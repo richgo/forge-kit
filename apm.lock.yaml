@@ -1,0 +1,367 @@
+lockfile_version: '1'
+apm_version: 0.33.0
+dependencies:
+- repo_url: richgo/forge-kit-skills
+  name: forge-kit-acceptance
+  host: github.com
+  resolved_commit: 2ad068c4e1b2abe9b7dda65f5e8dab4835213558
+  resolved_ref: 2ad068c4e1b2abe9b7dda65f5e8dab4835213558
+  version: 0.1.0
+  virtual_path: packages/acceptance
+  is_virtual: true
+  package_type: apm_package
+  deployed_files:
+  - .agents/skills/forge-acceptance
+  - .agents/skills/forge-acceptance/SKILL.md
+  deployed_file_hashes:
+    .agents/skills/forge-acceptance/SKILL.md: sha256:caa66d4f4d30e2c65902dfb5f35927b3d436f213da87b8c6a07dd946b97a6493
+  content_hash: sha256:6eae712e784f91f525f0d816ddd0453b1b392d36ca7b471d228e941e05110894
+- repo_url: richgo/forge-kit-skills
+  name: forge-kit-architecture
+  host: github.com
+  resolved_commit: 2ad068c4e1b2abe9b7dda65f5e8dab4835213558
+  resolved_ref: 2ad068c4e1b2abe9b7dda65f5e8dab4835213558
+  version: 0.1.0
+  virtual_path: packages/architecture
+  is_virtual: true
+  package_type: apm_package
+  deployed_files:
+  - .agents/skills/forge-architecture
+  - .agents/skills/forge-architecture/SKILL.md
+  deployed_file_hashes:
+    .agents/skills/forge-architecture/SKILL.md: sha256:5141b409514199c31f2a4e6debc3592097bcd6aca51c4c26d71fff5321bbee36
+  content_hash: sha256:a5a852a51855cdbe06699f8923af9955d56bbaa7d951e0f723fda6942f0b872a
+- repo_url: richgo/forge-kit-skills
+  name: forge-kit-build-repair
+  host: github.com
+  resolved_commit: 2ad068c4e1b2abe9b7dda65f5e8dab4835213558
+  resolved_ref: 2ad068c4e1b2abe9b7dda65f5e8dab4835213558
+  version: 0.1.0
+  virtual_path: packages/build-repair
+  is_virtual: true
+  package_type: apm_package
+  deployed_files:
+  - .agents/skills/forge-diagnose
+  - .agents/skills/forge-diagnose/LICENSE.txt
+  - .agents/skills/forge-diagnose/SKILL.md
+  - .agents/skills/tdd
+  - .agents/skills/tdd/LICENSE.txt
+  - .agents/skills/tdd/SKILL.md
+  - .agents/skills/tdd/mocking.md
+  - .agents/skills/tdd/tests.md
+  - .github/prompts/forge-repair.prompt.md
+  deployed_file_hashes:
+    .agents/skills/forge-diagnose/LICENSE.txt: sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5
+    .agents/skills/forge-diagnose/SKILL.md: sha256:cfcde3ba55df6425d4f2a443c0d0fe3815fe3427722c6109aaa928bafb37046a
+    .agents/skills/tdd/LICENSE.txt: sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5
+    .agents/skills/tdd/SKILL.md: sha256:5505d25bbaa8fc14a79e4d20163936958992a2995b7f1dd1d6197edc9ed722e0
+    .agents/skills/tdd/mocking.md: sha256:3ceb807fdf4a47d6a93d4d9a891e5ba6d362a6247bd08adc451feebfc17361ef
+    .agents/skills/tdd/tests.md: sha256:859f9e592c188fda4fc7277dd180e4ce9c7a2e13f6efe1f6f29eccc9d28c106a
+    .github/prompts/forge-repair.prompt.md: sha256:a0cd4112d89595f768ea59bfdd9ee9ad8e5b6396644d6c8a14ec4f375f054b02
+  content_hash: sha256:f0d1a2afd257c0e039ad360166f2712d38b043ca18252e7d039bee018382e60e
+- repo_url: richgo/forge-kit-skills
+  name: forge-kit-delivery
+  host: github.com
+  resolved_commit: 2ad068c4e1b2abe9b7dda65f5e8dab4835213558
+  resolved_ref: 2ad068c4e1b2abe9b7dda65f5e8dab4835213558
+  version: 0.1.0
+  virtual_path: packages/delivery
+  is_virtual: true
+  package_type: apm_package
+  deployed_files:
+  - .agents/skills/forge-delivery
+  - .agents/skills/forge-delivery/SKILL.md
+  deployed_file_hashes:
+    .agents/skills/forge-delivery/SKILL.md: sha256:0e403ccec5e4129429b82f13d987d02a690efc31093b4654641a13a91ee1bca2
+  content_hash: sha256:c24c82691396a8e5c83eea1c0fe1bb6f89f71ab7a165a0b02fb2167292c36d71
+- repo_url: richgo/forge-kit-skills
+  name: forge-kit-factory-workflows
+  host: github.com
+  resolved_commit: 2ad068c4e1b2abe9b7dda65f5e8dab4835213558
+  resolved_ref: 2ad068c4e1b2abe9b7dda65f5e8dab4835213558
+  version: 0.2.0
+  virtual_path: packages/factory-workflows
+  is_virtual: true
+  package_type: apm_package
+  deployed_files:
+  - .github/prompts/forge-verify.prompt.md
+  deployed_file_hashes:
+    .github/prompts/forge-verify.prompt.md: sha256:7e1f5d0362aeeb10f289826f915eea29b652483b7bd1707390019c5d72dc9783
+  content_hash: sha256:fc45e184199c262fb6c7d5db7afdf91af5358e6c82a4f67b3f1abf6c079ba6b1
+- repo_url: richgo/forge-kit-skills
+  name: forge-kit-repair-acceptance
+  host: github.com
+  resolved_commit: 2ad068c4e1b2abe9b7dda65f5e8dab4835213558
+  resolved_ref: 2ad068c4e1b2abe9b7dda65f5e8dab4835213558
+  version: 0.1.0
+  virtual_path: packages/repair-acceptance
+  is_virtual: true
+  package_type: apm_package
+  deployed_files:
+  - .agents/skills/forge-repair-evidence
+  - .agents/skills/forge-repair-evidence/SKILL.md
+  deployed_file_hashes:
+    .agents/skills/forge-repair-evidence/SKILL.md: sha256:69f166edce71cf7b6ecde154970c2656a04159e535c345ede90838f7de07b752
+  content_hash: sha256:0aa32b30c2306623a229807be7ff91c087dc254bf1e2af6eaf6db97006491a68
+- repo_url: richgo/forge-kit-skills
+  name: forge-kit-requirements
+  host: github.com
+  resolved_commit: 2ad068c4e1b2abe9b7dda65f5e8dab4835213558
+  resolved_ref: 2ad068c4e1b2abe9b7dda65f5e8dab4835213558
+  version: 0.1.0
+  virtual_path: packages/requirements
+  is_virtual: true
+  package_type: apm_package
+  deployed_files:
+  - .agents/skills/forge-requirements
+  - .agents/skills/forge-requirements/SKILL.md
+  - .github/agents/forge-spec-reviewer.agent.md
+  - .github/prompts/forge-plan.prompt.md
+  deployed_file_hashes:
+    .agents/skills/forge-requirements/SKILL.md: sha256:245d713550f16a926c48e37ccd7ca633de5425373295dffd28cb7d5cb0ce01bb
+    .github/agents/forge-spec-reviewer.agent.md: sha256:1e8d124d44c100956841a943091ff9eb843cc59b46421d3b7d5cba3c6a9c610e
+    .github/prompts/forge-plan.prompt.md: sha256:aea63adba7a860543b63335fb2b47e0082144ed1c915fb7a9d3d0c839a082429
+  content_hash: sha256:cc4cfcf4ec5017cee3bd8424069507032b3b38bc967384ce3cbbd0ea71fc4ec8
+- repo_url: richgo/forge-kit-skills
+  name: forge-kit-security-review
+  host: github.com
+  resolved_commit: 2ad068c4e1b2abe9b7dda65f5e8dab4835213558
+  resolved_ref: 2ad068c4e1b2abe9b7dda65f5e8dab4835213558
+  version: 0.1.0
+  virtual_path: packages/security-review
+  is_virtual: true
+  package_type: apm_package
+  deployed_files:
+  - .agents/skills/forge-security-triage
+  - .agents/skills/forge-security-triage/SKILL.md
+  - .github/agents/forge-security-reviewer.agent.md
+  deployed_file_hashes:
+    .agents/skills/forge-security-triage/SKILL.md: sha256:6761dcc04889ffd601789be9d220151f51b068a73b62f5d234157c9af17577d0
+    .github/agents/forge-security-reviewer.agent.md: sha256:942705031563c3e9ea796637b1e9a2f04e80dcf9f687b730e38f16f495b4b1d3
+  content_hash: sha256:6335942482407c96aa3d9ee760c0425c032d4b4101d34e97376286799c15364c
+deployments:
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/forge-acceptance
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/acceptance
+  active_owner: richgo/forge-kit-skills/packages/acceptance
+  content_hash: null
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/forge-acceptance/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/acceptance
+  active_owner: richgo/forge-kit-skills/packages/acceptance
+  content_hash: sha256:caa66d4f4d30e2c65902dfb5f35927b3d436f213da87b8c6a07dd946b97a6493
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/forge-architecture
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/architecture
+  active_owner: richgo/forge-kit-skills/packages/architecture
+  content_hash: null
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/forge-architecture/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/architecture
+  active_owner: richgo/forge-kit-skills/packages/architecture
+  content_hash: sha256:5141b409514199c31f2a4e6debc3592097bcd6aca51c4c26d71fff5321bbee36
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/forge-delivery
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/delivery
+  active_owner: richgo/forge-kit-skills/packages/delivery
+  content_hash: null
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/forge-delivery/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/delivery
+  active_owner: richgo/forge-kit-skills/packages/delivery
+  content_hash: sha256:0e403ccec5e4129429b82f13d987d02a690efc31093b4654641a13a91ee1bca2
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/forge-diagnose
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/build-repair
+  active_owner: richgo/forge-kit-skills/packages/build-repair
+  content_hash: null
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/forge-diagnose/LICENSE.txt
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/build-repair
+  active_owner: richgo/forge-kit-skills/packages/build-repair
+  content_hash: sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/forge-diagnose/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/build-repair
+  active_owner: richgo/forge-kit-skills/packages/build-repair
+  content_hash: sha256:cfcde3ba55df6425d4f2a443c0d0fe3815fe3427722c6109aaa928bafb37046a
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/forge-repair-evidence
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/repair-acceptance
+  active_owner: richgo/forge-kit-skills/packages/repair-acceptance
+  content_hash: null
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/forge-repair-evidence/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/repair-acceptance
+  active_owner: richgo/forge-kit-skills/packages/repair-acceptance
+  content_hash: sha256:69f166edce71cf7b6ecde154970c2656a04159e535c345ede90838f7de07b752
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/forge-requirements
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/requirements
+  active_owner: richgo/forge-kit-skills/packages/requirements
+  content_hash: null
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/forge-requirements/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/requirements
+  active_owner: richgo/forge-kit-skills/packages/requirements
+  content_hash: sha256:245d713550f16a926c48e37ccd7ca633de5425373295dffd28cb7d5cb0ce01bb
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/forge-security-triage
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/security-review
+  active_owner: richgo/forge-kit-skills/packages/security-review
+  content_hash: null
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/forge-security-triage/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/security-review
+  active_owner: richgo/forge-kit-skills/packages/security-review
+  content_hash: sha256:6761dcc04889ffd601789be9d220151f51b068a73b62f5d234157c9af17577d0
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/tdd
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/build-repair
+  active_owner: richgo/forge-kit-skills/packages/build-repair
+  content_hash: null
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/tdd/LICENSE.txt
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/build-repair
+  active_owner: richgo/forge-kit-skills/packages/build-repair
+  content_hash: sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/tdd/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/build-repair
+  active_owner: richgo/forge-kit-skills/packages/build-repair
+  content_hash: sha256:5505d25bbaa8fc14a79e4d20163936958992a2995b7f1dd1d6197edc9ed722e0
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/tdd/mocking.md
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/build-repair
+  active_owner: richgo/forge-kit-skills/packages/build-repair
+  content_hash: sha256:3ceb807fdf4a47d6a93d4d9a891e5ba6d362a6247bd08adc451feebfc17361ef
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/tdd/tests.md
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/build-repair
+  active_owner: richgo/forge-kit-skills/packages/build-repair
+  content_hash: sha256:859f9e592c188fda4fc7277dd180e4ce9c7a2e13f6efe1f6f29eccc9d28c106a
+- kind: project-relative
+  target: copilot
+  value: .github/agents/forge-security-reviewer.agent.md
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/security-review
+  active_owner: richgo/forge-kit-skills/packages/security-review
+  content_hash: sha256:942705031563c3e9ea796637b1e9a2f04e80dcf9f687b730e38f16f495b4b1d3
+- kind: project-relative
+  target: copilot
+  value: .github/agents/forge-spec-reviewer.agent.md
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/requirements
+  active_owner: richgo/forge-kit-skills/packages/requirements
+  content_hash: sha256:1e8d124d44c100956841a943091ff9eb843cc59b46421d3b7d5cba3c6a9c610e
+- kind: project-relative
+  target: copilot
+  value: .github/prompts/forge-plan.prompt.md
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/requirements
+  active_owner: richgo/forge-kit-skills/packages/requirements
+  content_hash: sha256:aea63adba7a860543b63335fb2b47e0082144ed1c915fb7a9d3d0c839a082429
+- kind: project-relative
+  target: copilot
+  value: .github/prompts/forge-repair.prompt.md
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/build-repair
+  active_owner: richgo/forge-kit-skills/packages/build-repair
+  content_hash: sha256:a0cd4112d89595f768ea59bfdd9ee9ad8e5b6396644d6c8a14ec4f375f054b02
+- kind: project-relative
+  target: copilot
+  value: .github/prompts/forge-verify.prompt.md
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/factory-workflows
+  active_owner: richgo/forge-kit-skills/packages/factory-workflows
+  content_hash: sha256:7e1f5d0362aeeb10f289826f915eea29b652483b7bd1707390019c5d72dc9783

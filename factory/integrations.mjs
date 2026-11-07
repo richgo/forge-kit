@@ -1,4 +1,7 @@
-const roles = ['orchestration', 'execution', 'checking', 'skills', 'mcp'];
+const roles = [
+  'orchestration', 'execution', 'checking', 'skills', 'mcp',
+  'architecture', 'repairChecking', 'delivery', 'buildRepair', 'securityReview',
+];
 
 function packageReference({ repository, path, ref }) {
   if (typeof repository !== 'string' || repository.trim() !== repository ||
@@ -63,7 +66,24 @@ export function assemble(manifest) {
   const pending = roles.filter(role => manifest.capabilities[role] === null);
   const packages = Object.fromEntries(roles.filter(role => !pending.includes(role))
     .map(role => [role, packageReference(manifest.capabilities[role])]));
-  return { pending, packages, rehearsal: packageReference(manifest.rehearsal) };
+  const orchestration = manifest.capabilities.orchestration;
+  let orchestrator = null;
+  if (orchestration) {
+    const { repository, workflow, ref } = orchestration;
+    if (typeof workflow !== 'string' || workflow.trim() !== workflow ||
+        !/^\.github\/workflows\/[a-z0-9_-]+\.lock\.yml$/.test(workflow)) {
+      throw new Error('Expected a compiled reusable GH-AW workflow');
+    }
+    orchestrator = repository + '/' + workflow + '@' + ref;
+  }
+  return { pending, packages, orchestrator, rehearsal: packageReference(manifest.rehearsal) };
+}
+
+export function apmManifest(packages) {
+  const references = [...new Set(Object.values(packages))].sort();
+  const dependencies = references.length ? ['  apm:', ...references.map(ref => "    - '" + ref + "'")] : ['  apm: []'];
+  return ['name: forge-kit', 'version: "0.1.0"', 'targets: [copilot]', 'dependencies:',
+    ...dependencies, '  mcp: []', ''].join('\n');
 }
 
 // The adapter normalizes a provider's choice and selected label probability.

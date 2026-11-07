@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { run, validateArchitecture, verifyRun } from '../factory/slice.mjs';
-import { assemble, routeRepair } from '../factory/integrations.mjs';
+import { apmManifest, assemble, routeRepair } from '../factory/integrations.mjs';
 
 const json = async path => JSON.parse(await readFile(path, 'utf8'));
 
@@ -60,10 +60,22 @@ test('a typed repair signal cannot exceed policy or authorize an unknown route',
 
 test('assembly reports unresolved capabilities and refuses mutable package references', async () => {
   const manifest = await json('factory/packages.json');
-  assert.deepEqual(assemble(manifest).pending, ['orchestration', 'execution', 'checking', 'skills', 'mcp']);
+  assert.deepEqual(assemble(manifest).pending, []);
+  manifest.capabilities.orchestration = null;
+  assert.deepEqual(assemble(manifest).pending, ['orchestration']);
   assert.match(assemble(manifest).rehearsal, /^danielmeppiel\/apmx\/.+#[a-f0-9]{40}$/);
   manifest.rehearsal.ref += '\n';
   assert.throws(() => assemble(manifest), /commit SHA/);
   manifest.rehearsal.ref = 'main';
   assert.throws(() => assemble(manifest), /commit SHA/);
+});
+
+test('the APM installer and GitHub workflow use the reviewed catalog pins', async () => {
+  const manifest = await json('factory/packages.json');
+  const assembly = assemble(manifest);
+  assert.match(assembly.orchestrator, /^richgo\/forge-kit-skills\/\.github\/workflows\/forge-reference\.lock\.yml@[a-f0-9]{40}$/);
+  assert.equal(await readFile('apm.yml', 'utf8'), apmManifest(assembly.packages));
+  const workflow = await readFile('.github/workflows/catalog-rehearsal.yml', 'utf8');
+  const callers = [...workflow.matchAll(/^\s+uses: (richgo\/forge-kit-skills\/[^\s]+)$/gm)];
+  assert.deepEqual(callers.map(match => match[1]), [assembly.orchestrator]);
 });
