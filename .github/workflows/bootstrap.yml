@@ -17,7 +17,26 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-      - run: node --test
+      - id: catalog
+        name: Resolve the delivery package revision
+        run: |
+          set -euo pipefail
+          pin="$(node factory/cli.mjs assemble | jq -er '.packages.delivery | split("#")[1]')"
+          [[ "$pin" =~ ^[0-9a-f]{40}$ ]]
+          printf 'pin=%s\n' "$pin" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: richgo/forge-kit-skills
+          ref: ${{ steps.catalog.outputs.pin }}
+          path: _catalog
+          persist-credentials: false
+      - run: node --test test/*.test.mjs
+      - name: Check signed evidence, rollback, and the pinned catalog's lifecycle
+        env:
+          FORGE_CATALOG_DIR: _catalog
+        run: |
+          node --test _catalog/test/*.mjs
+          node --test evals/catalog-scenarios.mjs
       - name: Reproduce the catalog install from its lock
         run: |
           set -euo pipefail
@@ -35,6 +54,9 @@ jobs:
           mkdir out
           node factory/cli.mjs run out/clean
           node factory/cli.mjs run out/repaired --faulty-first-build
+          inputs="$(mktemp -d)"
+          cp examples/requirements.json test/fixtures/delegated/architecture.json test/fixtures/delegated/architecture.c4 "$inputs/"
+          node factory/cli.mjs run out/delegated --inputs "$inputs" --fault wrong-output-once
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: bootstrap-delivery
@@ -57,3 +79,6 @@ jobs:
       - run: |
           node factory/cli.mjs verify out/clean
           node factory/cli.mjs verify out/repaired
+          inputs="$(mktemp -d)"
+          cp examples/requirements.json test/fixtures/delegated/architecture.json test/fixtures/delegated/architecture.c4 "$inputs/"
+          node factory/cli.mjs verify out/delegated --inputs "$inputs"

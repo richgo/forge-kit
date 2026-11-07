@@ -1,0 +1,13 @@
+specification {
+  element service
+}
+model {
+  health_probe = service 'Health probe'
+  readiness_worker = service 'Readiness worker'
+  health_probe -> readiness_worker
+}
+views {
+  view index {
+    include *
+  }
+}

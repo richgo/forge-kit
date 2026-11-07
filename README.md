@@ -4,6 +4,8 @@ Forge Kit is a reference software factory assembled from external APM packages. 
 
 ## Run the slice
 
+See [factory verification and evals](docs/testing.md) for architecture-change scenarios, injected faults, rollback, and grading.
+
 ```sh
 node --test
 node factory/cli.mjs assemble
@@ -16,7 +18,7 @@ node factory/cli.mjs verify out/repaired
 
 Use a fresh output directory for each run. The fixture starts with a readiness requirement and a checked-in FINOS CALM architecture. It checks the corresponding LikeC4 view, writes a plan, builds a small Node program, checks its exact behavior, copies the accepted artifact to a local deployment path, and invokes it to observe readiness. A deliberately faulty build demonstrates one repair attempt. Exhaustion or failed observation stops the run.
 
-The in-toto Statement in each successful output directory binds the deployed file and the three inputs by SHA-256. The offline checker re-hashes the files and applies the acceptance test without executing downloaded code. The local Statement is unsigned. Its stage history records the fixture's claims and carries no signer identity. [in-toto Statement specification](https://github.com/in-toto/attestation/blob/main/spec/v1/statement.md)
+The in-toto Statement in each successful output directory binds the deployed file, any rejected candidate, and the three inputs by SHA-256. The offline checker re-hashes the files and replays acceptance only after matching the code to a known fixture template. The local Statement is unsigned. Its stage history records the fixture's claims and carries no signer identity. [in-toto Statement specification](https://github.com/in-toto/attestation/blob/main/spec/v1/statement.md)
 
 The **Factory bootstrap** GitHub Actions workflow exercises both paths and checks the output again in a separate job. The **APMX package rehearsal** is manually dispatched from the default branch. It uses the upstream APMX workflow and a pinned upstream APM package to exercise contract execution with a fixture actor, an independent `apmx check` replay, and signed in-toto evidence. It uses no model credentials and proposes no Git changes. [APMX package fixture](https://github.com/danielmeppiel/apmx/tree/fae2067a0dc6ff07beda714015ff9e648f41ce63/tests/fixtures/run-workflow-package)
 
