@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { gradeReview } from '../evals/review.mjs';
 import { apmManifest, assemble, requestJevRepair } from './integrations.mjs';
-import { readVerifiedReceipt, run } from './slice.mjs';
+import { readRequirementsEvidence, readVerifiedReceipt, run } from './slice.mjs';
 
 const [command, ...args] = process.argv.slice(2);
 try {
@@ -11,8 +11,8 @@ try {
     const assembly = assemble(manifest);
     if (args.length) process.stdout.write(apmManifest(assembly.packages));
     else console.log(JSON.stringify(assembly, null, 2));
-  } else if (['run', 'verify', 'grade'].includes(command)) {
-    const options = { inputs: { type: 'string' } };
+  } else if (['run', 'verify', 'grade', 'requirements-evidence'].includes(command)) {
+    const options = { inputs: { type: 'string' }, story: { type: 'string' } };
     if (command === 'run') {
       options.fault = { type: 'string' };
       options['faulty-first-build'] = { type: 'boolean' };
@@ -21,18 +21,20 @@ try {
     const { positionals, values } = parseArgs({ args, options, allowPositionals: true });
     const [output] = positionals;
     if (positionals.length !== 1) throw new Error('Supply exactly one output directory');
-    const inputDirectory = values.inputs;
+    const selection = { inputDirectory: values.inputs, story: values.story };
     if (command === 'run') {
       const jevToken = process.env.FORGE_JEV_TOKEN;
       const receipt = await run(output, {
         faultyFirstBuild: Boolean(values['faulty-first-build']),
         fault: values.fault,
-        inputDirectory,
+        ...selection,
         recommendRepair: jevToken ? () => requestJevRepair(jevToken) : undefined,
       });
       console.log(JSON.stringify(receipt.predicate, null, 2));
+    } else if (command === 'requirements-evidence') {
+      console.log(JSON.stringify(await readRequirementsEvidence(output, selection), null, 2));
     } else {
-      const receipt = await readVerifiedReceipt(output, { inputDirectory });
+      const receipt = await readVerifiedReceipt(output, selection);
       if (command === 'verify') {
         console.log('Independent acceptance and receipt checks passed.');
       } else {
@@ -44,7 +46,7 @@ try {
       }
     }
   } else {
-    throw new Error('Usage: node factory/cli.mjs assemble [--apm] | run OUTPUT [--inputs DIR] [--fault MODE] | verify OUTPUT [--inputs DIR] | grade OUTPUT --review FILE [--inputs DIR]');
+    throw new Error('Usage: node factory/cli.mjs assemble [--apm] | run|verify|grade OUTPUT [--inputs DIR] [--story ID] | requirements-evidence OUTPUT --inputs DIR --story ID');
   }
 } catch (error) {
   console.error(error.message);

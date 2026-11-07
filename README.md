@@ -6,6 +6,8 @@ Forge Kit is a reference software factory assembled from external APM packages. 
 
 See [factory verification and evals](docs/testing.md) for architecture-change scenarios, injected faults, rollback, and grading.
 
+See [product requirements](docs/product-requirements.md) for the Epic → Feature → Story template, executable acceptance criteria, and APMX verification.
+
 ```sh
 node --test
 node factory/cli.mjs assemble
