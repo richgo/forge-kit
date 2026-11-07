@@ -28,6 +28,7 @@ export async function requestJevRepair(token, send = fetch) {
       redirect: 'error',
       signal: AbortSignal.timeout(5000),
       body: JSON.stringify({
+        model: 'jev-1.13.0',
         state: 'The fixture readiness check rejected the candidate build.',
         questions: {
           repair: {

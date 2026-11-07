@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "epics": [
+    {
+      "id": "EPIC-001",
+      "title": "Safe release promotion",
+      "outcome": "A release operator can tell when a candidate is ready.",
+      "features": [
+        {
+          "id": "FEAT-001",
+          "title": "Probe readiness",
+          "outcome": "The deployed candidate exposes a reproducible readiness result.",
+          "stories": [
+            {
+              "id": "STORY-001",
+              "title": "Report verified readiness",
+              "asA": "release operator",
+              "iWant": "to run the deployed probe",
+              "soThat": "I can confirm it is ready",
+              "architectureNode": "health_probe",
+              "acceptanceCriteria": [
+                { "id": "AC-001", "given": "The candidate is deployed.", "when": "run-readiness-probe", "then": { "stdout": "ready" } },
+                { "id": "AC-002", "given": "The candidate is deployed.", "when": "run-readiness-probe", "then": { "exitCode": 0 } }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

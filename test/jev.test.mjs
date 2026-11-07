@@ -8,6 +8,7 @@ test('sends a bounded choice request and reads the selected label probability', 
     assert.equal(request.redirect, 'error');
     assert.equal(request.headers.Authorization, 'Bearer test-token');
     const body = JSON.parse(request.body);
+    assert.equal(body.model, 'jev-1.13.0');
     assert.deepEqual(Object.keys(body.questions.repair.criteria), ['retry-build', 'escalate']);
     assert.equal(body.questions.repair.type, 'choice');
     assert.equal(body.state, 'The fixture readiness check rejected the candidate build.');

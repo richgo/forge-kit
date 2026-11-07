@@ -2,13 +2,18 @@ name: APMX package rehearsal
 
 on:
   workflow_dispatch:
+    inputs:
+      live_story:
+        description: Run the Copilot-backed contract on the independently replayed product story
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
   resolve:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
@@ -19,9 +24,17 @@ jobs:
           persist-credentials: false
       - id: package
         name: Resolve the immutable rehearsal package
+        env:
+          LIVE_STORY: ${{ inputs.live_story }}
+          HAS_COPILOT_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN != '' }}
         run: |
-          set -o pipefail
-          factory="$(node factory/cli.mjs assemble | jq -er '.rehearsal')"
+          set -euo pipefail
+          if [[ "$LIVE_STORY" == true ]]; then
+            [[ "$HAS_COPILOT_TOKEN" == true ]] || { echo '::error::Configure COPILOT_GITHUB_TOKEN.'; exit 1; }
+            factory="$(node factory/cli.mjs assemble | jq -er '.packages.skills')"
+          else
+            factory="$(node factory/cli.mjs assemble | jq -er '.rehearsal')"
+          fi
           printf 'factory=%s\n' "$factory" >> "$GITHUB_OUTPUT"
 
   rehearse:
@@ -33,9 +46,11 @@ jobs:
       attestations: write
     with:
       factory: ${{ needs.resolve.outputs.factory }}
-      workspace: examples/apmx-rehearsal
-      checks-requirements: checks/requirements.txt
+      workspace: ${{ inputs.live_story && 'examples/apmx-story' || 'examples/apmx-rehearsal' }}
+      checks-requirements: ${{ !inputs.live_story && 'checks/requirements.txt' || '' }}
       apmx-version: source
       apmx-ref: fae2067a0dc6ff07beda714015ff9e648f41ce63
-      hermetic-actor: true
+      hermetic-actor: ${{ !inputs.live_story }}
       attest: true
+    secrets:
+      agent-token: ${{ inputs.live_story && secrets.COPILOT_GITHUB_TOKEN || '' }}
