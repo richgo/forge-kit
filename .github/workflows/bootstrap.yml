@@ -17,7 +17,47 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-      - run: node --test
+      - id: catalog
+        name: Resolve the delivery package revision
+        run: |
+          set -euo pipefail
+          pin="$(node factory/cli.mjs assemble | jq -er '.packages.delivery | split("#")[1]')"
+          [[ "$pin" =~ ^[0-9a-f]{40}$ ]]
+          printf 'pin=%s\n' "$pin" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: richgo/forge-kit-skills
+          ref: ${{ steps.catalog.outputs.pin }}
+          path: _catalog
+          persist-credentials: false
+      - id: requirements
+        run: |
+          set -euo pipefail
+          pin="$(node factory/cli.mjs assemble | jq -er '.packages.skills | split("#")[1]')"
+          [[ "$pin" =~ ^[0-9a-f]{40}$ ]]
+          printf 'pin=%s\n' "$pin" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: richgo/forge-kit-skills
+          ref: ${{ steps.requirements.outputs.pin }}
+          path: _requirements
+          persist-credentials: false
+      - run: node --test test/*.test.mjs
+      - name: Trace a product story through repair and independent acceptance
+        env:
+          FORGE_REQUIREMENTS_PACKAGE: _requirements/packages/requirements
+        run: |
+          node --test _requirements/test/product-requirements.test.mjs evals/requirements-scenarios.mjs
+          mkdir -p out
+          inputs="$(mktemp -d)"
+          cp examples/product-requirements.json test/fixtures/delegated/architecture.json test/fixtures/delegated/architecture.c4 "$inputs/"
+          node factory/cli.mjs run out/story --inputs "$inputs" --story STORY-001 --fault wrong-output-once
+      - name: Check signed evidence, rollback, and the pinned catalog's lifecycle
+        env:
+          FORGE_CATALOG_DIR: _catalog
+        run: |
+          node --test _catalog/test/*.mjs
+          node --test evals/catalog-scenarios.mjs
       - name: Reproduce the catalog install from its lock
         run: |
           set -euo pipefail
@@ -32,9 +72,12 @@ jobs:
           "$apm" install --target copilot --frozen
       - name: Exercise clean and repaired builds
         run: |
-          mkdir out
+          mkdir -p out
           node factory/cli.mjs run out/clean
           node factory/cli.mjs run out/repaired --faulty-first-build
+          inputs="$(mktemp -d)"
+          cp examples/requirements.json test/fixtures/delegated/architecture.json test/fixtures/delegated/architecture.c4 "$inputs/"
+          node factory/cli.mjs run out/delegated --inputs "$inputs" --fault wrong-output-once
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: bootstrap-delivery
@@ -45,10 +88,22 @@ jobs:
   check:
     needs: produce
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
+          persist-credentials: false
+      - id: requirements
+        run: |
+          set -euo pipefail
+          reference="$(node factory/cli.mjs assemble | jq -er '.packages.skills')"
+          [[ "$reference" =~ ^richgo/forge-kit-skills/packages/requirements#[0-9a-f]{40}$ ]]
+          printf 'reference=%s\npin=%s\n' "$reference" "${reference##*#}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: richgo/forge-kit-skills
+          ref: ${{ steps.requirements.outputs.pin }}
+          path: _requirements
           persist-credentials: false
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
@@ -57,3 +112,39 @@ jobs:
       - run: |
           node factory/cli.mjs verify out/clean
           node factory/cli.mjs verify out/repaired
+          inputs="$(mktemp -d)"
+          cp examples/requirements.json test/fixtures/delegated/architecture.json test/fixtures/delegated/architecture.c4 "$inputs/"
+          node factory/cli.mjs verify out/delegated --inputs "$inputs"
+      - name: Replay the story and check the APMX verification report
+        env:
+          FORGE_REQUIREMENTS_PACKAGE: _requirements/packages/requirements
+        run: |
+          set -euo pipefail
+          inputs="$(mktemp -d)"
+          cp examples/product-requirements.json test/fixtures/delegated/architecture.json test/fixtures/delegated/architecture.c4 "$inputs/"
+          node factory/cli.mjs requirements-evidence out/story --inputs "$inputs" --story STORY-001 > out/story/requirements-verification.json
+          cp "$inputs/product-requirements.json" out/story/
+          (cd out/story && node ../../_requirements/packages/requirements/checks/apmx-requirements-check.mjs)
+      - name: Resolve the external contract in APMX
+        env:
+          REQUIREMENTS_REFERENCE: ${{ steps.requirements.outputs.reference }}
+        run: |
+          set -euo pipefail
+          scratch="$(mktemp -d)"
+          curl --fail --location --silent --show-error 'https://github.com/danielmeppiel/apmx/releases/download/v0.8.0/apmx-0.8.0-linux-x86_64.tar.gz' -o "$scratch/apmx.tar.gz"
+          printf '%s  %s\n' '524027362fe88728836ec6476d2c828d26b750d2067809c5741f27d950b93778' "$scratch/apmx.tar.gz" | sha256sum --check
+          tar -xzf "$scratch/apmx.tar.gz" -C "$scratch"
+          apmx="$(find "$scratch" -type f -name apmx -print -quit)"
+          mkdir "$scratch/copilot"
+          package="$(npm pack --ignore-scripts --silent --pack-destination "$scratch" @github/copilot-linux-x64@1.0.107)"
+          tar -xzf "$scratch/$package" -C "$scratch/copilot"
+          export PATH="$scratch/copilot/package:$PATH"
+          mkdir "$scratch/workspace"
+          cp out/story/{product-requirements.json,plan.json,receipt.json,deployed.mjs} "$scratch/workspace/"
+          cd "$scratch/workspace"
+          "$apmx" --from "$REQUIREMENTS_REFERENCE" --plan
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: verified-requirements-trace
+          path: out/story/requirements-verification.json
+          if-no-files-found: error

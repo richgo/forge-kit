@@ -106,9 +106,9 @@ dependencies:
 - repo_url: richgo/forge-kit-skills
   name: forge-kit-requirements
   host: github.com
-  resolved_commit: 2ad068c4e1b2abe9b7dda65f5e8dab4835213558
-  resolved_ref: 2ad068c4e1b2abe9b7dda65f5e8dab4835213558
-  version: 0.1.0
+  resolved_commit: 3625298b6c9b09344c314d6c413ff8e0b3abf4e4
+  resolved_ref: 3625298b6c9b09344c314d6c413ff8e0b3abf4e4
+  version: 0.2.0
   virtual_path: packages/requirements
   is_virtual: true
   package_type: apm_package
@@ -118,10 +118,10 @@ dependencies:
   - .github/agents/forge-spec-reviewer.agent.md
   - .github/prompts/forge-plan.prompt.md
   deployed_file_hashes:
-    .agents/skills/forge-requirements/SKILL.md: sha256:245d713550f16a926c48e37ccd7ca633de5425373295dffd28cb7d5cb0ce01bb
+    .agents/skills/forge-requirements/SKILL.md: sha256:23e004dff5c8518dbf2ded265396ce0d97feed9ea90645c6cd1c100d7e6859d0
     .github/agents/forge-spec-reviewer.agent.md: sha256:1e8d124d44c100956841a943091ff9eb843cc59b46421d3b7d5cba3c6a9c610e
     .github/prompts/forge-plan.prompt.md: sha256:aea63adba7a860543b63335fb2b47e0082144ed1c915fb7a9d3d0c839a082429
-  content_hash: sha256:cc4cfcf4ec5017cee3bd8424069507032b3b38bc967384ce3cbbd0ea71fc4ec8
+  content_hash: sha256:b8d51bb889a191ca3c99bafdeb6f26471db67c3aad5981c22886f0a03d43e611
 - repo_url: richgo/forge-kit-skills
   name: forge-kit-security-review
   host: github.com
@@ -256,7 +256,7 @@ deployments:
   owners:
   - richgo/forge-kit-skills/packages/requirements
   active_owner: richgo/forge-kit-skills/packages/requirements
-  content_hash: sha256:245d713550f16a926c48e37ccd7ca633de5425373295dffd28cb7d5cb0ce01bb
+  content_hash: sha256:23e004dff5c8518dbf2ded265396ce0d97feed9ea90645c6cd1c100d7e6859d0
 - kind: project-relative
   target: copilot
   value: .agents/skills/forge-security-triage
