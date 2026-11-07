@@ -1,0 +1,59 @@
+name: Factory bootstrap
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  produce:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - run: node --test
+      - name: Reproduce the catalog install from its lock
+        run: |
+          set -euo pipefail
+          scratch="$(mktemp -d)"
+          curl --fail --location --silent --show-error 'https://github.com/microsoft/apm/releases/download/v0.33.0/apm-linux-x86_64.tar.gz' -o "$scratch/apm.tar.gz"
+          printf '%s  %s\n' 'e6374402c74318f7c8bef97a90d8572d049fdab0dc3871492c6b0647ae9e881f' "$scratch/apm.tar.gz" | sha256sum --check
+          tar -xzf "$scratch/apm.tar.gz" -C "$scratch"
+          apm="$(find "$scratch" -type f -name apm -print -quit)"
+          mkdir "$scratch/project"
+          cp apm.yml apm.lock.yaml "$scratch/project/"
+          cd "$scratch/project"
+          "$apm" install --target copilot --frozen
+      - name: Exercise clean and repaired builds
+        run: |
+          mkdir out
+          node factory/cli.mjs run out/clean
+          node factory/cli.mjs run out/repaired --faulty-first-build
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: bootstrap-delivery
+          path: out/
+          if-no-files-found: error
+          retention-days: 7
+
+  check:
+    needs: produce
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: bootstrap-delivery
+          path: out/
+      - run: |
+          node factory/cli.mjs verify out/clean
+          node factory/cli.mjs verify out/repaired

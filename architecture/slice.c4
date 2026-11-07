@@ -1,0 +1,11 @@
+specification {
+  element service
+}
+model {
+  health_probe = service 'Health probe'
+}
+views {
+  view index {
+    include *
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "source": "richgo/forge-kit-skills",
+  "rehearsal": {
+    "repository": "danielmeppiel/apmx",
+    "path": "tests/fixtures/run-workflow-package",
+    "ref": "fae2067a0dc6ff07beda714015ff9e648f41ce63"
+  },
+  "capabilities": {
+    "orchestration": {
+      "repository": "richgo/forge-kit-skills",
+      "path": "packages/factory-workflows",
+      "ref": "2ad068c4e1b2abe9b7dda65f5e8dab4835213558",
+      "workflow": ".github/workflows/forge-reference.lock.yml"
+    },
+    "execution": {
+      "repository": "richgo/forge-kit-skills",
+      "path": "packages/acceptance",
+      "ref": "2ad068c4e1b2abe9b7dda65f5e8dab4835213558"
+    },
+    "checking": {
+      "repository": "richgo/forge-kit-skills",
+      "path": "packages/acceptance",
+      "ref": "2ad068c4e1b2abe9b7dda65f5e8dab4835213558"
+    },
+    "skills": {
+      "repository": "richgo/forge-kit-skills",
+      "path": "packages/requirements",
+      "ref": "2ad068c4e1b2abe9b7dda65f5e8dab4835213558"
+    },
+    "mcp": {
+      "repository": "richgo/forge-kit-skills",
+      "path": "packages/factory-workflows",
+      "ref": "2ad068c4e1b2abe9b7dda65f5e8dab4835213558"
+    },
+    "architecture": {
+      "repository": "richgo/forge-kit-skills",
+      "path": "packages/architecture",
+      "ref": "2ad068c4e1b2abe9b7dda65f5e8dab4835213558"
+    },
+    "repairChecking": {
+      "repository": "richgo/forge-kit-skills",
+      "path": "packages/repair-acceptance",
+      "ref": "2ad068c4e1b2abe9b7dda65f5e8dab4835213558"
+    },
+    "delivery": {
+      "repository": "richgo/forge-kit-skills",
+      "path": "packages/delivery",
+      "ref": "2ad068c4e1b2abe9b7dda65f5e8dab4835213558"
+    },
+    "buildRepair": {
+      "repository": "richgo/forge-kit-skills",
+      "path": "packages/build-repair",
+      "ref": "2ad068c4e1b2abe9b7dda65f5e8dab4835213558"
+    },
+    "securityReview": {
+      "repository": "richgo/forge-kit-skills",
+      "path": "packages/security-review",
+      "ref": "2ad068c4e1b2abe9b7dda65f5e8dab4835213558"
+    }
+  }
+}
