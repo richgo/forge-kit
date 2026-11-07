@@ -1,0 +1,41 @@
+name: APMX package rehearsal
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      factory: ${{ steps.package.outputs.factory }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - id: package
+        name: Resolve the immutable rehearsal package
+        run: |
+          set -o pipefail
+          factory="$(node factory/cli.mjs assemble | jq -er '.rehearsal')"
+          printf 'factory=%s\n' "$factory" >> "$GITHUB_OUTPUT"
+
+  rehearse:
+    needs: resolve
+    uses: danielmeppiel/apmx/.github/workflows/run.yml@fae2067a0dc6ff07beda714015ff9e648f41ce63 # v0.8.0
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    with:
+      factory: ${{ needs.resolve.outputs.factory }}
+      workspace: examples/apmx-rehearsal
+      checks-requirements: checks/requirements.txt
+      apmx-version: source
+      apmx-ref: fae2067a0dc6ff07beda714015ff9e648f41ce63
+      hermetic-actor: true
+      attest: true

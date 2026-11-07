@@ -1,0 +1,12 @@
+{
+  "$schema": "https://calm.finos.org/release/1.2/meta/calm.json",
+  "nodes": [
+    {
+      "unique-id": "health_probe",
+      "node-type": "service",
+      "name": "Health probe",
+      "description": "Reports readiness from the deployed artifact."
+    }
+  ],
+  "relationships": []
+}

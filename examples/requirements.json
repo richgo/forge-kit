@@ -1,0 +1,6 @@
+{
+  "id": "REQ-001",
+  "summary": "The deployed health probe prints ready and exits successfully.",
+  "node": "health_probe",
+  "expectedOutput": "ready"
+}

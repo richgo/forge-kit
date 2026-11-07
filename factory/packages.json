@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "source": "richgo/forge-kit-skills",
+  "rehearsal": {
+    "repository": "danielmeppiel/apmx",
+    "path": "tests/fixtures/run-workflow-package",
+    "ref": "fae2067a0dc6ff07beda714015ff9e648f41ce63"
+  },
+  "capabilities": {
+    "orchestration": null,
+    "execution": null,
+    "checking": null,
+    "skills": null,
+    "mcp": null
+  }
+}
