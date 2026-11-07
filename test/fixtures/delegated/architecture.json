@@ -1,0 +1,18 @@
+{
+  "$schema": "https://calm.finos.org/release/1.2/meta/calm.json",
+  "nodes": [
+    { "unique-id": "health_probe", "node-type": "service", "name": "Health probe", "description": "Owns the readiness contract." },
+    { "unique-id": "readiness_worker", "node-type": "service", "name": "Readiness worker", "description": "Provides the readiness response in a child process." }
+  ],
+  "relationships": [
+    {
+      "unique-id": "readiness-delegation",
+      "relationship-type": {
+        "connects": {
+          "source": { "node": "health_probe" },
+          "destination": { "node": "readiness_worker" }
+        }
+      }
+    }
+  ]
+}
