@@ -8,8 +8,14 @@ import { run, verifyRun } from '../factory/slice.mjs';
 assert.ok(process.env.FORGE_JEV_TOKEN, 'Configure the FORGE_JEV_TOKEN repository secret');
 const root = await mkdtemp(join(tmpdir(), 'forge-jev-'));
 try {
-  const recommendation = await requestJevRepair(process.env.FORGE_JEV_TOKEN);
-  assert.ok(recommendation, 'Jev did not return a valid typed repair recommendation');
+  let httpStatus;
+  const recommendation = await requestJevRepair(process.env.FORGE_JEV_TOKEN, async (...args) => {
+    const response = await fetch(...args);
+    httpStatus = response.status;
+    return response;
+  });
+  assert.ok(recommendation, 'Jev did not return a valid typed repair recommendation' +
+    (httpStatus ? ' (HTTP ' + httpStatus + ')' : ' (transport failed)'));
   const route = routeRepair(recommendation, { used: 0, limit: 1 });
   assert.equal(routeRepair(recommendation, { used: 1, limit: 1 }), 'escalate');
   const output = join(root, 'run');
