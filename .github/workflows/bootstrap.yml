@@ -5,11 +5,42 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      pages_drill:
+        description: Publish, probe, and roll back the synthetic Pages release
+        type: boolean
+        default: false
+      pages_restore_only:
+        description: With pages_drill enabled, publish only the verified baseline
+        type: boolean
+        default: false
+      jev_probe:
+        description: Run a live Jev decision on a synthetic repair case
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
+  decision:
+    if: github.event_name == 'workflow_dispatch' && inputs.jev_probe && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Exercise live Jev repair routing
+        env:
+          FORGE_JEV_TOKEN: ${{ secrets.FORGE_JEV_TOKEN }}
+        run: node evals/jev-live.mjs > "$RUNNER_TEMP/jev-repair.json"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: live-jev-repair
+          path: ${{ runner.temp }}/jev-repair.json
+          if-no-files-found: error
+
   produce:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -52,6 +83,8 @@ jobs:
           inputs="$(mktemp -d)"
           cp examples/product-requirements.json test/fixtures/delegated/architecture.json test/fixtures/delegated/architecture.c4 "$inputs/"
           node factory/cli.mjs run out/story --inputs "$inputs" --story STORY-001 --fault wrong-output-once
+          cp examples/pages-candidate/product-requirements.json "$inputs/"
+          node factory/cli.mjs run out/pages-candidate --inputs "$inputs" --story STORY-001
       - name: Check signed evidence, rollback, and the pinned catalog's lifecycle
         env:
           FORGE_CATALOG_DIR: _catalog
@@ -125,6 +158,9 @@ jobs:
           node factory/cli.mjs requirements-evidence out/story --inputs "$inputs" --story STORY-001 > out/story/requirements-verification.json
           cp "$inputs/product-requirements.json" out/story/
           (cd out/story && node ../../_requirements/packages/requirements/checks/apmx-requirements-check.mjs)
+          for file in product-requirements.json plan.json receipt.json deployed.mjs; do
+            cmp "out/story/$file" "examples/apmx-story/$file"
+          done
       - name: Resolve the external contract in APMX
         env:
           REQUIREMENTS_REFERENCE: ${{ steps.requirements.outputs.reference }}
@@ -147,4 +183,107 @@ jobs:
         with:
           name: verified-requirements-trace
           path: out/story/requirements-verification.json
+          if-no-files-found: error
+      - name: Package the independently checked Pages releases
+        env:
+          FORGE_REQUIREMENTS_PACKAGE: _requirements/packages/requirements
+        run: |
+          set -euo pipefail
+          inputs="$(mktemp -d)"
+          cp examples/pages-candidate/product-requirements.json test/fixtures/delegated/architecture.json test/fixtures/delegated/architecture.c4 "$inputs/"
+          node factory/cli.mjs requirements-evidence out/pages-candidate --inputs "$inputs" --story STORY-001 > out/pages-candidate/requirements-verification.json
+          cp "$inputs/product-requirements.json" out/pages-candidate/
+          (cd out/pages-candidate && node ../../_requirements/packages/requirements/checks/apmx-requirements-check.mjs)
+          mkdir pages proof
+          node factory/pages.mjs package out/story pages/baseline "$GITHUB_SHA"
+          node factory/pages.mjs package out/pages-candidate pages/candidate "$GITHUB_SHA"
+          cp pages/baseline/release.json proof/baseline.json
+          cp pages/candidate/release.json proof/candidate.json
+          [[ "$(jq -er '.release' proof/baseline.json)" != "$(jq -er '.release' proof/candidate.json)" ]]
+      - if: github.event_name == 'workflow_dispatch' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: pages-proof
+          path: proof/
+          if-no-files-found: error
+      - if: github.event_name == 'workflow_dispatch' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
+        with:
+          name: pages-baseline
+          path: pages/baseline
+      - if: github.event_name == 'workflow_dispatch' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
+        with:
+          name: pages-candidate
+          path: pages/candidate
+      - if: github.event_name == 'workflow_dispatch' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
+        with:
+          name: pages-rollback
+          path: pages/baseline
+
+  pages:
+    name: Publish, probe, and roll back on GitHub Pages
+    needs: check
+    if: github.event_name == 'workflow_dispatch' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.baseline.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: pages-proof
+          path: proof
+      - id: baseline
+        name: Publish the known-good baseline
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
+        with:
+          artifact_name: pages-baseline
+          timeout: 240000
+      - id: baseline_probe
+        name: Observe the baseline at the hosted URL
+        env:
+          PAGE_URL: ${{ steps.baseline.outputs.page_url }}
+        run: node factory/pages.mjs probe "$PAGE_URL" proof/baseline.json > proof/observed-baseline.json
+      - id: candidate
+        if: ${{ !inputs.pages_restore_only }}
+        name: Publish the candidate
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
+        with:
+          artifact_name: pages-candidate
+          timeout: 240000
+      - name: Observe the distinct candidate at the hosted URL
+        if: ${{ !inputs.pages_restore_only }}
+        env:
+          PAGE_URL: ${{ steps.candidate.outputs.page_url }}
+        run: node factory/pages.mjs probe "$PAGE_URL" proof/candidate.json > proof/observed-candidate.json
+      - id: rollback
+        if: ${{ !cancelled() && !inputs.pages_restore_only && steps.baseline_probe.outcome == 'success' }}
+        name: Redeploy the identical baseline bytes
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
+        with:
+          artifact_name: pages-rollback
+          timeout: 240000
+      - if: ${{ !cancelled() && steps.rollback.outcome == 'success' }}
+        name: Verify rollback at the hosted URL
+        env:
+          PAGE_URL: ${{ steps.rollback.outputs.page_url }}
+        run: node factory/pages.mjs probe "$PAGE_URL" proof/baseline.json > proof/observed-rollback.json
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: hosted-release-evidence
+          path: proof/
           if-no-files-found: error
