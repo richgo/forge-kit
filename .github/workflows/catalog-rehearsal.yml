@@ -3,6 +3,10 @@ name: Forge Factory E2E
 on:
   workflow_dispatch:
     inputs:
+      website_release:
+        description: Trail Desk product revision (baseline or step-free). Leave blank for the readiness fixture.
+        type: string
+        default: ''
       story:
         description: Story ID in the approved product requirements
         type: string
@@ -43,7 +47,7 @@ jobs:
   factory:
     name: Run the agentic factory
     if: ${{ !inputs.catalog_fixture && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF) }}
-    uses: richgo/forge-kit-skills/.github/workflows/forge-factory.lock.yml@0f7ce71557f6d793771e91f52ccf54df172e0f7b
+    uses: richgo/forge-kit-skills/.github/workflows/forge-factory.lock.yml@3ce3e29a17cce4c99ed93808592fce4c6d887810
     permissions:
       actions: read
       attestations: write
@@ -58,7 +62,7 @@ jobs:
   reference:
     name: Rehearse the legacy catalog fixture
     if: ${{ inputs.catalog_fixture && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF) }}
-    uses: richgo/forge-kit-skills/.github/workflows/forge-reference.lock.yml@0f7ce71557f6d793771e91f52ccf54df172e0f7b
+    uses: richgo/forge-kit-skills/.github/workflows/forge-reference.lock.yml@3ce3e29a17cce4c99ed93808592fce4c6d887810
     permissions:
       contents: read
       actions: read
@@ -82,9 +86,12 @@ jobs:
           name: factory-verified
           path: verified
       - name: Require the independently checked evidence
+        env:
+          WEBSITE_RELEASE: ${{ inputs.website_release }}
         run: |
           test -s verified/requirements-verification.json
           test -s verified/receipt.intoto.jsonl
+          if [[ -n "$WEBSITE_RELEASE" ]]; then test -s verified/browser-evidence.json; fi
       - if: inputs.publish_pages
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:

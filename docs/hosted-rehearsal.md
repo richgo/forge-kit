@@ -27,6 +27,34 @@ trace and in-toto receipts, or `factory-pages-observation` for the
 public HTTP proof when Pages is enabled. `catalog_fixture` selects the
 older catalog rehearsal.
 
+## Release Trail Desk on Pages
+
+Trail Desk is a fictional trail directory. Its two reviewed product
+requirements are under `examples/trail-desk`. Neither revision includes an
+architecture or a website. The factory generates CALM, projects the LikeC4
+view from the CALM graph, and builds the static site.
+
+In **Forge Factory E2E**, set `publish_pages` and run `website_release` in
+this order:
+
+1. `baseline` publishes the three-trail catalog and checks AC-101.
+2. `step-free` keeps that story and adds the filter story. CALM adds
+   `step_free_filter` and its browser and catalog connections. Chromium
+   checks that filtering hides Juniper Ridge and clearing restores it.
+
+The worker validates the models with the FINOS CALM and LikeC4 CLIs. In a
+separate job, it checks Chromium behavior and replays the native APMX
+contract against the exact requirements, CALM, and HTML. Pages promotion
+requires the checked APMX attestation. The deployed site links to the
+generated CALM, LikeC4 and release manifest. The live HTTP probe hashes all
+three site files. Each run keeps its own `factory-candidate` and
+`factory-verified` artifacts so the revisions can be compared after the
+second release replaces the first at the same URL.
+
+The website mode uses the built-in reviewed product documents. The
+readiness-only story, topology, Jev and fault-injection inputs apply when
+`website_release` is blank.
+
 ## Component rehearsals
 
 
