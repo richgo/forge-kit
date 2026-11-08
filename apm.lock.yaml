@@ -77,8 +77,8 @@ dependencies:
 - repo_url: richgo/forge-kit-skills
   name: forge-kit-factory-workflows
   host: github.com
-  resolved_commit: d1c2c61f75335de80cd388134a12d9e2e78b32a4
-  resolved_ref: d1c2c61f75335de80cd388134a12d9e2e78b32a4
+  resolved_commit: 69db19c628f9f7af4b500a69f77e35b672a9fe38
+  resolved_ref: 69db19c628f9f7af4b500a69f77e35b672a9fe38
   version: 0.4.0
   virtual_path: packages/factory-workflows
   is_virtual: true
@@ -87,7 +87,7 @@ dependencies:
   - .github/prompts/forge-verify.prompt.md
   deployed_file_hashes:
     .github/prompts/forge-verify.prompt.md: sha256:7e1f5d0362aeeb10f289826f915eea29b652483b7bd1707390019c5d72dc9783
-  content_hash: sha256:2124c6a81cf24d90182c737725706af70ba393a95f9e2f9235b91502487bd0e4
+  content_hash: sha256:1f24d7b12e9d5ff99bbf9ffc25dceb5050741d2978f38b16338ad0c452477cc1
 - repo_url: richgo/forge-kit-skills
   name: forge-kit-repair-acceptance
   host: github.com
@@ -142,8 +142,8 @@ dependencies:
 - repo_url: richgo/forge-kit-skills
   name: forge-kit-website-acceptance
   host: github.com
-  resolved_commit: d1c2c61f75335de80cd388134a12d9e2e78b32a4
-  resolved_ref: d1c2c61f75335de80cd388134a12d9e2e78b32a4
+  resolved_commit: 69db19c628f9f7af4b500a69f77e35b672a9fe38
+  resolved_ref: 69db19c628f9f7af4b500a69f77e35b672a9fe38
   version: 0.1.0
   virtual_path: packages/website-acceptance
   is_virtual: true
