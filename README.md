@@ -1,8 +1,16 @@
 # Forge Kit
 
-**Forge Kit is an open-source software factory that turns a product or architecture change into a verified release and checks that it works where it runs.** Teams describe the outcome they want and the architecture it must respect. The factory assembles reusable capabilities, produces a candidate, checks it independently, and promotes the exact artifact that passed. Each release can be traced back to the approved change, the packages used, the checks that ran, and the behavior observed after deployment.
+## Executive summary
 
-This overview describes the **target product**. The [reference implementation](#try-the-reference-implementation) exercises parts of that lifecycle today.
+**Forge Kit is an open-source software factory that helps teams turn a requested software change into a release they can trust.** A product team might ask for a new way to sort search results, or an engineering team might change how a service works behind the scenes. Both changes follow the same path.
+
+1. **Agree on the change.** The team describes what should improve, what must keep working, and how to tell whether the change succeeded.
+2. **Plan and build it.** Forge Kit works out what the request affects, brings together the tools needed for the job, and produces a version for review.
+3. **Check it independently.** A separate check confirms that the new version does what the team asked and still follows the rules for how the software is built. A failed check holds the release back.
+4. **Approve and release it.** Reviewers can see the request, the checks that passed, and the version being released. The approved version goes live and is checked again where people use it.
+5. **Recover if something goes wrong.** The factory is designed to restore the last working version, try a limited repair when the rules allow it, and bring in an operator if recovery fails. A repaired version goes through the same checks before release.
+
+This is the target for Forge Kit. The [reference implementation](#try-the-reference-implementation) demonstrates parts of the process today.
 
 ## Who uses it
 
@@ -19,13 +27,25 @@ This overview describes the **target product**. The [reference implementation](#
 | --- | --- |
 | **Product requirements** | An Epic → Feature → Story hierarchy connects an outcome to an owning architecture node. Stable Given/When/Then acceptance IDs give planners and checkers a shared contract for expected behavior. |
 | **FINOS CALM and LikeC4** | CALM is the authoritative, machine-readable model of components, relationships, and constraints. LikeC4 gives reviewers a readable view of that model. The factory checks that the view agrees with CALM and uses the model to scope affected stories, services, and checks. |
-| **APM and APMX** | APM assembles reviewed external packages for agents, skills, workflows, MCP configuration, policies, and checkers. The manifest and lock pin origins and transitive dependencies. APMX runs the declared package contracts and supports replaying their checks separately. |
+| **APM (Agent Package Manager)** | Resolves and installs the factory's reviewed external capabilities, including agents, skills, workflow primitives, MCP configuration, policies, and checkers. `apm.yml` declares dependencies and `apm.lock.yaml` records the exact resolved versions, including transitive dependencies, for reproducible setup. |
+| **APMX (contract runner)** | Runs pinned Markdown contracts that declare required inputs, expected outputs, and executable checks. APMX invokes an agent harness for agent tasks. In a separate job, the verifier can use `apmx check` to replay the checks against recorded outputs without an agent. |
 | **GitHub Actions and GitHub Agentic Workflows (GH-AW)** | Actions coordinates isolated jobs and artifact handoffs. Agentic workflows give agents scoped planning, implementation, and repair tasks. GitHub review and environment rules control changes and release access. |
 | **TypeSafe Jev and deterministic policy** | Jev supplies typed recommendations, such as retry or escalate. Factory policy checks the response schema, allowed actions, confidence, and remaining attempts, time, and spend. Missing, invalid, or low-confidence signals escalate. Passing verification and release approval are separate gates. |
 | **Independent verification and in-toto evidence** | A separate checker uses approved inputs and its own acceptance oracle to test behavior, architecture compliance, security, policy, and package integrity. Trusted signing produces in-toto evidence binding the candidate digest to requirements, architecture, the package lock, decisions, check results, and rejected attempts. |
 | **Delivery and runtime self-healing** | A gated delivery adapter checks the attestation, signer, and artifact digest before deploying the verified bytes. Runtime probes confirm release identity and behavior. If a release fails, the factory restores and probes the last known-good release. Policy can allow a bounded repair, which goes through independent verification and approval again. Failed recovery or an exhausted budget goes to an operator. |
 
 The producer, checker, attestor, and deployer have distinct permissions. The checker gets approved requirements, architecture, and test definitions from trusted revisions, with the producer supplying the candidate. This keeps the producer from changing the rules by which its own work is accepted. [Detailed architecture](docs/architecture.md)
+
+## Software supply chain and SLSA
+
+SLSA (Supply-chain Levels for Software Artifacts) gives teams a way to assess whether a release came from the expected source and build process, and whether the delivered files match the evidence. Forge Kit applies several SLSA Build Track concepts. [SLSA Build Track basics](https://slsa.dev/spec/v1.2/build-track-basics)
+
+- **Known build inputs.** The APM lock pins package revisions, and hosted workflows and APMX contracts use reviewed commit references. The factory records hashes of the inputs it checked.
+- **Build provenance.** APMX records how outputs were produced and identifies them by digest in an in-toto receipt. Provenance describes the build. Test results describe what was checked and whether it passed. [SLSA Build Provenance](https://slsa.dev/spec/v1.2/build-provenance)
+- **Separate verification and signing.** The hosted reference replays checks in a separate GitHub Actions job before signing an APMX receipt bundle and a SLSA Verification Summary Attestation. The summary records the verification result and binds it to the delivered files. [APMX signing action](https://github.com/danielmeppiel/apmx/blob/fae2067a0dc6ff07beda714015ff9e648f41ce63/.github/actions/attest/action.yml)
+- **Evidence before delivery.** The hosted Pages rehearsal waits for the signing job and checks the live files against the release manifest. The target release gate also verifies the signature, trusted workflow identity, expected build inputs, and artifact digest before deployment. [Hosted rehearsal](docs/hosted-rehearsal.md) · [SLSA artifact verification](https://slsa.dev/spec/v1.2/verifying-artifacts)
+
+The local fixture emits an unsigned in-toto receipt. The hosted verification summary records a pass and leaves the SLSA level field empty. A Build Track level claim would require assessing the specific build and release path against the relevant requirements, including provenance generation, distribution, and build platform controls. [SLSA Build requirements](https://slsa.dev/spec/v1.2/build-requirements)
 
 ## When a factory user changes product requirements
 
@@ -36,10 +56,10 @@ flowchart TD
     story["Product owner updates STORY-001 and AC-001"]
     scope["Trace affected consumers and confirm CALM still supports the story"]
     plan{"Revised story and plan approved?"}
-    assembly["Assemble locked APM packages for execution and checks"]
+    assembly["APM installs the approved packages from the lock"]
     packages{"Package pins and permissions valid?"}
-    build["GH-AW coordinates APMX build: return healthy"]
-    check{"Independent checker: behavior, architecture and policy pass?"}
+    build["Build the probe to return healthy and run its APMX contract"]
+    check{"Independent replay: APMX checks, architecture and policy pass?"}
     repair{"Policy allows repair within budget?"}
     proof["Sign in-toto evidence for the verified artifact"]
     release{"Evidence and environment approval valid?"}
@@ -76,10 +96,10 @@ flowchart TD
     architecture{"Model valid, view in sync and dependency allowed?"}
     impact["Trace affected stories, interfaces, packages and deployment dependencies"]
     plan{"Migration plan and revised checks approved?"}
-    assembly["Resolve reviewed worker and checker capabilities into the APM lock"]
+    assembly["APM resolves and installs the reviewed worker and checker packages"]
     packages{"Package pins and permissions valid?"}
-    build["GH-AW coordinates APMX build: delegate the probe to the worker"]
-    check{"Independent checker: worker ran, CALM rules and story pass?"}
+    build["Build the delegated probe and run its APMX contract"]
+    check{"Independent replay: worker, CALM and story checks pass?"}
     repair{"Policy allows repair within budget?"}
     proof["Sign in-toto evidence for the artifact and architecture revision"]
     release{"Evidence and environment approval valid?"}
