@@ -1,8 +1,12 @@
 # Forge Kit
 
-**Forge Kit is an open-source software factory that turns a product or architecture change into a verified release and checks that it works where it runs.** Teams describe the outcome they want and the architecture it must respect. The factory assembles reusable capabilities, produces a candidate, checks it independently, and promotes the exact artifact that passed. Each release can be traced back to the approved change, the packages used, the checks that ran, and the behavior observed after deployment.
+## Executive summary
 
-This overview describes the **target product**. The [reference implementation](#try-the-reference-implementation) exercises parts of that lifecycle today.
+**Forge Kit is an open-source software factory that helps teams turn a requested software change into a release they can trust.** A product team might ask for a new way to sort search results, or an engineering team might change how an existing service works. The team describes the change and how to tell if it worked. Forge Kit coordinates the build and has the result checked independently before it can go live.
+
+Teams can see what was requested, what passed its checks, who approved the release, and whether it worked in use. If a release fails, the factory is designed to restore the last working version, attempt a limited repair when policy allows, and involve an operator if it cannot recover.
+
+This is the target for Forge Kit. The [reference implementation](#try-the-reference-implementation) demonstrates parts of the process today.
 
 ## Who uses it
 
@@ -19,7 +23,8 @@ This overview describes the **target product**. The [reference implementation](#
 | --- | --- |
 | **Product requirements** | An Epic → Feature → Story hierarchy connects an outcome to an owning architecture node. Stable Given/When/Then acceptance IDs give planners and checkers a shared contract for expected behavior. |
 | **FINOS CALM and LikeC4** | CALM is the authoritative, machine-readable model of components, relationships, and constraints. LikeC4 gives reviewers a readable view of that model. The factory checks that the view agrees with CALM and uses the model to scope affected stories, services, and checks. |
-| **APM and APMX** | APM assembles reviewed external packages for agents, skills, workflows, MCP configuration, policies, and checkers. The manifest and lock pin origins and transitive dependencies. APMX runs the declared package contracts and supports replaying their checks separately. |
+| **APM (Agent Package Manager)** | Resolves and installs the factory's reviewed external capabilities, including agents, skills, workflow primitives, MCP configuration, policies, and checkers. `apm.yml` declares dependencies and `apm.lock.yaml` records the exact resolved versions, including transitive dependencies, for reproducible setup. |
+| **APMX (contract runner)** | Runs pinned Markdown contracts that declare required inputs, expected outputs, and executable checks. APMX invokes an agent harness for agent tasks. In a separate job, the verifier can use `apmx check` to replay the checks against recorded outputs without an agent. |
 | **GitHub Actions and GitHub Agentic Workflows (GH-AW)** | Actions coordinates isolated jobs and artifact handoffs. Agentic workflows give agents scoped planning, implementation, and repair tasks. GitHub review and environment rules control changes and release access. |
 | **TypeSafe Jev and deterministic policy** | Jev supplies typed recommendations, such as retry or escalate. Factory policy checks the response schema, allowed actions, confidence, and remaining attempts, time, and spend. Missing, invalid, or low-confidence signals escalate. Passing verification and release approval are separate gates. |
 | **Independent verification and in-toto evidence** | A separate checker uses approved inputs and its own acceptance oracle to test behavior, architecture compliance, security, policy, and package integrity. Trusted signing produces in-toto evidence binding the candidate digest to requirements, architecture, the package lock, decisions, check results, and rejected attempts. |
@@ -36,10 +41,10 @@ flowchart TD
     story["Product owner updates STORY-001 and AC-001"]
     scope["Trace affected consumers and confirm CALM still supports the story"]
     plan{"Revised story and plan approved?"}
-    assembly["Assemble locked APM packages for execution and checks"]
+    assembly["APM installs the approved packages from the lock"]
     packages{"Package pins and permissions valid?"}
-    build["GH-AW coordinates APMX build: return healthy"]
-    check{"Independent checker: behavior, architecture and policy pass?"}
+    build["Build the probe to return healthy and run its APMX contract"]
+    check{"Independent replay: APMX checks, architecture and policy pass?"}
     repair{"Policy allows repair within budget?"}
     proof["Sign in-toto evidence for the verified artifact"]
     release{"Evidence and environment approval valid?"}
@@ -76,10 +81,10 @@ flowchart TD
     architecture{"Model valid, view in sync and dependency allowed?"}
     impact["Trace affected stories, interfaces, packages and deployment dependencies"]
     plan{"Migration plan and revised checks approved?"}
-    assembly["Resolve reviewed worker and checker capabilities into the APM lock"]
+    assembly["APM resolves and installs the reviewed worker and checker packages"]
     packages{"Package pins and permissions valid?"}
-    build["GH-AW coordinates APMX build: delegate the probe to the worker"]
-    check{"Independent checker: worker ran, CALM rules and story pass?"}
+    build["Build the delegated probe and run its APMX contract"]
+    check{"Independent replay: worker, CALM and story checks pass?"}
     repair{"Policy allows repair within budget?"}
     proof["Sign in-toto evidence for the artifact and architecture revision"]
     release{"Evidence and environment approval valid?"}
