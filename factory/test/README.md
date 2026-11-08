@@ -43,10 +43,10 @@ A local unsigned receipt is suitable for development diagnostics but **must not*
 From the repository root:
 
 ```bash
-npm test
+node --test
 ```
 
-Inspect `package.json` for additional supported scripts before invoking them. For GitHub-hosted tests, use the workflows in `.github/workflows/` and follow `docs/hosted-rehearsal.md`. Credentialed live evaluations are separate from deterministic offline tests; do not silently substitute one for the other.
+For GitHub-hosted tests, use the workflows in `.github/workflows/` and follow `docs/hosted-rehearsal.md`. Credentialed live evaluations are separate from deterministic offline tests; do not silently substitute one for the other.
 
 ## Release gates and reporting
 
@@ -55,3 +55,7 @@ Inspect `package.json` for additional supported scripts before invoking them. Fo
 - Require independent verification and trusted signed provenance before any real promotion.
 - On every change to a package, policy, checker, architecture or workflow, rerun affected contracts plus reference E2E.
 - Preserve the complete failure and repair history for review.
+
+## Component runbooks
+
+- [Hosted release and attestation](hosted-release.md)

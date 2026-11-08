@@ -1,0 +1,44 @@
+# Hosted release and attestation
+
+Forge Factory E2E uses the APM catalog to resolve the immutable worker
+revision. It restores the reviewed lock with APM 0.33.0 in a separate job
+before the build starts. The worker then builds Trail Desk, invokes the
+pinned APMX contract with Copilot, and independently checks CALM, LikeC4,
+browser acceptance and the APMX output.
+
+The verifier packages the exact Pages tarball. A separate attestor signs
+its digest in an in-toto statement with the source revision, APM lock
+hash, independently replayed APMX receipt hash and acceptance report
+hash. Before deployment, another runner verifies the GitHub signature,
+worker path and exact worker commit, source ref and commit, runner
+identity and predicate type. It compares the signed evidence hashes
+against the checked artifacts and lock. Pages consumes the same
+immutable archive after verification and its deployment environment gate.
+
+## Run and inspect
+
+1. Run `node --test` in Forge Kit. This includes a check that the release
+   workflow and capability manifest use the same worker pin.
+2. Run `node --test` in the pinned `richgo/forge-kit-skills` checkout. Its
+   hosted workflow tests check the archive handoff, separate packaging
+   paths, frozen assembly, signature constraints and evidence binding.
+3. Dispatch **Forge Factory E2E** with `publish_pages=false` on a reviewed
+   branch. The repository needs `COPILOT_GITHUB_TOKEN` and access to
+   GitHub artifact attestations. Inspect `factory-verified`,
+   `factory-pages-signature`, and `factory-release-proof`.
+4. Dispatch with `publish_pages=true` from `main` to exercise the Pages
+   environment and HTTPS observation. Only run this against the
+   intended deployment environment. Download
+   `factory-pages-observation` to compare the live file digests.
+
+In a qualification run, a missing artifact, signature or independently
+replayed report must fail the worker. A changed archive, wrong signer
+path or revision, mismatched source, or changed evidence hash must fail
+authentication before the Pages job becomes eligible. Local tests
+exercise workflow wiring. An actual hosted qualification is needed to
+verify GitHub signing and certificate identity.
+
+The reference rehearsals are separate workflows. Their evidence cannot
+qualify a production Pages release. This gate covers F-E2E-06 and
+F-E2E-10 for the hosted Trail Desk path. Runtime recovery is tracked
+separately from signature qualification.

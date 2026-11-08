@@ -11,15 +11,15 @@ on:
       publish_pages:
         description: Publish and observe the verified product on GitHub Pages
         type: boolean
-        default: true
+        default: false
 
 permissions: {}
 
 jobs:
   factory:
     name: Run the agentic factory
-    if: ${{ github.ref == 'refs/heads/main' && inputs.website_release == 'current' }}
-    uses: richgo/forge-kit-skills/.github/workflows/forge-factory.lock.yml@ac4fb6835dfd485805f9cc60252d5f3266181b35
+    if: ${{ (github.ref == 'refs/heads/main' || !inputs.publish_pages) && inputs.website_release == 'current' }}
+    uses: richgo/forge-kit-skills/.github/workflows/forge-factory.lock.yml@642ebd17be621b6cbfd69acc4164748b6f164043
     permissions:
       actions: read
       attestations: write
@@ -52,6 +52,12 @@ jobs:
           test -s verified/requirements-verification.json
           test -s verified/receipt.intoto.jsonl
           test -s verified/browser-evidence.json
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: factory-release-proof
+          path: proof
+      - name: Require successful release signature verification
+        run: test -s proof/verified-signature.json && test -s proof/release.json
       - if: inputs.publish_pages
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
