@@ -11,6 +11,10 @@ on:
         description: Tracked input directory with product-requirements.json, architecture.json and architecture.c4 (blank uses the reference)
         type: string
         default: ''
+      public_inputs:
+        description: Confirm that custom files may be sent to Copilot and stored in run artifacts
+        type: boolean
+        default: false
       topology:
         description: CALM topology for the built-in reference inputs
         type: choice
@@ -39,7 +43,7 @@ jobs:
   factory:
     name: Run the agentic factory
     if: ${{ !inputs.catalog_fixture && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF) }}
-    uses: richgo/forge-kit-skills/.github/workflows/forge-factory.lock.yml@967eea161cf03c6c9fd1e993fcb83fd9990bd039
+    uses: richgo/forge-kit-skills/.github/workflows/forge-factory.lock.yml@0f7ce71557f6d793771e91f52ccf54df172e0f7b
     permissions:
       actions: read
       attestations: write
@@ -54,9 +58,37 @@ jobs:
   reference:
     name: Rehearse the legacy catalog fixture
     if: ${{ inputs.catalog_fixture && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF) }}
-    uses: richgo/forge-kit-skills/.github/workflows/forge-reference.lock.yml@967eea161cf03c6c9fd1e993fcb83fd9990bd039
+    uses: richgo/forge-kit-skills/.github/workflows/forge-reference.lock.yml@0f7ce71557f6d793771e91f52ccf54df172e0f7b
     permissions:
       contents: read
       actions: read
     secrets:
       COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+
+  result:
+    name: Require evidence from the factory worker
+    needs: factory
+    if: ${{ always() && !inputs.catalog_fixture }}
+    runs-on: ubuntu-24.04
+    permissions: {}
+    timeout-minutes: 2
+    steps:
+      - name: Require the factory to have completed
+        env:
+          FACTORY_RESULT: ${{ needs.factory.result }}
+        run: test "$FACTORY_RESULT" = success
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: factory-verified
+          path: verified
+      - name: Require the independently checked evidence
+        run: |
+          test -s verified/requirements-verification.json
+          test -s verified/receipt.intoto.jsonl
+      - if: inputs.publish_pages
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: factory-pages-observation
+          path: observed
+      - if: inputs.publish_pages
+        run: jq -e '.observed == "passed"' observed/observed.json

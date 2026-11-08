@@ -13,11 +13,13 @@ runtime and APMX checks in a fresh job before signing.
   Use `topology` to choose a direct probe or a delegated worker.
 - For a reviewed story, supply a tracked directory containing
   `product-requirements.json`, `architecture.json` and `architecture.c4`,
-  plus its `story` ID. This reference supports the readiness-probe contract.
+  plus its `story` ID. Confirm `public_inputs` only for files safe to send
+  to Copilot and retain in GitHub Actions artifacts. This reference supports
+  the readiness-probe contract.
 - `inject_fault` injects a failed first build. `use_jev` enables a live
   advisory repair decision, which may escalate and stop the run.
 - `publish_pages` deploys and probes the checked public reference only.
-  Custom inputs stay on the runner. The separate Pages drill below
+  Custom inputs are excluded from Pages. The separate Pages drill below
   rehearses swapping releases and restoring the prior baseline.
 
 Download `factory-verified` for the independently replayed requirements
