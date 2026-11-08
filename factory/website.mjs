@@ -131,6 +131,15 @@ export function buildWebsite(spec) {
   return { architecture, view, html: render(spec, architecture), acceptance };
 }
 
+function websiteReport({ requirements, architecture, view, html, acceptance }) {
+  return {
+    requirementsSha256: digest(requirements),
+    architectureSha256: digest(architecture),
+    viewSha256: digest(view),
+    siteSha256: digest(html),
+    acceptance: acceptance.map(item => item.id),
+  };
+}
 async function verifyWebsite(specFile, output) {
   const approved = await readFile(specFile);
   assert.deepEqual(await readFile(join(output, 'product-requirements.json')), approved, 'Requirements bytes differ');
@@ -156,13 +165,13 @@ async function verifyWebsite(specFile, output) {
       assert.deepEqual(visible, then.visibleTrails, id + ' browser acceptance failed');
       observations.push({ id, visible });
     }
-    await writeFile(join(output, 'requirements-verification.json'), json({
-      requirementsSha256: digest(approved),
-      architectureSha256: digest(await readFile(join(output, 'architecture.json'))),
-      viewSha256: digest(await readFile(join(output, 'architecture.c4'))),
-      siteSha256: digest(html),
-      acceptance: observations.map(item => item.id),
-    }));
+    const report = websiteReport({
+      requirements: approved, architecture: json(expected.architecture), view: expected.view,
+      html, acceptance: observations,
+    });
+    assert.deepEqual(JSON.parse(await readFile(join(output, 'candidate-evidence.json'))), report,
+      'Candidate report does not match independent observations');
+    await writeFile(join(output, 'requirements-verification.json'), json(report));
     return observations;
   } finally {
     await browser.close();
@@ -209,13 +218,15 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
   const [command, first, second, third] = process.argv.slice(2);
   if (command === 'build') {
     const raw = await readFile(first);
-    const { html, architecture, view } = buildWebsite(JSON.parse(raw));
+    const { html, architecture, view, acceptance } = buildWebsite(JSON.parse(raw));
+    const report = websiteReport({ requirements: raw, architecture: json(architecture), view, html, acceptance });
     await mkdir(second);
     await Promise.all([
       writeFile(join(second, 'product-requirements.json'), raw),
       writeFile(join(second, 'index.html'), html),
       writeFile(join(second, 'architecture.json'), json(architecture)),
       writeFile(join(second, 'architecture.c4'), view),
+      writeFile(join(second, 'candidate-evidence.json'), json(report)),
     ]);
   } else if (command === 'verify') {
     const observations = await verifyWebsite(first, second);
