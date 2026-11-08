@@ -23,6 +23,58 @@ permissions:
   contents: read
 
 jobs:
+  website-preview:
+    name: Preview Trail Desk architecture and website changes
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Generate both revisions from their tracked requirements
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          current=examples/trail-desk/current/product-requirements.json
+          if [[ ! -f "$current" ]]; then
+            if git cat-file -e "$BASE_SHA:$current" 2>/dev/null; then
+              echo '::error::The active Trail Desk product requirements were removed.'
+              exit 1
+            fi
+            exit 0
+          fi
+          git worktree add --detach "$RUNNER_TEMP/website-base" "$BASE_SHA"
+          base="$RUNNER_TEMP/website-base"
+          prior="$base/$current"
+          if [[ ! -f "$prior" ]]; then prior="$base/examples/trail-desk/step-free/product-requirements.json"; fi
+          mkdir website-preview
+          node "$base/factory/website.mjs" build "$prior" website-preview/before
+          node factory/website.mjs build "$current" website-preview/after
+          for file in product-requirements.json architecture.json architecture.c4 index.html; do
+            status=0
+            git diff --no-index -- "website-preview/before/$file" "website-preview/after/$file" > "website-preview/$file.diff" || status=$?
+            [[ "$status" -le 1 ]]
+          done
+      - name: Replay Trail Desk acceptance in Chromium
+        run: |
+          set -euo pipefail
+          [[ -d website-preview/after ]] || exit 0
+          npm install --prefix "$RUNNER_TEMP/website-browser" --no-fund --no-audit playwright@1.56.1
+          "$RUNNER_TEMP/website-browser/node_modules/.bin/playwright" install chromium
+          export FORGE_PLAYWRIGHT="$RUNNER_TEMP/website-browser/node_modules/playwright/index.mjs"
+          node factory/website.mjs verify examples/trail-desk/current/product-requirements.json website-preview/after > website-preview/browser-evidence.json
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: trail-desk-pr-preview
+          path: website-preview/
+          if-no-files-found: ignore
+
   decision:
     if: github.event_name == 'workflow_dispatch' && inputs.jev_probe && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
     runs-on: ubuntu-24.04

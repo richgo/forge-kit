@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       website_release:
-        description: Trail Desk product revision (baseline or step-free). Leave blank for the readiness fixture.
+        description: Trail Desk product revision (baseline, step-free or current). Leave blank for the readiness fixture.
         type: string
         default: ''
       story:
@@ -47,7 +47,7 @@ jobs:
   factory:
     name: Run the agentic factory
     if: ${{ !inputs.catalog_fixture && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF) }}
-    uses: richgo/forge-kit-skills/.github/workflows/forge-factory.lock.yml@2677f59a7ae067ad3380aa5ce9454e198791cf1e
+    uses: richgo/forge-kit-skills/.github/workflows/forge-factory.lock.yml@ac4fb6835dfd485805f9cc60252d5f3266181b35
     permissions:
       actions: read
       attestations: write
@@ -62,7 +62,7 @@ jobs:
   reference:
     name: Rehearse the legacy catalog fixture
     if: ${{ inputs.catalog_fixture && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF) }}
-    uses: richgo/forge-kit-skills/.github/workflows/forge-reference.lock.yml@2677f59a7ae067ad3380aa5ce9454e198791cf1e
+    uses: richgo/forge-kit-skills/.github/workflows/forge-reference.lock.yml@ac4fb6835dfd485805f9cc60252d5f3266181b35
     permissions:
       contents: read
       actions: read

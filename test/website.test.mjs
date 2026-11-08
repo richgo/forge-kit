@@ -41,3 +41,17 @@ test('the checker rejects injected HTML before opening a browser', async t => {
   await appendFile(join(output, 'index.html'), '<script>globalThis.injected = true;</script>');
   await assert.rejects(execute(process.execPath, [cli, 'verify', input, output]), /Website HTML differs/);
 });
+
+test('a distance-sort story adds a browser component and retains step-free filtering', async () => {
+  const prior = buildWebsite(await spec('step-free'));
+  const change = buildWebsite(await spec('current'));
+  assert.deepEqual(change.architecture.nodes.slice(0, -1), prior.architecture.nodes);
+  assert.equal(change.architecture.nodes.at(-1)['unique-id'], 'distance_sort');
+  assert.match(change.view, /browser -> distance_sort/);
+  assert.doesNotMatch(prior.html, /Sort by distance/);
+  assert.match(change.html, /Sort by distance/);
+  assert.match(change.html, /Step-free only/);
+  assert.deepEqual(change.acceptance.map(item => item.id), [
+    'AC-101', 'AC-102', 'AC-103', 'AC-104', 'AC-105', 'AC-106', 'AC-107',
+  ]);
+});

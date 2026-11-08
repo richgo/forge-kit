@@ -9,7 +9,13 @@ import { setTimeout as delay } from 'node:timers/promises';
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const json = value => JSON.stringify(value, null, 2) + '\n';
 const inputs = ['index.html', 'architecture.json', 'architecture.c4'];
-const actions = { 'open-catalog': 'trail_catalog', 'filter-step-free': 'step_free_filter', 'clear-filter': 'step_free_filter' };
+const sortChoices = { 'sort-shortest': 'shortest', 'sort-longest': 'longest', 'sort-longest-step-free': 'longest', 'reset-sort': 'catalog' };
+const actions = {
+  'open-catalog': 'trail_catalog',
+  'filter-step-free': 'step_free_filter',
+  'clear-filter': 'step_free_filter',
+  ...Object.fromEntries(Object.keys(sortChoices).map(action => [action, 'distance_sort'])),
+};
 const escape = value => value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 
 function trace(spec) {
@@ -41,7 +47,7 @@ function trace(spec) {
   return rows;
 }
 
-function websiteModel(hasFilter) {
+function websiteModel({ hasFilter, hasSort }) {
   const node = (id, type, name, description) => ({ 'unique-id': id, 'node-type': type, name, description });
   const edge = (source, destination, description) => ({
     'unique-id': source + '-' + destination, description,
@@ -66,6 +72,11 @@ function websiteModel(hasFilter) {
     architecture.relationships.push(edge('browser', 'step_free_filter', 'Executes the inline browser filter.'),
       edge('step_free_filter', 'trail_catalog', 'Reads the step-free metadata in the trail cards.'));
   }
+  if (hasSort) {
+    architecture.nodes.push(node('distance_sort', 'service', 'Distance sorting', 'Orders rendered trail cards by distance in the browser.'));
+    architecture.relationships.push(edge('browser', 'distance_sort', 'Executes the inline distance sort.'),
+      edge('distance_sort', 'trail_catalog', 'Reads distance values from the trail cards.'));
+  }
   const types = [...new Set(architecture.nodes.map(item => item['node-type']))];
   const element = type => type.replaceAll('-', '_');
   const view = [
@@ -82,15 +93,17 @@ function websiteModel(hasFilter) {
 
 function render(spec, architecture) {
   const hasFilter = architecture.nodes.some(node => node['unique-id'] === 'step_free_filter');
+  const hasSort = architecture.nodes.some(node => node['unique-id'] === 'distance_sort');
   const cards = spec.trails.map(trail => [
-    '<article data-trail="' + trail.id + '" data-step-free="' + trail.stepFree + '">',
+    '<article data-trail="' + trail.id + '" data-step-free="' + trail.stepFree + '"' +
+      (hasSort ? ' data-distance-km="' + Number.parseFloat(trail.distance) + '"' : '') + '>',
     '<div class="tag">' + escape(trail.terrain) + '</div>',
     '<h2>' + escape(trail.name) + '</h2><p>' + escape(trail.description) + '</p>',
     '<footer>' + escape(trail.distance) + (trail.stepFree ? ' · Step-free' : ' · Uneven terrain') + '</footer>',
     '</article>',
   ].join('')).join('\n');
   const filter = hasFilter ? '<label><input id="step-free" type="checkbox"> Step-free only</label>' : '';
-  const script = hasFilter ? [
+  const filterScript = hasFilter ? [
     '<script>',
     'const filter = document.querySelector("#step-free");',
     'const trails = [...document.querySelectorAll("[data-trail]")];',
@@ -101,10 +114,29 @@ function render(spec, architecture) {
     'filter.addEventListener("change", updateTrails); updateTrails();',
     '</script>',
   ].join('\n') : '';
+  const sort = hasSort
+    ? '<label>Sort by distance <select id="distance-sort"><option value="catalog">Catalog order</option><option value="shortest">Shortest first</option><option value="longest">Longest first</option></select></label>'
+    : '';
+  const sortScript = hasSort ? [
+    '<script>',
+    '(() => {',
+    '  const order = document.querySelector("#distance-sort");',
+    '  const catalog = document.querySelector(".grid");',
+    '  const cards = [...catalog.querySelectorAll("[data-trail]")];',
+    '  const distance = card => Number(card.dataset.distanceKm);',
+    '  order.addEventListener("change", () => {',
+    '    const ordered = [...cards];',
+    '    if (order.value === "shortest") ordered.sort((left, right) => distance(left) - distance(right));',
+    '    if (order.value === "longest") ordered.sort((left, right) => distance(right) - distance(left));',
+    '    catalog.append(...ordered);',
+    '  });',
+    '})();',
+    '</script>',
+  ].join('\n') : '';
   return [
     '<!doctype html><html lang="en"><head><meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width,initial-scale=1"><title>Trail Desk</title>',
-    '<style>',
+    '<style>' + (hasSort ? '.toolbar{flex-wrap:wrap}' : ''),
     ':root{font-family:system-ui,sans-serif;color:#19342b;background:#eef2e8}*{box-sizing:border-box}',
     'body{margin:0}header{background:linear-gradient(125deg,#12352d,#295848);color:#f8f3df;padding:clamp(2.7rem,8vw,6rem) max(6vw,calc((100vw - 68rem)/2))}',
     'header p{font-size:1.2rem;max-width:35rem;color:#d5e1cc}h1{font-family:Georgia,serif;font-size:clamp(3rem,10vw,6rem);margin:.25em 0}',
@@ -118,16 +150,27 @@ function render(spec, architecture) {
     '.about{margin:2.6rem 0 0;color:#375f4e}.about a{color:inherit}',
     '</style></head><body>',
     '<header><span class="eyebrow">The field guide</span><h1>Trail Desk</h1><p>Pick a route before you head out. Compare distance, terrain, and access on three fictional trails.</p></header>',
-    '<main><div class="toolbar"><strong id="count" aria-live="polite">' + spec.trails.length + ' trails</strong>' + filter + '</div>',
+    '<main><div class="toolbar"><strong id="count" aria-live="polite">' + spec.trails.length + ' trails</strong>' + filter + sort + '</div>',
     '<section class="grid" aria-label="Trail catalog">' + cards + '</section>',
     '<p class="about"><a href="architecture.json">CALM architecture</a> · <a href="architecture.c4">LikeC4 view</a> · <a href="release.json">Release evidence</a></p></main>',
-    script, '</body></html>', '',
+    filterScript + sortScript, '</body></html>', '',
   ].join('\n');
 }
 
 export function buildWebsite(spec) {
   const acceptance = trace(spec);
-  const { architecture, view } = websiteModel(acceptance.some(row => row.when === 'filter-step-free'));
+  const hasFilter = acceptance.some(row => row.node === 'step_free_filter');
+  const hasSort = acceptance.some(row => row.node === 'distance_sort');
+  if (hasSort) {
+    for (const trail of spec.trails) {
+      assert.match(trail.distance, /^[0-9]+(?:\.[0-9]+)? km$/, 'Sorting requires distance in kilometres');
+      assert.ok(Number.isFinite(Number.parseFloat(trail.distance)), 'Distance must be finite');
+    }
+  }
+  if (acceptance.some(row => row.when === 'sort-longest-step-free')) {
+    assert.ok(hasFilter, 'Combined sorting requires the step-free filter');
+  }
+  const { architecture, view } = websiteModel({ hasFilter, hasSort });
   return { architecture, view, html: render(spec, architecture), acceptance };
 }
 
@@ -160,6 +203,12 @@ async function verifyWebsite(specFile, output) {
       if (when === 'clear-filter') {
         await filter.check();
         await filter.uncheck();
+      }
+      if (Object.hasOwn(sortChoices, when)) {
+        const order = page.getByRole('combobox', { name: 'Sort by distance' });
+        if (when === 'sort-longest-step-free') await filter.check();
+        if (when === 'reset-sort') await order.selectOption('longest');
+        await order.selectOption(sortChoices[when]);
       }
       const visible = await page.locator('[data-trail]:visible').evaluateAll(elements => elements.map(node => node.dataset.trail));
       assert.deepEqual(visible, then.visibleTrails, id + ' browser acceptance failed');
