@@ -51,3 +51,16 @@ node --test test/impact.test.mjs
 ```
 
 The tests cover tracked Trail Desk and readiness inputs, transitive and cyclic dependencies, removals, acceptance-only changes, shared product data, view renames, stable ordering and rejection of invalid inputs.
+
+## Native architecture regression checks
+
+Run `bash factory/test/native-architecture.sh` with Node.js and npm. It uses
+the pinned FINOS CLI to verify both readiness topologies and rejects a
+disconnected multi-node model. The policy permits the upstream
+`architecture-nodes-must-be-referenced` warning for one standalone service.
+GitHub PR preview also checks the generated website snapshots with native
+CALM and LikeC4 and publishes both impact reports.
+
+A changed acceptance criterion scopes that criterion plus the acceptance
+checks of downstream consumers. The planner keeps requirement seeds
+separate from direct CALM edits.

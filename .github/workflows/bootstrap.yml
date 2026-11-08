@@ -77,7 +77,7 @@ jobs:
             npx --yes --package @finos/calm-cli@1.68.0 calm validate --strict -a "$snapshot/architecture.json"
             npx --yes --package likec4@1.60.0 likec4 validate "$snapshot"
           done
-          npx --yes --package @finos/calm-cli@1.68.0 calm validate --strict -a architecture/slice.json
+          bash factory/test/native-architecture.sh
           npx --yes --package likec4@1.60.0 likec4 validate architecture
       - name: Resolve the independent website security package
         id: website-security

@@ -28,7 +28,7 @@ jobs:
   factory:
     name: Run the agentic factory
     if: ${{ (github.ref == 'refs/heads/main' || (!inputs.publish_pages && github.actor == github.repository_owner)) && inputs.website_release == 'current' }}
-    uses: richgo/forge-kit-skills/.github/workflows/forge-factory.lock.yml@852772cab170ef4e1e82577425adb09621836da0
+    uses: richgo/forge-kit-skills/.github/workflows/forge-factory.lock.yml@24a4e19903c6a83d34a434ed78ab748bafe71673
     permissions:
       actions: read
       attestations: write

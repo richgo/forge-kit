@@ -1,27 +1,18 @@
 # Reference factory implementation status
 
-This document distinguishes **demonstrated reference behavior** from the **target design** in [architecture](architecture.md). Do not interpret a passing local fixture as proof of enterprise readiness.
+This records the supported factory paths and their verification boundaries.
+See the [target architecture](architecture.md) and the [component checks](../factory/test/components.md).
 
-| Capability | Current reference | Required next step |
+| Capability | Runnable path | Boundary |
 | --- | --- | --- |
-| Product intent | Product requirements and scenario fixtures | Generic epic/feature/story intake, immutable acceptance IDs and change control |
-| Architecture | CALM/LikeC4-inspired reference inputs and checks | Full CALM validation, LikeC4 projection and architecture drift gates |
-| Capability assembly | APM manifest/lock and APMX rehearsals | Enforce external versioned APM packaging for every primitive; trust, licence and transitive lock checks |
-| Orchestration | Forge Factory E2E uses a GitHub Agentic Workflow to call one pinned factory worker | Extend the worker model to additional product contracts and execution backends |
-| Decisions | Jev integration and evaluation fixtures | Typed decision API contracts with deterministic policy enforcement and failure handling |
-| Verification | Offline tests, scenario evaluations and rehearsal workflows | Independent acceptance oracle, policy/security suites and signed test evidence |
-| Provenance | Local evidence and catalog rehearsal | Complete signed in-toto supply-chain attestations verified at promotion |
-| Deployment | Local/optional hosted rehearsal | Gated adapters, artifact identity checks and rollback controls |
-| Observation | Reference fixture and hosted probes | Durable runtime telemetry, SLOs and incident correlation |
-| Self-healing | Bounded reference repair | Policy-bounded production remediation, independent revalidation, rollback and escalation |
-| End-to-end | One Actions run exercises the reference story, injected build fault, independent APMX replay, signing, and optional Pages observation | Expand the scenario matrix to other product contracts and hosted repair |
+| Product intent | Tracked Epic → Feature → Story documents with stable acceptance IDs. The impact planner traces edits through story ownership and transitive consumers. | Readiness and Trail Desk have executable adapters. Other product documents can be planned with authored model pairs. |
+| Architecture | FINOS CALM and LikeC4 native validation, exact flat projection comparison, generated Trail Desk models and authored direct/delegated readiness models. | The planner supports flat CALM 1.2 node-level connections. It rejects broader topology or view syntax. |
+| Package assembly | APM 0.33.0 restores and audits the nine immutable catalog packages before the hosted build. Native APMX runs and independently replays the approved contract. | The reviewed repository lock is the package trust policy. The catalog admits new packages through review. |
+| Planning and execution | GitHub Agentic Workflows calls one pinned worker. The worker prepares a scoped plan, builds from reviewed inputs, and uses Copilot through APMX. | The product adapters generate code deterministically. The hosted agent coordinates and produces contract output. |
+| Decisions and repair | TypeSafe Jev advises an eligible readiness retry. Local policy enforces action, confidence, attempts, time, and work units. Independent replay checks the repair evidence. | The budget accounts for local work units. The readiness repair adapter has one retry. |
+| Independent verification | A clean runner verifies the approved inputs, plan, architecture, behavior, security, package integrity and the contract. The website security checker comes from a pinned external APM package. | The acceptance and security rules are specific to the supported products. |
+| Provenance and release | Separate GitHub jobs sign and authenticate the exact Pages archive, the APMX receipt and the independent evidence. The deployer needs the authenticated archive and the Pages environment. | The local unsigned receipt is for diagnostics. GitHub archive signatures apply to the hosted release path. |
+| Observe and recover | The Pages adapter probes the public manifest and files. It authenticates and probes a selected prior release before publication and makes one restoration attempt after a deployment or probe failure. | Prior artifacts are kept for 90 days. Pages publication and rollback need the deployment environment. Continuous monitoring and broader remediation remain open. |
 
-## Progression criteria
-
-1. Each new primitive is versioned, pinned and independently testable.
-2. Each vertical slice maps a story acceptance ID to source, architecture, check results, artifact digest and observation.
-3. Failed acceptance or missing provenance demonstrably blocks promotion.
-4. Repair preserves a full attempt history and never bypasses gates.
-5. Factory tests document success and adversarial paths before capability activation.
-
-See [factory/test](../factory/test/README.md) for test levels and E2E scenarios.
+The [factory test records](../factory/test/README.md) distinguish local
+checks, live provider calls, hosted qualification and production operations.

@@ -341,7 +341,7 @@ export async function readVerifiedReceipt(output, { inputDirectory, story, expec
   const stages = ['requirements', 'architecture', 'plan', 'build', 'test'];
   if (repairs) stages.push('repair', 'build', 'test');
   stages.push('deploy', 'observe', 'evidence', 'review-ready');
-  if (receipt.predicateType === legacyPredicateType && !inputDirectory && implementation.mode === 'direct') {
+  if (receipt.predicateType === legacyPredicateType && !expectedRepairAdvisor && !inputDirectory && implementation.mode === 'direct') {
     assert.deepEqual(receipt, {
       _type: 'https://in-toto.io/Statement/v1',
       subject: [{ name: 'deployed.mjs', digest: digest(deployed) }],

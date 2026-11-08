@@ -219,3 +219,11 @@ test('changing an acceptance criterion reaches consumers even without a topology
   ]);
   assert.deepEqual(plan.scope.acceptanceToRun, ['AC-102', 'AC-104', 'AC-105', 'AC-106', 'AC-107']);
 });
+
+test('a stable acceptance ID cannot be reassigned to a different story', async () => {
+  const before = await trailDesk('step-free');
+  const after = structuredClone(before);
+  const [catalog, filter] = after.requirements.epics[0].features;
+  catalog.stories[0].acceptanceCriteria.push(filter.stories[0].acceptanceCriteria.shift());
+  assert.throws(() => planImpact(before, after), /Acceptance ID moved to a different story: AC-102/);
+});

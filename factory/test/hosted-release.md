@@ -2,9 +2,9 @@
 
 Forge Factory E2E uses the APM catalog to resolve the immutable worker
 revision. It restores the reviewed lock with APM 0.33.0 in a separate job
-before the build starts. The worker then builds Trail Desk, invokes the
+and audits the installed files before the build starts. The worker then builds Trail Desk, invokes the
 pinned APMX contract with Copilot, and independently checks CALM, LikeC4,
-browser acceptance and the APMX output.
+browser acceptance, security and the APMX output. A separate job regenerates the impact plan from the approved inputs.
 
 The verifier packages the exact Pages tarball. A separate attestor signs
 its digest in an in-toto statement with the source revision, APM lock
@@ -22,7 +22,7 @@ immutable archive after verification and its deployment environment gate.
 2. Run `node --test` in the pinned `richgo/forge-kit-skills` checkout. Its
    hosted workflow tests check the archive handoff, separate packaging
    paths, frozen assembly, signature constraints and evidence binding.
-3. Dispatch **Forge Factory E2E** with `publish_pages=false` on a reviewed
+3. Dispatch **Forge Factory E2E** with `publish_pages=false` as the repository owner on a reviewed
    branch. The repository needs `COPILOT_GITHUB_TOKEN` and access to
    GitHub artifact attestations. Inspect `factory-verified`,
    `factory-pages-signature`, and `factory-release-proof`.
@@ -42,3 +42,25 @@ The reference rehearsals are separate workflows. Their evidence cannot
 qualify a production Pages release. This gate covers F-E2E-06 and
 F-E2E-10 for the hosted Trail Desk path. Runtime recovery is tracked
 separately from signature qualification.
+
+## Recover a failed Pages deployment
+
+Select `rollback_run_id` from a successful **Forge Factory E2E** deployment
+from `main` whose signed release is still live. The candidate plan uses that
+run's source as its comparison base. Before it publishes, the deployment
+job validates the prior run identity and archive signature, compares the
+retained observation against the prior manifest, and probes the active
+site again. An expired, unverified or stale fallback blocks publication.
+
+If deployment or observation fails, the job makes one attempt to redeploy
+the authenticated prior archive and re-probes the restored files. The
+candidate run stays failed, even after a confirmed recovery. Download
+`factory-pages-recovery` to see the candidate and restoration outcomes.
+A cancelled job or failed restoration requires operator intervention.
+
+The archive and signature are retained for 90 days on the repository's
+current Actions settings. For a first signed release or deliberate
+break-glass publication, set `allow_publish_without_rollback=true` and
+leave `rollback_run_id` empty. This explicitly waives automated rollback
+for that release. The repository's `github-pages` environment controls
+deployment access.

@@ -58,4 +58,8 @@ For GitHub-hosted tests, use the workflows in `.github/workflows/` and follow `d
 
 ## Component runbooks
 
-- [Hosted release and attestation](hosted-release.md)
+- [Component checks](components.md)
+- [Architecture and product impact](architecture-impact.md)
+- [Typed Jev and local repair policy](jev.md)
+- [Independent website security](website-security.md)
+- [Hosted release, attestation and recovery](hosted-release.md)
