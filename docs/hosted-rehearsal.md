@@ -29,8 +29,8 @@ older catalog rehearsal.
 
 ## Release Trail Desk on Pages
 
-Trail Desk is a fictional trail directory. Its two reviewed product
-requirements are under `examples/trail-desk`. Neither revision includes an
+Trail Desk is a fictional trail directory. Its reviewed product
+requirements are under `examples/trail-desk`. The requirements do not include an
 architecture or a website. The factory generates CALM, projects the LikeC4
 view from the CALM graph, and builds the static site.
 
@@ -51,7 +51,15 @@ three site files. Each run keeps its own `factory-candidate` and
 `factory-verified` artifacts so the revisions can be compared after the
 second release replaces the first at the same URL.
 
-The website mode uses the built-in reviewed product documents. The
+For a product change, edit `examples/trail-desk/current/product-requirements.json`
+in a pull request. **Factory bootstrap** builds the base and proposed
+requirements and uploads their generated CALM, LikeC4, and HTML diffs in
+`trail-desk-pr-preview`. After review, use `website_release=current` and
+`publish_pages=true` to run native APMX and promote the independently
+checked build. The current story adds distance sorting and verifies that
+it composes with the step-free filter.
+
+The website mode uses the tracked, reviewed product documents. The
 readiness-only story, topology, Jev and fault-injection inputs apply when
 `website_release` is blank.
 
