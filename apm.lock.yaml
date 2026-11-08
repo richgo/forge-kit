@@ -77,8 +77,8 @@ dependencies:
 - repo_url: richgo/forge-kit-skills
   name: forge-kit-factory-workflows
   host: github.com
-  resolved_commit: 69db19c628f9f7af4b500a69f77e35b672a9fe38
-  resolved_ref: 69db19c628f9f7af4b500a69f77e35b672a9fe38
+  resolved_commit: de79daa36db30f4578fdeb0029d589ffcd0aa125
+  resolved_ref: de79daa36db30f4578fdeb0029d589ffcd0aa125
   version: 0.4.0
   virtual_path: packages/factory-workflows
   is_virtual: true
@@ -142,8 +142,8 @@ dependencies:
 - repo_url: richgo/forge-kit-skills
   name: forge-kit-website-acceptance
   host: github.com
-  resolved_commit: 69db19c628f9f7af4b500a69f77e35b672a9fe38
-  resolved_ref: 69db19c628f9f7af4b500a69f77e35b672a9fe38
+  resolved_commit: de79daa36db30f4578fdeb0029d589ffcd0aa125
+  resolved_ref: de79daa36db30f4578fdeb0029d589ffcd0aa125
   version: 0.1.0
   virtual_path: packages/website-acceptance
   is_virtual: true
@@ -152,7 +152,7 @@ dependencies:
   - .github/prompts/review-website.prompt.md
   deployed_file_hashes:
     .github/prompts/review-website.prompt.md: sha256:e0b0f14fbc69283975295f87301d97e9065637ea5366b5a7bc9cf363c730de29
-  content_hash: sha256:5866b70c01522df2461badd9d1782aada7c7a60ade6c6f51b1ca3fbcd8084ca7
+  content_hash: sha256:4cd93b2f0b975c9e4b59356227ad2eac5c038a52011f7f479c5ba987935d5131
 deployments:
 - kind: project-relative
   target: copilot
