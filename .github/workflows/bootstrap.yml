@@ -176,7 +176,7 @@ jobs:
         run: |
           node --test _catalog/test/*.mjs
           node --test evals/catalog-scenarios.mjs
-      - name: Reproduce the catalog install from its lock
+      - name: Reproduce the frozen install and reject package tampering
         run: |
           set -euo pipefail
           scratch="$(mktemp -d)"
@@ -184,10 +184,7 @@ jobs:
           printf '%s  %s\n' 'e6374402c74318f7c8bef97a90d8572d049fdab0dc3871492c6b0647ae9e881f' "$scratch/apm.tar.gz" | sha256sum --check
           tar -xzf "$scratch/apm.tar.gz" -C "$scratch"
           apm="$(find "$scratch" -type f -name apm -print -quit)"
-          mkdir "$scratch/project"
-          cp apm.yml apm.lock.yaml "$scratch/project/"
-          cd "$scratch/project"
-          "$apm" install --target copilot --frozen
+          bash factory/test/apm-integrity.sh "$apm"
       - name: Exercise clean and repaired builds
         run: |
           mkdir -p out
