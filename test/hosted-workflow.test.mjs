@@ -8,7 +8,9 @@ const manifest = JSON.parse(await readFile(new URL('../factory/packages.json', i
 
 test('production and no-deploy qualification share the same attested worker pin', () => {
   assert.ok(workflow.includes('uses: ' + assemble(manifest).orchestrator));
-  assert.match(workflow, /github.ref == 'refs\/heads\/main' \|\| !inputs.publish_pages/);
+  assert.match(workflow, /github.ref == 'refs\/heads\/main' \|\| \(!inputs.publish_pages && github.actor == github.repository_owner\)/);
+  assert.match(workflow, /rollback_run_id:/);
+  assert.match(workflow, /allow_publish_without_rollback:/);
   assert.match(workflow, /name: factory-release-proof/);
   assert.match(workflow, /test -s proof\/verified-signature\.json/);
 });

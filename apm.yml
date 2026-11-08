@@ -7,9 +7,9 @@ dependencies:
     - 'richgo/forge-kit-skills/packages/architecture#2ad068c4e1b2abe9b7dda65f5e8dab4835213558'
     - 'richgo/forge-kit-skills/packages/build-repair#2ad068c4e1b2abe9b7dda65f5e8dab4835213558'
     - 'richgo/forge-kit-skills/packages/delivery#2ad068c4e1b2abe9b7dda65f5e8dab4835213558'
-    - 'richgo/forge-kit-skills/packages/factory-workflows#642ebd17be621b6cbfd69acc4164748b6f164043'
+    - 'richgo/forge-kit-skills/packages/factory-workflows#852772cab170ef4e1e82577425adb09621836da0'
     - 'richgo/forge-kit-skills/packages/repair-acceptance#2ad068c4e1b2abe9b7dda65f5e8dab4835213558'
     - 'richgo/forge-kit-skills/packages/requirements#3625298b6c9b09344c314d6c413ff8e0b3abf4e4'
-    - 'richgo/forge-kit-skills/packages/security-review#2ad068c4e1b2abe9b7dda65f5e8dab4835213558'
+    - 'richgo/forge-kit-skills/packages/security-review#852772cab170ef4e1e82577425adb09621836da0'
     - 'richgo/forge-kit-skills/packages/website-acceptance#ac4fb6835dfd485805f9cc60252d5f3266181b35'
   mcp: []

@@ -17,11 +17,16 @@ try {
       options.fault = { type: 'string' };
       options['faulty-first-build'] = { type: 'boolean' };
     }
+    if (command !== 'run') options['repair-advisor'] = { type: 'string' };
     if (command === 'grade') options.review = { type: 'string' };
     const { positionals, values } = parseArgs({ args, options, allowPositionals: true });
     const [output] = positionals;
     if (positionals.length !== 1) throw new Error('Supply exactly one output directory');
-    const selection = { inputDirectory: values.inputs, story: values.story };
+    const expectedRepairAdvisor = values['repair-advisor'];
+    if (expectedRepairAdvisor !== undefined && !['fixture-policy', 'typed-advisor'].includes(expectedRepairAdvisor)) {
+      throw new Error('Unknown expected repair advisor');
+    }
+    const selection = { inputDirectory: values.inputs, story: values.story, expectedRepairAdvisor };
     if (command === 'run') {
       const jevToken = process.env.FORGE_JEV_TOKEN;
       const receipt = await run(output, {

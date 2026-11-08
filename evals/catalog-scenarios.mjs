@@ -21,8 +21,10 @@ test('actual deployment byte corruption restores the last good release and escal
   const root = await mkdtemp(join(tmpdir(), 'forge-catalog-eval-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   const environment = createEnvironment(root);
-  // This separately approved fixture represents an already-active prior release.
-  const prior = await environment.promote(Buffer.from('{"path":"/ready","status":200,"body":"prior"}'), () => true);
+  const previousRequirements = JSON.parse(requirements).map(item => ({ ...item, body: 'prior' }));
+  const { observed: prior } = await runLifecycle({
+    ...inputs, requirements: Buffer.from(JSON.stringify(previousRequirements)),
+  }, environment);
   const stages = [];
   await assert.rejects(runLifecycle(inputs, environment, {
     maxRepairs: 0,

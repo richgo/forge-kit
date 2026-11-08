@@ -27,7 +27,7 @@ jobs:
     name: Preview Trail Desk architecture and website changes
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 8
     permissions:
       contents: read
     steps:
@@ -56,11 +56,42 @@ jobs:
           mkdir website-preview
           node "$base/factory/website.mjs" build "$prior" website-preview/before
           node factory/website.mjs build "$current" website-preview/after
+          node factory/impact.mjs \
+            --before-requirements "$prior" --before-calm website-preview/before/architecture.json --before-likec4 website-preview/before/architecture.c4 \
+            --after-requirements "$current" --after-calm website-preview/after/architecture.json --after-likec4 website-preview/after/architecture.c4 \
+            > website-preview/impact.json
+          node factory/impact.mjs \
+            --before-requirements "$base/examples/product-requirements.json" --before-calm "$base/architecture/slice.json" --before-likec4 "$base/architecture/slice.c4" \
+            --after-requirements examples/product-requirements.json --after-calm architecture/slice.json --after-likec4 architecture/slice.c4 \
+            > website-preview/readiness-impact.json
           for file in product-requirements.json architecture.json architecture.c4 index.html; do
             status=0
             git diff --no-index -- "website-preview/before/$file" "website-preview/after/$file" > "website-preview/$file.diff" || status=$?
             [[ "$status" -le 1 ]]
           done
+      - name: Validate the planned CALM and LikeC4 snapshots with the native tools
+        run: |
+          set -euo pipefail
+          [[ -d website-preview/after ]] || exit 0
+          for snapshot in website-preview/before website-preview/after; do
+            npx --yes --package @finos/calm-cli@1.68.0 calm validate --strict -a "$snapshot/architecture.json"
+            npx --yes --package likec4@1.60.0 likec4 validate "$snapshot"
+          done
+          npx --yes --package @finos/calm-cli@1.68.0 calm validate --strict -a architecture/slice.json
+          npx --yes --package likec4@1.60.0 likec4 validate architecture
+      - name: Resolve the independent website security package
+        id: website-security
+        run: |
+          set -euo pipefail
+          ref="$(node factory/cli.mjs assemble | jq -er '.packages.securityReview')"
+          [[ "$ref" =~ ^richgo/forge-kit-skills/packages/security-review#[0-9a-f]{40}$ ]]
+          printf 'sha=%s\n' "${ref##*#}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: richgo/forge-kit-skills
+          ref: ${{ steps.website-security.outputs.sha }}
+          path: _security
+          persist-credentials: false
       - name: Replay Trail Desk acceptance in Chromium
         run: |
           set -euo pipefail
@@ -68,6 +99,7 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/website-browser" --no-fund --no-audit playwright@1.56.1
           "$RUNNER_TEMP/website-browser/node_modules/.bin/playwright" install chromium
           export FORGE_PLAYWRIGHT="$RUNNER_TEMP/website-browser/node_modules/playwright/index.mjs"
+          export FORGE_SECURITY_PACKAGE="_security/packages/security-review"
           node factory/website.mjs verify examples/trail-desk/current/product-requirements.json website-preview/after > website-preview/browser-evidence.json
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:

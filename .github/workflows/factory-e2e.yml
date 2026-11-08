@@ -12,14 +12,23 @@ on:
         description: Publish and observe the verified product on GitHub Pages
         type: boolean
         default: false
+      rollback_run_id:
+        description: Successful main release run whose signed archive is still active
+        type: string
+        default: ''
+      allow_publish_without_rollback:
+        description: Break glass to publish without a verified rollback release
+        type: boolean
+        default: false
+
 
 permissions: {}
 
 jobs:
   factory:
     name: Run the agentic factory
-    if: ${{ (github.ref == 'refs/heads/main' || !inputs.publish_pages) && inputs.website_release == 'current' }}
-    uses: richgo/forge-kit-skills/.github/workflows/forge-factory.lock.yml@642ebd17be621b6cbfd69acc4164748b6f164043
+    if: ${{ (github.ref == 'refs/heads/main' || (!inputs.publish_pages && github.actor == github.repository_owner)) && inputs.website_release == 'current' }}
+    uses: richgo/forge-kit-skills/.github/workflows/forge-factory.lock.yml@852772cab170ef4e1e82577425adb09621836da0
     permissions:
       actions: read
       attestations: write
@@ -52,6 +61,7 @@ jobs:
           test -s verified/requirements-verification.json
           test -s verified/receipt.intoto.jsonl
           test -s verified/browser-evidence.json
+          test -s verified/security-verification.json
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: factory-release-proof

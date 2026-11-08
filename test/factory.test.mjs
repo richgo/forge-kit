@@ -129,3 +129,14 @@ test('independent verification rejects altered repair evidence', async t => {
   await writeFile(path, JSON.stringify(decisions));
   await assert.rejects(verifyRun(output), /Repair decision violates the retry budget/);
 });
+
+test('the hosted verifier requires its configured advisor and budget, regardless of the producer report', async t => {
+  const output = await workspace(t);
+  await run(output, { faultyFirstBuild: true });
+  await assert.rejects(verifyRun(output, { expectedRepairAdvisor: 'typed-advisor' }), /Unexpected repair advisor/);
+  const path = join(output, 'repair-decisions.json');
+  const decisions = await json(path);
+  decisions[0].budget.spendLimitUnits = 9;
+  await writeFile(path, JSON.stringify(decisions));
+  await assert.rejects(verifyRun(output, { expectedRepairAdvisor: 'fixture-policy' }), /Unexpected repair budget/);
+});

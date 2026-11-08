@@ -8,6 +8,7 @@ import { pathToFileURL } from 'node:url';
 import { repairBudgetAllowsRetry, routeRepair } from './integrations.mjs';
 
 const execute = promisify(execFile);
+const approvedRepairBudget = Object.freeze({ timeLimitMs: 15000, spendLimitUnits: 1, retryCostUnits: 1 });
 const schema = 'https://calm.finos.org/release/1.2/meta/calm.json';
 const legacyPredicateType = 'https://github.com/richgo/forge-kit/attestations/bootstrap/v1';
 const predicateType = 'https://github.com/richgo/forge-kit/attestations/bootstrap/v2';
@@ -167,7 +168,7 @@ export async function run(output, {
   inputDirectory,
   story,
   maxRepairs = 1,
-  repairBudget = { timeLimitMs: 15000, spendLimitUnits: 1, retryCostUnits: 1 },
+  repairBudget = approvedRepairBudget,
   recommendRepair,
 } = {}) {
   assert.ok(maxRepairs === 0 || maxRepairs === 1, 'Fixture allows at most one repair');
@@ -296,12 +297,12 @@ export async function run(output, {
   return receipt;
 }
 
-async function verifyRepairDecisions(output, rejected) {
+async function verifyRepairDecisions(output, rejected, expectedAdvisor) {
   let report;
   try {
     report = JSON.parse(await readFile(join(output, 'repair-decisions.json')));
   } catch (error) {
-    if (error.code === 'ENOENT') return; // Earlier receipts did not carry a companion policy report.
+    if (error.code === 'ENOENT' && (!expectedAdvisor || !rejected.length)) return;
     throw error;
   }
   assert.ok(Array.isArray(report) && report.length === rejected.length, 'Unexpected repair decision count');
@@ -311,6 +312,12 @@ async function verifyRepairDecisions(output, rejected) {
     assert.ok(budget?.used === index && budget.limit === 1 &&
       budget.spentUnits === index * budget.retryCostUnits && repairBudgetAllowsRetry(budget),
     'Repair decision violates the retry budget');
+    if (expectedAdvisor) {
+      assert.equal(advisor, expectedAdvisor, 'Unexpected repair advisor');
+      for (const [key, limit] of Object.entries(approvedRepairBudget)) {
+        assert.equal(budget[key], limit, 'Unexpected repair budget for ' + key);
+      }
+    }
     if (advisor === 'fixture-policy') {
       assert.equal(recommendation, null, 'The deterministic fixture does not consult an advisor');
     } else {
@@ -321,7 +328,7 @@ async function verifyRepairDecisions(output, rejected) {
   }
 }
 
-export async function readVerifiedReceipt(output, { inputDirectory, story } = {}) {
+export async function readVerifiedReceipt(output, { inputDirectory, story, expectedRepairAdvisor } = {}) {
   const input = await loadInputs(inputDirectory, story);
   const { requirements, implementation } = input;
   const receipt = JSON.parse(await readFile(join(output, 'receipt.json'), 'utf8'));
@@ -352,7 +359,7 @@ export async function readVerifiedReceipt(output, { inputDirectory, story } = {}
     await assert.rejects(observe(bytes, requirements, implementation), { code: 'ERR_ASSERTION' },
       'Rejected candidate satisfies acceptance');
   }
-  await verifyRepairDecisions(output, rejected);
+  await verifyRepairDecisions(output, rejected, expectedRepairAdvisor);
   assert.deepEqual(receipt, statement(input, deployed, stages, rejected, observed));
   if (input.product) {
     const plan = JSON.parse(await readFile(join(output, 'plan.json')));
@@ -361,9 +368,9 @@ export async function readVerifiedReceipt(output, { inputDirectory, story } = {}
   return receipt;
 }
 
-export async function readRequirementsEvidence(output, { inputDirectory, story }) {
+export async function readRequirementsEvidence(output, { inputDirectory, story, expectedRepairAdvisor }) {
   assert.ok(inputDirectory && story, 'Supply --inputs and --story for requirements evidence');
-  const receipt = await readVerifiedReceipt(output, { inputDirectory, story });
+  const receipt = await readVerifiedReceipt(output, { inputDirectory, story, expectedRepairAdvisor });
   const product = await requirementsPackage();
   const requirements = await readFile(join(inputDirectory, 'product-requirements.json'));
   const plan = JSON.parse(await readFile(join(output, 'plan.json')));

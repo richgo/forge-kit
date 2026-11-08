@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { appendFile, mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -54,4 +55,27 @@ test('a distance-sort story adds a browser component and retains step-free filte
   assert.deepEqual(change.acceptance.map(item => item.id), [
     'AC-101', 'AC-102', 'AC-103', 'AC-104', 'AC-105', 'AC-106', 'AC-107',
   ]);
+});
+
+test('product requirements reject duplicate story identities and cannot override their own trace', async () => {
+  const input = await spec('baseline');
+  const [feature] = input.epics[0].features;
+  const [story] = feature.stories;
+  feature.stories.push({ ...story, acceptanceCriteria: [{ ...story.acceptanceCriteria[0], id: 'AC-999' }] });
+  assert.throws(() => buildWebsite(input), /Duplicate requirements ID STORY-101/);
+  feature.stories.pop();
+  story.acceptanceCriteria[0].story = 'STORY-999';
+  assert.throws(() => buildWebsite(input), /Unexpected acceptance fields/);
+});
+
+test('the HTML denies ambient capabilities and approves only the actual inline scripts', async () => {
+  const { html } = buildWebsite(await spec('current'));
+  const policy = /<meta http-equiv="Content-Security-Policy" content="([^"]+)">/.exec(html)?.[1];
+  assert.ok(policy, 'A release requires a Content Security Policy');
+  assert.match(policy, /default-src 'none';/);
+  assert.match(policy, /connect-src 'none';/);
+  const scriptHashes = [...html.matchAll(/<script>([^]*?)<\/script>/g)]
+    .map(match => "'sha256-" + createHash('sha256').update(match[1]).digest('base64') + "'");
+  assert.equal(/script-src ([^;]+)/.exec(policy)[1], scriptHashes.join(' '));
+  assert.doesNotMatch(policy, /unsafe-inline|unsafe-eval/);
 });
