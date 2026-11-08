@@ -2,9 +2,13 @@
 
 ## Executive summary
 
-**Forge Kit is an open-source software factory that helps teams turn a requested software change into a release they can trust.** A product team might ask for a new way to sort search results, or an engineering team might change how an existing service works. The team describes the change and how to tell if it worked. Forge Kit coordinates the build and has the result checked independently before it can go live.
+**Forge Kit is an open-source software factory that helps teams turn a requested software change into a release they can trust.** A product team might ask for a new way to sort search results, or an engineering team might change how a service works behind the scenes. Both changes follow the same path.
 
-Teams can see what was requested, what passed its checks, who approved the release, and whether it worked in use. If a release fails, the factory is designed to restore the last working version, attempt a limited repair when policy allows, and involve an operator if it cannot recover.
+1. **Agree on the change.** The team describes what should improve, what must keep working, and how to tell whether the change succeeded.
+2. **Plan and build it.** Forge Kit works out what the request affects, brings together the tools needed for the job, and produces a version for review.
+3. **Check it independently.** A separate check confirms that the new version does what the team asked and still follows the rules for how the software is built. A failed check holds the release back.
+4. **Approve and release it.** Reviewers can see the request, the checks that passed, and the version being released. The approved version goes live and is checked again where people use it.
+5. **Recover if something goes wrong.** The factory is designed to restore the last working version, try a limited repair when the rules allow it, and bring in an operator if recovery fails. A repaired version goes through the same checks before release.
 
 This is the target for Forge Kit. The [reference implementation](#try-the-reference-implementation) demonstrates parts of the process today.
 
@@ -31,6 +35,17 @@ This is the target for Forge Kit. The [reference implementation](#try-the-refere
 | **Delivery and runtime self-healing** | A gated delivery adapter checks the attestation, signer, and artifact digest before deploying the verified bytes. Runtime probes confirm release identity and behavior. If a release fails, the factory restores and probes the last known-good release. Policy can allow a bounded repair, which goes through independent verification and approval again. Failed recovery or an exhausted budget goes to an operator. |
 
 The producer, checker, attestor, and deployer have distinct permissions. The checker gets approved requirements, architecture, and test definitions from trusted revisions, with the producer supplying the candidate. This keeps the producer from changing the rules by which its own work is accepted. [Detailed architecture](docs/architecture.md)
+
+## Software supply chain and SLSA
+
+SLSA (Supply-chain Levels for Software Artifacts) gives teams a way to assess whether a release came from the expected source and build process, and whether the delivered files match the evidence. Forge Kit applies several SLSA Build Track concepts. [SLSA Build Track basics](https://slsa.dev/spec/v1.2/build-track-basics)
+
+- **Known build inputs.** The APM lock pins package revisions, and hosted workflows and APMX contracts use reviewed commit references. The factory records hashes of the inputs it checked.
+- **Build provenance.** APMX records how outputs were produced and identifies them by digest in an in-toto receipt. Provenance describes the build. Test results describe what was checked and whether it passed. [SLSA Build Provenance](https://slsa.dev/spec/v1.2/build-provenance)
+- **Separate verification and signing.** The hosted reference replays checks in a separate GitHub Actions job before signing an APMX receipt bundle and a SLSA Verification Summary Attestation. The summary records the verification result and binds it to the delivered files. [APMX signing action](https://github.com/danielmeppiel/apmx/blob/fae2067a0dc6ff07beda714015ff9e648f41ce63/.github/actions/attest/action.yml)
+- **Evidence before delivery.** The hosted Pages rehearsal waits for the signing job and checks the live files against the release manifest. The target release gate also verifies the signature, trusted workflow identity, expected build inputs, and artifact digest before deployment. [Hosted rehearsal](docs/hosted-rehearsal.md) · [SLSA artifact verification](https://slsa.dev/spec/v1.2/verifying-artifacts)
+
+The local fixture emits an unsigned in-toto receipt. The hosted verification summary records a pass and leaves the SLSA level field empty. A Build Track level claim would require assessing the specific build and release path against the relevant requirements, including provenance generation, distribution, and build platform controls. [SLSA Build requirements](https://slsa.dev/spec/v1.2/build-requirements)
 
 ## When a factory user changes product requirements
 
