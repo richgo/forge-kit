@@ -133,6 +133,8 @@ The rehearsals demonstrate separate parts of the target. Integrating live APMX e
 
 ## Explore or extend the factory
 
+**Forge Factory E2E** is the GitHub Actions entry point for a selected product story. A pinned GitHub Agentic Workflow calls the factory worker, which builds the story, runs and independently replays its APMX contract, signs the evidence, and can publish the public reference to Pages. The workflow uses `COPILOT_GITHUB_TOKEN`. See the [hosted runbook](docs/hosted-rehearsal.md) for inputs, artifacts, and the older catalog rehearsal.
+
 - Author stories and trace their acceptance IDs through a run. [Product requirements guide](docs/product-requirements.md)
 - Review the required scenarios and expected evidence, then run the existing verification suite. [Factory test plan](factory/test/README.md) · [Verification and evals](docs/testing.md)
 - Inspect the capability roles and immutable references with `node factory/cli.mjs assemble`. When changing a package, review its source, transitive pins, permissions, and install effects. Regenerate the manifest with `node factory/cli.mjs assemble --apm`, refresh the lock, and update the caller's pinned workflow reference if orchestration changes. CI checks that APM 0.33.0 can reproduce the install with `apm install --target copilot --frozen`. [Capability manifest](factory/packages.json) · [APM manifest](apm.yml) · [APM lock](apm.lock.yaml) · [Skills catalog](https://github.com/richgo/forge-kit-skills)

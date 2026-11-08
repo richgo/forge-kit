@@ -1,6 +1,6 @@
 const roles = [
   'orchestration', 'execution', 'checking', 'skills', 'mcp',
-  'architecture', 'repairChecking', 'delivery', 'buildRepair', 'securityReview',
+  'architecture', 'websiteChecking', 'repairChecking', 'delivery', 'buildRepair', 'securityReview',
 ];
 
 function packageReference({ repository, path, ref }) {

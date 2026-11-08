@@ -1,30 +1,101 @@
-name: Catalog reference rehearsal
+name: Forge Factory E2E
 
 on:
   workflow_dispatch:
+    inputs:
+      website_release:
+        description: Trail Desk product revision (baseline or step-free). Leave blank for the readiness fixture.
+        type: string
+        default: ''
+      story:
+        description: Story ID in the approved product requirements
+        type: string
+        default: STORY-001
+      input_directory:
+        description: Tracked input directory with product-requirements.json, architecture.json and architecture.c4 (blank uses the reference)
+        type: string
+        default: ''
+      public_inputs:
+        description: Confirm that custom files may be sent to Copilot and stored in run artifacts
+        type: boolean
+        default: false
+      topology:
+        description: CALM topology for the built-in reference inputs
+        type: choice
+        options: [delegated, direct]
+        default: delegated
+      inject_fault:
+        description: Inject one bad build before the bounded repair
+        type: boolean
+        default: true
+      use_jev:
+        description: Consult Jev for repair (escalation may stop the run)
+        type: boolean
+        default: false
+      publish_pages:
+        description: Publish and observe the public reference on GitHub Pages
+        type: boolean
+        default: false
+      catalog_fixture:
+        description: Run only the legacy skills catalog fixture
+        type: boolean
+        default: false
 
 permissions: {}
 
 jobs:
-  preflight:
-    if: github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF
-    runs-on: ubuntu-24.04
-    timeout-minutes: 2
-    steps:
-      - name: Require the Copilot credential
-        env:
-          HAS_COPILOT_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN != '' }}
-        run: |
-          if [ "$HAS_COPILOT_TOKEN" != 'true' ]; then
-            echo '::error::Configure COPILOT_GITHUB_TOKEN for the reference rehearsal.'
-            exit 1
-          fi
+  factory:
+    name: Run the agentic factory
+    if: ${{ !inputs.catalog_fixture && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF) }}
+    uses: richgo/forge-kit-skills/.github/workflows/forge-factory.lock.yml@2677f59a7ae067ad3380aa5ce9454e198791cf1e
+    permissions:
+      actions: read
+      attestations: write
+      contents: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    secrets:
+      COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+      FORGE_JEV_TOKEN: ${{ secrets.FORGE_JEV_TOKEN }}
 
   reference:
-    needs: preflight
-    uses: richgo/forge-kit-skills/.github/workflows/forge-reference.lock.yml@fbfd04889bd59a1afeddd03e2d73880ff3579d1b
+    name: Rehearse the legacy catalog fixture
+    if: ${{ inputs.catalog_fixture && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF) }}
+    uses: richgo/forge-kit-skills/.github/workflows/forge-reference.lock.yml@2677f59a7ae067ad3380aa5ce9454e198791cf1e
     permissions:
       contents: read
       actions: read
     secrets:
       COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+
+  result:
+    name: Require evidence from the factory worker
+    needs: factory
+    if: ${{ always() && !inputs.catalog_fixture }}
+    runs-on: ubuntu-24.04
+    permissions: {}
+    timeout-minutes: 2
+    steps:
+      - name: Require the factory to have completed
+        env:
+          FACTORY_RESULT: ${{ needs.factory.result }}
+        run: test "$FACTORY_RESULT" = success
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: factory-verified
+          path: verified
+      - name: Require the independently checked evidence
+        env:
+          WEBSITE_RELEASE: ${{ inputs.website_release }}
+        run: |
+          test -s verified/requirements-verification.json
+          test -s verified/receipt.intoto.jsonl
+          if [[ -n "$WEBSITE_RELEASE" ]]; then test -s verified/browser-evidence.json; fi
+      - if: inputs.publish_pages
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: factory-pages-observation
+          path: observed
+      - if: inputs.publish_pages
+        run: jq -e '.observed == "passed"' observed/observed.json

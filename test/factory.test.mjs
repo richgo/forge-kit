@@ -73,9 +73,12 @@ test('assembly reports unresolved capabilities and refuses mutable package refer
 test('the APM installer and GitHub workflow use the reviewed catalog pins', async () => {
   const manifest = await json('factory/packages.json');
   const assembly = assemble(manifest);
-  assert.match(assembly.orchestrator, /^richgo\/forge-kit-skills\/\.github\/workflows\/forge-reference\.lock\.yml@[a-f0-9]{40}$/);
+  assert.match(assembly.orchestrator, /^richgo\/forge-kit-skills\/\.github\/workflows\/forge-factory\.lock\.yml@[a-f0-9]{40}$/);
   assert.equal(await readFile('apm.yml', 'utf8'), apmManifest(assembly.packages));
   const workflow = await readFile('.github/workflows/catalog-rehearsal.yml', 'utf8');
   const callers = [...workflow.matchAll(/^\s+uses: (richgo\/forge-kit-skills\/[^\s]+)$/gm)];
-  assert.deepEqual(callers.map(match => match[1]), [assembly.orchestrator]);
+  assert.deepEqual(callers.map(match => match[1]), [
+    assembly.orchestrator,
+    assembly.orchestrator.replace("forge-factory.lock.yml", "forge-reference.lock.yml"),
+  ]);
 });
