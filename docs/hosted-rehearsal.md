@@ -1,5 +1,33 @@
 # Hosted end-to-end rehearsal
 
+## Run the factory in one GitHub Actions run
+
+Open **Actions → Forge Factory E2E → Run workflow** on the default branch.
+The GitHub Agentic Workflow uses its `call-workflow` safe output to start
+one pinned worker. The workflow fails if the worker is skipped or fails.
+The worker reads the original dispatch, executes the Forge Kit CLI, runs
+the pinned APMX contract against that candidate, and replays both the
+runtime and APMX checks in a fresh job before signing.
+
+- Leave `input_directory` blank to run the built-in `STORY-001` example.
+  Use `topology` to choose a direct probe or a delegated worker.
+- For a reviewed story, supply a tracked directory containing
+  `product-requirements.json`, `architecture.json` and `architecture.c4`,
+  plus its `story` ID. This reference supports the readiness-probe contract.
+- `inject_fault` injects a failed first build. `use_jev` enables a live
+  advisory repair decision, which may escalate and stop the run.
+- `publish_pages` deploys and probes the checked public reference only.
+  Custom inputs stay on the runner. The separate Pages drill below
+  rehearses swapping releases and restoring the prior baseline.
+
+Download `factory-verified` for the independently replayed requirements
+trace and in-toto receipts, or `factory-pages-observation` for the
+public HTTP proof when Pages is enabled. `catalog_fixture` selects the
+older catalog rehearsal.
+
+## Component rehearsals
+
+
 Enable GitHub Pages with **GitHub Actions** as its source and restrict the
 `github-pages` deployment environment to the approved release branch.
 **Factory bootstrap** runs the tests, verifies the two synthetic story

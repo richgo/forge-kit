@@ -24,7 +24,7 @@ The in-toto Statement in each successful output directory binds the deployed fil
 
 The **Factory bootstrap** GitHub Actions workflow exercises both paths and checks the output again in a separate job. The **APMX package rehearsal** is manually dispatched from the default branch. It uses the upstream APMX workflow and a pinned upstream APM package to exercise contract execution with a fixture actor, an independent `apmx check` replay, and signed in-toto evidence. It uses no model credentials and proposes no Git changes. [APMX package fixture](https://github.com/danielmeppiel/apmx/tree/fae2067a0dc6ff07beda714015ff9e648f41ce63/tests/fixtures/run-workflow-package)
 
-**Catalog reference rehearsal** calls the merged Forge Kit Skills workflow at the same immutable revision as the APM packages. Dispatch it from the default branch after configuring the repository's `COPILOT_GITHUB_TOKEN` secret. The catalog builds its reference candidate, signs the in-toto receipt in a separate checker job, and verifies it before local promotion. It rehearses rollback and one repair. Copilot summarizes the run with read-only access. [Catalog reference runbook](https://github.com/richgo/forge-kit-skills/blob/2ad068c4e1b2abe9b7dda65f5e8dab4835213558/docs/reference.md)
+**Forge Factory E2E** is the GitHub Actions entry point for a selected product story. A pinned GitHub Agentic Workflow calls the factory worker, which builds the story, runs and independently replays its APMX contract, signs the evidence, and can publish the public reference to Pages. The workflow uses `COPILOT_GITHUB_TOKEN`. See the [hosted runbook](docs/hosted-rehearsal.md) for inputs, artifacts, and the older catalog rehearsal.
 
 ## Decision policy
 
