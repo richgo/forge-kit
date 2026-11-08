@@ -9,23 +9,14 @@ The worker reads the original dispatch, executes the Forge Kit CLI, runs
 the pinned APMX contract against that candidate, and replays both the
 runtime and APMX checks in a fresh job before signing.
 
-- Leave `input_directory` blank to run the built-in `STORY-001` example.
-  Use `topology` to choose a direct probe or a delegated worker.
-- For a reviewed story, supply a tracked directory containing
-  `product-requirements.json`, `architecture.json` and `architecture.c4`,
-  plus its `story` ID. Confirm `public_inputs` only for files safe to send
-  to Copilot and retain in GitHub Actions artifacts. This reference supports
-  the readiness-probe contract.
-- `inject_fault` injects a failed first build. `use_jev` enables a live
-  advisory repair decision, which may escalate and stop the run.
-- `publish_pages` deploys and probes the checked public reference only.
-  Custom inputs are excluded from Pages. The separate Pages drill below
-  rehearses swapping releases and restoring the prior baseline.
+The release workflow accepts only `website_release=current`. It runs on
+`main` and publishes to Pages by default. Turn off `publish_pages` to
+verify the current product without publishing.
 
-Download `factory-verified` for the independently replayed requirements
-trace and in-toto receipts, or `factory-pages-observation` for the
-public HTTP proof when Pages is enabled. `catalog_fixture` selects the
-older catalog rehearsal.
+Download `factory-verified` for the independent Chromium observations,
+requirements trace, and in-toto receipts. `factory-pages-observation`
+records the HTTPS checks of the public site and architecture files.
+
 
 ## Release Trail Desk on Pages
 
@@ -34,8 +25,8 @@ requirements are under `examples/trail-desk`. The requirements do not include an
 architecture or a website. The factory generates CALM, projects the LikeC4
 view from the CALM graph, and builds the static site.
 
-In **Forge Factory E2E**, set `publish_pages` and run `website_release` in
-this order:
+To replay the original example, open **Factory rehearsals** and select its
+`website_release` fixtures in this order:
 
 1. `baseline` publishes the three-trail catalog and checks AC-101.
 2. `step-free` keeps that story and adds the filter story. CALM adds
@@ -54,14 +45,18 @@ second release replaces the first at the same URL.
 For a product change, edit `examples/trail-desk/current/product-requirements.json`
 in a pull request. **Factory bootstrap** builds the base and proposed
 requirements and uploads their generated CALM, LikeC4, and HTML diffs in
-`trail-desk-pr-preview`. After review, use `website_release=current` and
-`publish_pages=true` to run native APMX and promote the independently
+`trail-desk-pr-preview`. After review, dispatch **Forge Factory E2E** from `main`
+to run native APMX and promote the independently
 checked build. The current story adds distance sorting and verifies that
 it composes with the step-free filter.
 
-The website mode uses the tracked, reviewed product documents. The
-readiness-only story, topology, Jev and fault-injection inputs apply when
-`website_release` is blank.
+In **Factory rehearsals**, leave `website_release` blank to run the built-in
+`STORY-001` readiness fixture. Choose a direct or delegated topology, and
+optionally inject a fault or consult Jev. A custom readiness story needs a
+tracked directory with `product-requirements.json`, `architecture.json` and
+`architecture.c4`. Confirm `public_inputs` only for files safe to send to
+Copilot and retain in Actions artifacts. Custom inputs cannot publish to Pages.
+Select `catalog_fixture` to exercise the separate legacy catalog workflow.
 
 ## Component rehearsals
 
@@ -90,8 +85,8 @@ Run **APMX package rehearsal** with `live_story` enabled to verify the
 same baseline story through the pinned native APMX runner, its separate
 check job, and GitHub artifact signing. CI compares the checked-in
 rehearsal inputs with fresh independent outputs before publishing.
-The live story and **Catalog reference rehearsal** require the repository's
-`COPILOT_GITHUB_TOKEN`. The latter runs the pinned read-only GH-AW catalog.
+The live story and legacy catalog fixture require the repository's
+`COPILOT_GITHUB_TOKEN`.
 
 `FORGE_REHEARSAL_REF` is an optional repository variable for a reviewed
 branch rehearsal. Pages still requires the matching deployment environment

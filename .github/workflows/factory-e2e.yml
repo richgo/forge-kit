@@ -1,0 +1,61 @@
+name: Forge Factory E2E
+
+on:
+  workflow_dispatch:
+    inputs:
+      website_release:
+        description: Release the tracked Trail Desk product requirements
+        type: choice
+        options: [current]
+        default: current
+      publish_pages:
+        description: Publish and observe the verified product on GitHub Pages
+        type: boolean
+        default: true
+
+permissions: {}
+
+jobs:
+  factory:
+    name: Run the agentic factory
+    if: ${{ github.ref == 'refs/heads/main' && inputs.website_release == 'current' }}
+    uses: richgo/forge-kit-skills/.github/workflows/forge-factory.lock.yml@ac4fb6835dfd485805f9cc60252d5f3266181b35
+    permissions:
+      actions: read
+      attestations: write
+      contents: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    secrets:
+      COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+
+  result:
+    name: Require independently checked release evidence
+    needs: factory
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions: {}
+    timeout-minutes: 2
+    steps:
+      - name: Require the factory to have completed
+        env:
+          FACTORY_RESULT: ${{ needs.factory.result }}
+        run: test "$FACTORY_RESULT" = success
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: factory-verified
+          path: verified
+      - name: Require browser acceptance and the APMX receipt
+        run: |
+          set -euo pipefail
+          test -s verified/requirements-verification.json
+          test -s verified/receipt.intoto.jsonl
+          test -s verified/browser-evidence.json
+      - if: inputs.publish_pages
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: factory-pages-observation
+          path: observed
+      - if: inputs.publish_pages
+        run: jq -e '.observed == "passed"' observed/observed.json
