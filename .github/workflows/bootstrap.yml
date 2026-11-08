@@ -76,7 +76,7 @@ jobs:
           if-no-files-found: ignore
 
   decision:
-    if: github.event_name == 'workflow_dispatch' && inputs.jev_probe && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
+    if: github.event_name == 'workflow_dispatch' && inputs.jev_probe && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF || github.actor == github.repository_owner)
     runs-on: ubuntu-24.04
     timeout-minutes: 3
     steps:
@@ -87,7 +87,8 @@ jobs:
         env:
           FORGE_JEV_TOKEN: ${{ secrets.FORGE_JEV_TOKEN }}
         run: node evals/jev-live.mjs > "$RUNNER_TEMP/jev-repair.json"
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: live-jev-repair
           path: ${{ runner.temp }}/jev-repair.json

@@ -28,7 +28,7 @@ try {
         faultyFirstBuild: Boolean(values['faulty-first-build']),
         fault: values.fault,
         ...selection,
-        recommendRepair: jevToken ? () => requestJevRepair(jevToken) : undefined,
+        recommendRepair: jevToken ? (state, { timeoutMs }) => requestJevRepair(jevToken, fetch, { state, timeoutMs }) : undefined,
       });
       console.log(JSON.stringify(receipt.predicate, null, 2));
     } else if (command === 'requirements-evidence') {

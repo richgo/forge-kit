@@ -86,3 +86,46 @@ test('the APM installer and GitHub workflow use the reviewed catalog pins', asyn
     assembly.orchestrator.replace("forge-factory.lock.yml", "forge-reference.lock.yml"),
   ]);
 });
+
+test('an exhausted repair spend budget prevents contacting Jev and promotion', async t => {
+  const output = await workspace(t);
+  let consulted = false;
+  await assert.rejects(run(output, {
+    fault: 'wrong-output-once',
+    repairBudget: { timeLimitMs: 2000, spendLimitUnits: 0, retryCostUnits: 1 },
+    recommendRepair: () => { consulted = true; return { choice: 'retry-build', probability: 1 }; },
+  }), /repair denied/);
+  assert.equal(consulted, false);
+  await assert.rejects(readFile(join(output, 'deployed.mjs')), { code: 'ENOENT' });
+  const [decision] = await json(join(output, 'repair-decisions.json'));
+  assert.equal(decision.route, 'escalate');
+  assert.equal(decision.advisor, 'budget-exhausted');
+  assert.equal(decision.budget.spentUnits, 0);
+  assert.match(decision.rejected.digest.sha256, /^[a-f0-9]{64}$/);
+});
+
+test('a stalled repair advisor times out without authorizing a retry', async t => {
+  const output = await workspace(t);
+  await assert.rejects(run(output, {
+    fault: 'wrong-output-once',
+    repairBudget: { timeLimitMs: 40, spendLimitUnits: 1, retryCostUnits: 1 },
+    recommendRepair: state => {
+      assert.deepEqual(state, { failure: 'readiness-mismatch', used: 0, limit: 1 });
+      return new Promise(() => {});
+    },
+  }), /repair denied/);
+  const [decision] = await json(join(output, 'repair-decisions.json'));
+  assert.equal(decision.route, 'escalate');
+  assert.equal(decision.recommendation, null);
+  await assert.rejects(readFile(join(output, 'deployed.mjs')), { code: 'ENOENT' });
+});
+
+test('independent verification rejects altered repair evidence', async t => {
+  const output = await workspace(t);
+  await run(output, { faultyFirstBuild: true });
+  const path = join(output, 'repair-decisions.json');
+  const decisions = await json(path);
+  decisions[0].budget.spendLimitUnits = 0;
+  await writeFile(path, JSON.stringify(decisions));
+  await assert.rejects(verifyRun(output), /Repair decision violates the retry budget/);
+});
