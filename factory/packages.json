@@ -10,7 +10,7 @@
     "orchestration": {
       "repository": "richgo/forge-kit-skills",
       "path": "packages/factory-workflows",
-      "ref": "3ce3e29a17cce4c99ed93808592fce4c6d887810",
+      "ref": "d1c2c61f75335de80cd388134a12d9e2e78b32a4",
       "workflow": ".github/workflows/forge-factory.lock.yml"
     },
     "execution": {
@@ -31,12 +31,12 @@
     "mcp": {
       "repository": "richgo/forge-kit-skills",
       "path": "packages/factory-workflows",
-      "ref": "3ce3e29a17cce4c99ed93808592fce4c6d887810"
+      "ref": "d1c2c61f75335de80cd388134a12d9e2e78b32a4"
     },
     "websiteChecking": {
       "repository": "richgo/forge-kit-skills",
       "path": "packages/website-acceptance",
-      "ref": "3ce3e29a17cce4c99ed93808592fce4c6d887810"
+      "ref": "d1c2c61f75335de80cd388134a12d9e2e78b32a4"
     },
     "architecture": {
       "repository": "richgo/forge-kit-skills",

@@ -137,13 +137,15 @@ async function verifyWebsite(specFile, output) {
   const expected = buildWebsite(JSON.parse(approved));
   assert.equal(await readFile(join(output, 'architecture.json'), 'utf8'), json(expected.architecture), 'CALM architecture drift');
   assert.equal(await readFile(join(output, 'architecture.c4'), 'utf8'), expected.view, 'LikeC4 projection drift');
+  const html = await readFile(join(output, 'index.html'));
+  assert.equal(digest(html), digest(expected.html), 'Website HTML differs from the approved render');
   const { chromium } = await import(pathToFileURL(resolve(process.env.FORGE_PLAYWRIGHT)).href);
   const browser = await chromium.launch();
   try {
     const page = await browser.newPage();
-    await page.goto(pathToFileURL(resolve(output, 'index.html')).href);
     const observations = [];
     for (const { id, when, then } of expected.acceptance) {
+      await page.goto(pathToFileURL(resolve(output, 'index.html')).href);
       const filter = page.getByRole('checkbox', { name: 'Step-free only' });
       if (when === 'filter-step-free') await filter.check();
       if (when === 'clear-filter') {
@@ -157,7 +159,8 @@ async function verifyWebsite(specFile, output) {
     await writeFile(join(output, 'requirements-verification.json'), json({
       requirementsSha256: digest(approved),
       architectureSha256: digest(await readFile(join(output, 'architecture.json'))),
-      siteSha256: digest(await readFile(join(output, 'index.html'))),
+      viewSha256: digest(await readFile(join(output, 'architecture.c4'))),
+      siteSha256: digest(html),
       acceptance: observations.map(item => item.id),
     }));
     return observations;
@@ -190,7 +193,9 @@ async function probe(url, manifestPath) {
   for (let attempt = 1; ; attempt++) {
     try {
       assert.deepEqual(JSON.parse(await fetchBytes('release.json')), expected);
-      for (const name of inputs) assert.equal(digest(await fetchBytes(name)), expected.files[name], name + ' digest mismatch');
+      await Promise.all(inputs.map(async name => {
+        assert.equal(digest(await fetchBytes(name)), expected.files[name], name + ' digest mismatch');
+      }));
       console.log(json({ ...expected, url, observed: 'passed' }));
       return;
     } catch (error) {
