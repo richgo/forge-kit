@@ -146,14 +146,14 @@ node factory/cli.mjs verify out/repaired
 ```
 
 - **Factory bootstrap** runs the reference checks and replays acceptance in a separate job. The optional Pages drill publishes a synthetic candidate, probes the live release, and restores the verified baseline. [Hosted rehearsal](docs/hosted-rehearsal.md)
-- **APMX package rehearsal** exercises a pinned execution contract, an independent check, and signed evidence. **Catalog reference rehearsal** calls the pinned GH-AW workflow and exercises a separate signed handoff, local promotion, rollback, and one repair. [APMX workflow](.github/workflows/apmx-rehearsal.yml) · [Catalog workflow](.github/workflows/catalog-rehearsal.yml)
+- **APMX package rehearsal** exercises a pinned execution contract, an independent check, and signed evidence. **Factory rehearsals** with `catalog_fixture` calls the pinned GH-AW workflow and exercises a separate signed handoff, local promotion, rollback, and one repair. [APMX workflow](.github/workflows/apmx-rehearsal.yml) · [Catalog workflow](.github/workflows/catalog-rehearsal.yml)
 - **Optional Jev routing** uses `FORGE_JEV_TOKEN` to opt into a live choice call on an eligible fixture rejection. The fixture permits one retry at a selected-label probability of at least 0.8. [TypeSafe decision API](https://github.com/TypeSafeAI/typesafe-router/blob/main/REFERENCE.md)
 
 The rehearsals demonstrate separate parts of the target. Integrating live APMX execution with production delivery, establishing durable signer identities, and operating a production telemetry and repair loop remain open work. [Implementation status](docs/implementation-status.md)
 
 ## Explore or extend the factory
 
-**Forge Factory E2E** is the GitHub Actions entry point for a selected product story. A pinned GitHub Agentic Workflow calls the factory worker, which builds the story, runs and independently replays its APMX contract, signs the evidence, and can publish the public reference to Pages. The workflow uses `COPILOT_GITHUB_TOKEN`. See the [hosted runbook](docs/hosted-rehearsal.md) for inputs, artifacts, and the older catalog rehearsal.
+**Forge Factory E2E** is the GitHub Actions release entry point for the current Trail Desk product. The pinned GitHub Agentic Workflow builds the site, independently checks it with Chromium and APMX, signs the evidence, and publishes to Pages. The workflow uses `COPILOT_GITHUB_TOKEN`. The [hosted runbook](docs/hosted-rehearsal.md) covers release inputs, evidence, and the separate fixture workflows.
 
 - Author stories and trace their acceptance IDs through a run. [Product requirements guide](docs/product-requirements.md)
 - Review the required scenarios and expected evidence, then run the existing verification suite. [Factory test plan](factory/test/README.md) · [Verification and evals](docs/testing.md)
