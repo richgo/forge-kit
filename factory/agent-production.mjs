@@ -9,7 +9,7 @@ import { promisify } from 'node:util';
 const execute = promisify(execFile);
 const sha256 = text => createHash('sha256').update(text).digest('hex');
 const prompts = {
-  plan: 'Plan the implementation and identify affected components. Return {"plan":"..."} (at most 2000 characters).',
+  plan: 'Plan the implementation and identify affected components. Return {"plan":"..."} (aim for 1500 characters and use at most 6000).',
   code: 'Implement the reviewed product contract. Return {"files":{"src/filename":"complete source"}} with exactly all approved paths.',
   test: 'Assess boundary cases and regressions worth testing. Return {"risks":["..."]} with up to six concise items.',
   review: 'Check the proposal against requirements and flag only specific, blocking bugs or security issues. Return {"issues":["..."]} with up to six concise items. An empty list means no blockers.',
@@ -85,7 +85,7 @@ export async function callCopilot(role, context) {
 function validatedNotes(value, key) {
   const notes = value?.[key];
   assert.ok(Array.isArray(notes) && notes.length <= 6 &&
-    notes.every(note => typeof note === 'string' && note.length > 0 && note.length <= 500), 'Invalid ' + key);
+    notes.every(note => typeof note === 'string' && note.length > 0 && note.length <= 1000), 'Invalid ' + key);
   return notes;
 }
 
@@ -97,7 +97,7 @@ export async function produceRevision(revision, previous, { agent, check, record
     return value;
   };
   const { plan } = await call('plan', { ...base, previous });
-  assert.ok(typeof plan === 'string' && plan.trim() && plan.length <= 2000, 'Invalid agent plan');
+  assert.ok(typeof plan === 'string' && plan.trim() && plan.length <= 6000, 'Invalid agent plan');
   await record({ decision: 'plan', plan });
   const context = { ...base, previous, plan };
   let candidate = acceptSource(revision.product, await call('code', context));

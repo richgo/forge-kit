@@ -21,8 +21,10 @@ Each product has `initial` and `next` snapshots under
 The runtime interface accepts one JSON value on standard input and emits one
 JSON value on standard output. Node and Python use standard libraries and
 immutable container images. Onboarding another product that meets this
-contract requires its reviewed descriptors and an entry in the qualification
-matrix. Adding a runtime requires a reviewed executable adapter and image pin.
+contract requires its reviewed descriptors. The workflow discovers the
+qualification matrix from those directories. Each product keeps the same
+runtime across the two revisions. A new runtime requires a reviewed executable
+adapter and image pin.
 
 Trail Desk implements catalog and step-free filtering and evolves to support
 distance ordering. Stock Ledger replays an inventory movement journal and
@@ -39,7 +41,8 @@ and an emitted tool request fails the job. Agent review can block promotion.
 A failed check or review permits at most one repair per revision. Case inputs
 and expected outputs stay with the deterministic checker. A repair sees failed
 case and story IDs. Agent audit artifacts retain session IDs, response digests,
-plans, review findings, attempts and source digests.
+plans, review findings, attempts and source digests. The independently checked
+bundle binds the complete audit digest and the accepted source to the signature.
 
 A separate verifier job has no Copilot credential. It checks CALM and LikeC4
 with pinned native tools, recomputes impact and executes all reviewed cases for

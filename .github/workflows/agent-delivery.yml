@@ -9,7 +9,26 @@ on:
 permissions: {}
 
 jobs:
+  catalog:
+    name: Discover reviewed product descriptors
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.discover.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - id: discover
+        run: |
+          set -euo pipefail
+          matrix="$(node factory/agent-catalog.mjs examples/agent-products)"
+          printf 'matrix=%s\n' "$matrix" >> "$GITHUB_OUTPUT"
+
   produce:
+    needs: catalog
     name: Author both revisions
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -17,12 +36,7 @@ jobs:
       contents: read
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - product: trail-desk
-            runtime: node
-          - product: stock-ledger
-            runtime: python
+      matrix: ${{ fromJSON(needs.catalog.outputs.matrix) }}
     env:
       PRODUCT: ${{ matrix.product }}
     steps:
@@ -55,19 +69,14 @@ jobs:
 
   verify:
     name: Independently validate architecture and accept both revisions
-    needs: produce
+    needs: [catalog, produce]
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     permissions:
       contents: read
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - product: trail-desk
-            runtime: node
-          - product: stock-ledger
-            runtime: python
+      matrix: ${{ fromJSON(needs.catalog.outputs.matrix) }}
     env:
       PRODUCT: ${{ matrix.product }}
     steps:
@@ -108,7 +117,7 @@ jobs:
 
   sign:
     name: Attest exact verified product bundle
-    needs: verify
+    needs: [catalog, verify]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -117,12 +126,7 @@ jobs:
       attestations: write
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - product: trail-desk
-            runtime: node
-          - product: stock-ledger
-            runtime: python
+      matrix: ${{ fromJSON(needs.catalog.outputs.matrix) }}
     steps:
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
@@ -142,7 +146,7 @@ jobs:
 
   release:
     name: Authenticate and rehearse release, fault and recovery
-    needs: sign
+    needs: [catalog, sign]
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     permissions:
@@ -150,12 +154,7 @@ jobs:
       contents: read
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - product: trail-desk
-            runtime: node
-          - product: stock-ledger
-            runtime: python
+      matrix: ${{ fromJSON(needs.catalog.outputs.matrix) }}
     env:
       PRODUCT: ${{ matrix.product }}
     steps:
