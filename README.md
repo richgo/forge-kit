@@ -42,6 +42,8 @@ This is the target for Forge Kit. The [reference implementation](#try-the-refere
 
 ## Who uses it
 
+Find the steps, review points, and handoffs for your role. [Forge Kit user guide](docs/user-guide.md)
+
 | Factory user | What they do |
 | --- | --- |
 | Product owners | Define outcomes as epics, features, and stories with stable, executable acceptance criteria. Review how a proposed release changes product behavior. |
