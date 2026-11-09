@@ -147,11 +147,26 @@ jobs:
         env:
           FORGE_JEV_TOKEN: ${{ secrets.FORGE_JEV_TOKEN }}
         run: node evals/jev-live.mjs > "$RUNNER_TEMP/jev-repair.json"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        if: ${{ !cancelled() }}
+        with:
+          repository: richgo/forge-kit-skills
+          ref: 0c4751fd793149121d55be57fde1f0534aa9710e
+          path: _runtime_advisor
+          persist-credentials: false
+      - name: Exercise live typed runtime advice with synthetic input
+        if: ${{ !cancelled() }}
+        env:
+          FORGE_RUNTIME_ADVISOR: ${{ github.workspace }}/_runtime_advisor/packages/repair-acceptance/checks/jev.mjs
+          FORGE_JEV_TOKEN: ${{ secrets.FORGE_JEV_TOKEN }}
+        run: node evals/jev-runtime-live.mjs > "$RUNNER_TEMP/jev-runtime.json"
       - if: ${{ !cancelled() }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: live-jev-repair
-          path: ${{ runner.temp }}/jev-repair.json
+          path: |
+            ${{ runner.temp }}/jev-repair.json
+            ${{ runner.temp }}/jev-runtime.json
           if-no-files-found: error
 
   produce:
