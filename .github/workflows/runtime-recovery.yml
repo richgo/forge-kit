@@ -1,0 +1,193 @@
+name: Qualify Pages runtime and recover incidents
+on:
+  schedule:
+    - cron: '23 */3 * * *'
+  workflow_dispatch:
+
+permissions: {}
+concurrency:
+  group: forge-runtime-recovery
+  cancel-in-progress: false
+
+env:
+  CANDIDATE_RUN: ${{ vars.FORGE_RUNTIME_CANDIDATE_RUN }}
+  BASELINE_RUN: ${{ vars.FORGE_RUNTIME_BASELINE_RUN }}
+
+jobs:
+  detect:
+    if: github.ref == 'refs/heads/main' && vars.FORGE_RUNTIME_CANDIDATE_RUN != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    permissions:
+      actions: read
+      attestations: read
+      contents: read
+      pages: read
+    outputs:
+      action: ${{ steps.detect.outputs.action }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - id: detect
+        name: Authenticate releases and observe public HTTPS content
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          url="$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq .html_url)"
+          bash factory/authenticate-pages-run.sh "$url" evidence
+          node factory/runtime-recovery-cli.mjs detect evidence "$url"
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: runtime-detection
+          path: |
+            evidence/detect.json
+            evidence/*/release.json
+            evidence/*/verified-signature.json
+            evidence/*/archive-sha256
+          if-no-files-found: warn
+          retention-days: 90
+
+  incident:
+    needs: detect
+    if: ${{ !cancelled() && (needs.detect.result == 'failure' || needs.detect.outputs.action == 'escalate') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      issues: write
+    outputs:
+      issue: ${{ steps.open.outputs.issue }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - id: open
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash factory/runtime-incident.sh open
+      - if: needs.detect.result == 'failure' || vars.FORGE_RUNTIME_RECOVERY_ENABLED != 'true'
+        run: |
+          echo '::error::Runtime incident requires operator review.'
+          exit 1
+
+  recover:
+    needs: [detect, incident]
+    if: github.ref == 'refs/heads/main' && needs.detect.outputs.action == 'escalate' && vars.FORGE_RUNTIME_RECOVERY_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.restore.outputs.page_url }}
+    permissions:
+      actions: read
+      attestations: read
+      contents: read
+      deployments: read
+      issues: write
+      pages: write
+      id-token: write
+    env:
+      ISSUE: ${{ needs.incident.outputs.issue }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: richgo/forge-kit-skills
+          ref: 0c4751fd793149121d55be57fde1f0534aa9710e
+          path: _runtime_advisor
+          persist-credentials: false
+      - id: authenticate
+        name: Independently authenticate the candidate and predecessor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          url="$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq .html_url)"
+          bash factory/authenticate-pages-run.sh "$url" evidence
+          printf 'url=%s\n' "$url" >> "$GITHUB_OUTPUT"
+      - id: budget
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash factory/runtime-incident.sh budget
+      - id: decision
+        name: Re-observe and apply Jev advice through deterministic policy
+        env:
+          PAGE_URL: ${{ steps.authenticate.outputs.url }}
+          FORGE_ATTEMPTED: ${{ steps.budget.outputs.attempted }}
+          FORGE_RUNTIME_ADVISOR: ${{ github.workspace }}/_runtime_advisor/packages/repair-acceptance/checks/jev.mjs
+          FORGE_JEV_TOKEN: ${{ secrets.FORGE_JEV_TOKEN }}
+        run: node factory/runtime-recovery-cli.mjs authorize evidence "$PAGE_URL"
+      - if: steps.decision.outputs.action == 'restore'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: factory-runtime-rollback
+          path: evidence/baseline/archive/artifact.tar
+          if-no-files-found: error
+      - if: steps.decision.outputs.action == 'restore'
+        name: Recheck live identity and reserve the single attempt
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PAGE_URL: ${{ steps.authenticate.outputs.url }}
+        run: |
+          set -euo pipefail
+          bash factory/check-pages-deployment.sh "$PAGE_URL" evidence/candidate/release.json > evidence/current-deployment.json
+          node factory/runtime-recovery-cli.mjs freshness evidence "$PAGE_URL"
+          bash factory/runtime-incident.sh claim
+      - id: restore
+        name: Deploy the authenticated predecessor
+        if: steps.decision.outputs.action == 'restore'
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e
+        with:
+          artifact_name: factory-runtime-rollback
+          timeout: 240000
+      - id: verify
+        if: steps.restore.outcome == 'success'
+        name: Independently probe restored HTTPS bytes
+        env:
+          PAGE_URL: ${{ steps.authenticate.outputs.url }}
+        run: |
+          set -euo pipefail
+          if node factory/website.mjs probe "$PAGE_URL" evidence/baseline/release.json > evidence/restored.json; then
+            exit 0
+          fi
+          jq -n --arg at "$(date -u +%FT%TZ)" --slurpfile expected evidence/baseline/release.json \
+            '{observed:"failed", at:$at, expected:$expected[0]}' > evidence/restored.json
+          exit 1
+      - name: Preserve recovery evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: runtime-recovery
+          path: |
+            evidence/*.json
+            evidence/*/release.json
+            evidence/*/verified-signature.json
+            evidence/*/archive-sha256
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Report recovery or escalate to the incident
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DECISION: ${{ steps.decision.outputs.action }}
+          VERIFIED: ${{ steps.verify.outcome }}
+        run: |
+          set -euo pipefail
+          if [[ "$VERIFIED" == success ]]; then
+            REPORT="The authenticated predecessor was restored and independently observed"
+          elif [[ "$DECISION" == healthy || "$DECISION" == already-restored ]]; then
+            REPORT="A qualified release was healthy on re-observation"
+          else
+            REPORT="Runtime incident escalated. A verified restoration was not recorded"
+          fi
+          export REPORT
+          bash factory/runtime-incident.sh report
+          [[ "$VERIFIED" == success || "$DECISION" == healthy || "$DECISION" == already-restored ]]

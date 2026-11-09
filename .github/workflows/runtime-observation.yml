@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   observe:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && vars.FORGE_RUNTIME_CANDIDATE_RUN == ''
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
