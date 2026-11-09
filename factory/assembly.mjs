@@ -1,6 +1,6 @@
 const roles = [
   'orchestration', 'execution', 'checking', 'skills', 'mcp',
-  'architecture', 'websiteChecking', 'repairChecking', 'delivery', 'buildRepair', 'securityReview',
+  'architecture', 'websiteChecking', 'repairChecking', 'delivery', 'buildRepair', 'securityReview', 'agentDelivery',
 ];
 
 function packageReference({ repository, path, ref }) {
@@ -20,6 +20,8 @@ function packageReference({ repository, path, ref }) {
   return repository + (path ? '/' + path : '') + '#' + ref;
 }
 
+const canonicalReference = ref => ref.replace(/^[^/]+\/[^/#]+/, repository => repository.toLowerCase());
+
 export function assemble(manifest) {
   if (manifest.version !== 1 || !manifest.capabilities ||
       Object.keys(manifest.capabilities).length !== roles.length ||
@@ -29,6 +31,22 @@ export function assemble(manifest) {
   const pending = roles.filter(role => manifest.capabilities[role] === null);
   const packages = Object.fromEntries(roles.filter(role => !pending.includes(role))
     .map(role => [role, packageReference(manifest.capabilities[role])]));
+  const rehearsal = packageReference(manifest.rehearsal);
+  const revoked = manifest.revoked ?? [];
+  if (!Array.isArray(revoked) ||
+      revoked.some(ref => typeof ref !== 'string' || !/^[A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)+#[a-f0-9]{40}$/.test(ref))) {
+    throw new Error('Invalid capability revocation list');
+  }
+  const deny = new Set(revoked.map(canonicalReference));
+  if (deny.size !== revoked.length) throw new Error('Duplicate capability revocation');
+  if ([...Object.values(packages), rehearsal].some(ref => deny.has(canonicalReference(ref)))) {
+    throw new Error('Selected capability revision is revoked');
+  }
+  const agentDelivery = manifest.capabilities.agentDelivery;
+  if (agentDelivery && (agentDelivery.repository !== 'richgo/forge-kit-skills' ||
+      agentDelivery.path !== 'packages/agent-delivery' || agentDelivery.runtimeApi !== 1)) {
+    throw new Error('Incompatible agent delivery runtime API or catalog package');
+  }
   const orchestration = manifest.capabilities.orchestration;
   let orchestrator = null;
   if (orchestration) {
@@ -39,7 +57,7 @@ export function assemble(manifest) {
     }
     orchestrator = repository + '/' + workflow + '@' + ref;
   }
-  return { pending, packages, orchestrator, rehearsal: packageReference(manifest.rehearsal) };
+  return { pending, packages, orchestrator, rehearsal };
 }
 
 export function apmManifest(packages) {

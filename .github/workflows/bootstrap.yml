@@ -24,19 +24,33 @@ on:
         type: boolean
         default: false
 
+      agent_replay_drill:
+        description: Authenticate and replay the archived Phase 2 source in the resume drill
+        type: boolean
+        default: false
+      agent_resume_drill:
+        description: Interrupt agent delivery once after the initial checkpoint
+        type: boolean
+        default: false
+
 permissions:
   contents: read
 
 jobs:
   agent-products:
-    if: github.event_name == 'workflow_dispatch' && inputs.agent_products && github.actor == github.repository_owner
+    if: github.event_name == 'workflow_dispatch' && inputs.agent_products && (github.ref == 'refs/heads/main' || github.actor == github.repository_owner)
     uses: ./.github/workflows/agent-delivery.yml
+    with:
+      resume_drill: ${{ inputs.agent_resume_drill }}
+      replay_drill: ${{ inputs.agent_replay_drill }}
     permissions:
+      actions: read
       attestations: write
       contents: read
       id-token: write
     secrets:
       COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+      FORGE_JEV_TOKEN: ${{ secrets.FORGE_JEV_TOKEN }}
 
   website-preview:
     name: Preview Trail Desk architecture and website changes
@@ -248,6 +262,8 @@ jobs:
           path: _decisions
           persist-credentials: false
       - run: echo "FORGE_DECISION_PACKAGE=$GITHUB_WORKSPACE/_decisions/packages/repair-acceptance" >> "$GITHUB_ENV"
+      - name: Restore the audited delivery capability from the frozen lock
+        run: bash factory/restore-capabilities.sh
       - run: node --test test/*.test.mjs
         env:
           FORGE_ARCHITECTURE_PACKAGE: _architecture/packages/architecture
