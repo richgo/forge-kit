@@ -129,6 +129,20 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+      - name: Resolve the pinned repair decision policy
+        id: decision-package
+        run: |
+          set -euo pipefail
+          ref="$(node factory/cli.mjs assemble | jq -er '.packages.repairChecking')"
+          [[ "$ref" =~ ^richgo/forge-kit-skills/packages/repair-acceptance#[0-9a-f]{40}$ ]]
+          printf 'sha=%s\n' "${ref##*#}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: richgo/forge-kit-skills
+          ref: ${{ steps.decision-package.outputs.sha }}
+          path: _decisions
+          persist-credentials: false
+      - run: echo "FORGE_DECISION_PACKAGE=$GITHUB_WORKSPACE/_decisions/packages/repair-acceptance" >> "$GITHUB_ENV"
       - name: Exercise live Jev repair routing
         env:
           FORGE_JEV_TOKEN: ${{ secrets.FORGE_JEV_TOKEN }}
@@ -185,6 +199,20 @@ jobs:
           ref: ${{ steps.architecture-package.outputs.sha }}
           path: _architecture
           persist-credentials: false
+      - name: Resolve the pinned repair decision policy
+        id: decision-package
+        run: |
+          set -euo pipefail
+          ref="$(node factory/cli.mjs assemble | jq -er '.packages.repairChecking')"
+          [[ "$ref" =~ ^richgo/forge-kit-skills/packages/repair-acceptance#[0-9a-f]{40}$ ]]
+          printf 'sha=%s\n' "${ref##*#}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: richgo/forge-kit-skills
+          ref: ${{ steps.decision-package.outputs.sha }}
+          path: _decisions
+          persist-credentials: false
+      - run: echo "FORGE_DECISION_PACKAGE=$GITHUB_WORKSPACE/_decisions/packages/repair-acceptance" >> "$GITHUB_ENV"
       - run: node --test test/*.test.mjs
         env:
           FORGE_ARCHITECTURE_PACKAGE: _architecture/packages/architecture
@@ -209,7 +237,7 @@ jobs:
         run: |
           set -euo pipefail
           scratch="$(mktemp -d)"
-          curl --fail --location --silent --show-error 'https://github.com/microsoft/apm/releases/download/v0.33.0/apm-linux-x86_64.tar.gz' -o "$scratch/apm.tar.gz"
+          curl --fail --location --silent --show-error --retry 2 -H 'Accept: application/octet-stream' 'https://api.github.com/repos/microsoft/apm/releases/assets/606234092?download=1' -o "$scratch/apm.tar.gz"
           printf '%s  %s\n' 'e6374402c74318f7c8bef97a90d8572d049fdab0dc3871492c6b0647ae9e881f' "$scratch/apm.tar.gz" | sha256sum --check
           tar -xzf "$scratch/apm.tar.gz" -C "$scratch"
           apm="$(find "$scratch" -type f -name apm -print -quit)"
@@ -237,6 +265,20 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+      - name: Resolve the pinned repair decision policy
+        id: decision-package
+        run: |
+          set -euo pipefail
+          ref="$(node factory/cli.mjs assemble | jq -er '.packages.repairChecking')"
+          [[ "$ref" =~ ^richgo/forge-kit-skills/packages/repair-acceptance#[0-9a-f]{40}$ ]]
+          printf 'sha=%s\n' "${ref##*#}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: richgo/forge-kit-skills
+          ref: ${{ steps.decision-package.outputs.sha }}
+          path: _decisions
+          persist-credentials: false
+      - run: echo "FORGE_DECISION_PACKAGE=$GITHUB_WORKSPACE/_decisions/packages/repair-acceptance" >> "$GITHUB_ENV"
       - id: requirements
         run: |
           set -euo pipefail
@@ -278,7 +320,7 @@ jobs:
         run: |
           set -euo pipefail
           scratch="$(mktemp -d)"
-          curl --fail --location --silent --show-error 'https://github.com/danielmeppiel/apmx/releases/download/v0.8.0/apmx-0.8.0-linux-x86_64.tar.gz' -o "$scratch/apmx.tar.gz"
+          curl --fail --location --silent --show-error --retry 2 -H 'Accept: application/octet-stream' 'https://api.github.com/repos/danielmeppiel/apmx/releases/assets/699962963?download=1' -o "$scratch/apmx.tar.gz"
           printf '%s  %s\n' '524027362fe88728836ec6476d2c828d26b750d2067809c5741f27d950b93778' "$scratch/apmx.tar.gz" | sha256sum --check
           tar -xzf "$scratch/apmx.tar.gz" -C "$scratch"
           apmx="$(find "$scratch" -type f -name apmx -print -quit)"

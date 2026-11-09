@@ -5,7 +5,6 @@ import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { pathToFileURL } from 'node:url';
-import { repairBudgetAllowsRetry, routeRepair } from './integrations.mjs';
 
 const execute = promisify(execFile);
 const approvedRepairBudget = Object.freeze({ timeLimitMs: 15000, spendLimitUnits: 1, retryCostUnits: 1 });
@@ -239,6 +238,7 @@ export async function run(output, {
     const name = repairs === 0 ? 'rejected.mjs' : 'rejected-2.mjs';
     await writeFile(join(output, name), built, { flag: 'wx' });
     rejected.push({ name, digest: digest(built) });
+    const { repairBudgetAllowsRetry, routeRepair } = await import('./decisions.mjs');
     repairStarted ??= performance.now();
     let recommendation = null;
     let advisor = 'budget-exhausted';
@@ -306,6 +306,8 @@ async function verifyRepairDecisions(output, rejected, expectedAdvisor) {
     throw error;
   }
   assert.ok(Array.isArray(report) && report.length === rejected.length, 'Unexpected repair decision count');
+  if (report.length === 0) return;
+  const { repairBudgetAllowsRetry, routeRepair } = await import('./decisions.mjs');
   for (const [index, entry] of report.entries()) {
     assert.deepEqual(entry.rejected, rejected[index], 'Repair decision refers to a different rejected artifact');
     const { advisor, recommendation, budget, route } = entry;

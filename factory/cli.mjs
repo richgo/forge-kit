@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { gradeReview } from '../evals/review.mjs';
-import { apmManifest, assemble, requestJevRepair } from './integrations.mjs';
+import { apmManifest, assemble } from './assembly.mjs';
 import { readRequirementsEvidence, readVerifiedReceipt, run } from './slice.mjs';
 
 const [command, ...args] = process.argv.slice(2);
@@ -33,7 +33,10 @@ try {
         faultyFirstBuild: Boolean(values['faulty-first-build']),
         fault: values.fault,
         ...selection,
-        recommendRepair: jevToken ? (state, { timeoutMs }) => requestJevRepair(jevToken, fetch, { state, timeoutMs }) : undefined,
+        recommendRepair: jevToken ? async (state, { timeoutMs }) => {
+          const { requestJevRepair } = await import('./decisions.mjs');
+          return requestJevRepair(jevToken, fetch, { state, timeoutMs });
+        } : undefined,
       });
       console.log(JSON.stringify(receipt.predicate, null, 2));
     } else if (command === 'requirements-evidence') {

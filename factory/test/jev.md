@@ -47,3 +47,9 @@ expected route, and observed outcome.
 The live evaluation fails if any provider response is unavailable, malformed,
 or misses its expected outcome. Offline transport and budget checks are kept
 separate from the credentialed provider observations.
+
+The repair adapter and deterministic budget policy are exported by the
+pinned `repair-acceptance` APM package. Restore the APM lock before
+running the contract tests. To test a separately checked-out revision
+of the pinned catalog, set `FORGE_DECISION_PACKAGE` to its
+`packages/repair-acceptance` directory.

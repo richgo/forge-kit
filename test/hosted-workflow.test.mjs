@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
-import { assemble } from '../factory/integrations.mjs';
+import { assemble } from '../factory/assembly.mjs';
 
 const workflow = await readFile(new URL('../.github/workflows/factory-e2e.yml', import.meta.url), 'utf8');
 const manifest = JSON.parse(await readFile(new URL('../factory/packages.json', import.meta.url), 'utf8'));
