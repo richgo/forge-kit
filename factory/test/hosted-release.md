@@ -2,7 +2,7 @@
 
 Forge Factory E2E uses the APM catalog to resolve the immutable worker
 revision. It restores the reviewed lock with APM 0.33.0 in a separate job
-and audits the installed files before the build starts. The worker then builds Trail Desk, invokes the
+and audits the installed files before the build starts. The build and verifier independently hash-check and restore the resulting module archive. The release attestation binds both the package lock and that exact archive. The worker then builds Trail Desk, invokes the
 pinned APMX contract with Copilot, and independently checks CALM, LikeC4,
 browser acceptance, security and the APMX output. A separate job regenerates the impact plan from the approved inputs.
 

@@ -40,9 +40,10 @@ A local unsigned receipt is suitable for development diagnostics but **must not*
 
 ## Running existing checks
 
-From the repository root:
+From the repository root, using APM 0.33.0. The planner runs from the restored architecture package.
 
 ```bash
+apm install --target copilot --frozen
 node --test
 ```
 

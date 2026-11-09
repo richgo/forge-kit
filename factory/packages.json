@@ -10,7 +10,7 @@
     "orchestration": {
       "repository": "richgo/forge-kit-skills",
       "path": "packages/factory-workflows",
-      "ref": "24a4e19903c6a83d34a434ed78ab748bafe71673",
+      "ref": "8861afd5606136f3bbb55043d21ac732ed11df53",
       "workflow": ".github/workflows/forge-factory.lock.yml"
     },
     "execution": {
@@ -31,7 +31,7 @@
     "mcp": {
       "repository": "richgo/forge-kit-skills",
       "path": "packages/factory-workflows",
-      "ref": "24a4e19903c6a83d34a434ed78ab748bafe71673"
+      "ref": "8861afd5606136f3bbb55043d21ac732ed11df53"
     },
     "websiteChecking": {
       "repository": "richgo/forge-kit-skills",
@@ -41,7 +41,7 @@
     "architecture": {
       "repository": "richgo/forge-kit-skills",
       "path": "packages/architecture",
-      "ref": "2ad068c4e1b2abe9b7dda65f5e8dab4835213558"
+      "ref": "8861afd5606136f3bbb55043d21ac732ed11df53"
     },
     "repairChecking": {
       "repository": "richgo/forge-kit-skills",
@@ -61,7 +61,7 @@
     "securityReview": {
       "repository": "richgo/forge-kit-skills",
       "path": "packages/security-review",
-      "ref": "24a4e19903c6a83d34a434ed78ab748bafe71673"
+      "ref": "8861afd5606136f3bbb55043d21ac732ed11df53"
     }
   }
 }

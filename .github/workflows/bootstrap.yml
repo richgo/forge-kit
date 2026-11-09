@@ -36,8 +36,22 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           persist-credentials: false
+      - name: Resolve the pinned architecture planner
+        id: architecture-package
+        run: |
+          set -euo pipefail
+          ref="$(node factory/cli.mjs assemble | jq -er '.packages.architecture')"
+          [[ "$ref" =~ ^richgo/forge-kit-skills/packages/architecture#[0-9a-f]{40}$ ]]
+          printf 'sha=%s\n' "${ref##*#}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: richgo/forge-kit-skills
+          ref: ${{ steps.architecture-package.outputs.sha }}
+          path: _architecture
+          persist-credentials: false
       - name: Generate both revisions from their tracked requirements
         env:
+          FORGE_ARCHITECTURE_PACKAGE: _architecture/packages/architecture
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
@@ -158,7 +172,22 @@ jobs:
           ref: ${{ steps.requirements.outputs.pin }}
           path: _requirements
           persist-credentials: false
+      - name: Resolve the pinned architecture planner
+        id: architecture-package
+        run: |
+          set -euo pipefail
+          ref="$(node factory/cli.mjs assemble | jq -er '.packages.architecture')"
+          [[ "$ref" =~ ^richgo/forge-kit-skills/packages/architecture#[0-9a-f]{40}$ ]]
+          printf 'sha=%s\n' "${ref##*#}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: richgo/forge-kit-skills
+          ref: ${{ steps.architecture-package.outputs.sha }}
+          path: _architecture
+          persist-credentials: false
       - run: node --test test/*.test.mjs
+        env:
+          FORGE_ARCHITECTURE_PACKAGE: _architecture/packages/architecture
       - name: Trace a product story through repair and independent acceptance
         env:
           FORGE_REQUIREMENTS_PACKAGE: _requirements/packages/requirements

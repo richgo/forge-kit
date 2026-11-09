@@ -1,6 +1,6 @@
 # Factory component checks
 
-Run `node --test` for the repository suite. The native architecture and
+Restore the lock with APM 0.33.0, then run `node --test` for the repository suite. The native architecture and
 package checks below use real upstream binaries. The GitHub dispatches
 use repository credentials and record separate artifacts.
 

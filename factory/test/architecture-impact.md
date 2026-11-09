@@ -1,6 +1,6 @@
 # Architecture and product change impact
 
-Run the planner from the repository root. It reads the before and after product requirements, validates each CALM and LikeC4 pair and prints a deterministic JSON plan.
+Restore the APM lock first, then run the planner from the repository root. To use a separately checked-out copy of the pinned catalog, set `FORGE_ARCHITECTURE_PACKAGE` to its `packages/architecture` directory. It reads the before and after product requirements, validates each CALM and LikeC4 pair and prints a deterministic JSON plan.
 
 ## Tracked Trail Desk changes
 

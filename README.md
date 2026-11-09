@@ -134,9 +134,10 @@ In both examples, a rejected candidate stays out of the target environment. Repa
 
 The deterministic Node.js 20+ fixture runs offline by default. It checks the CALM and LikeC4 inputs, builds and checks a small readiness program, copies the accepted bytes to a local deployment path, and runs the deployed program. The faulty-build case demonstrates one repair attempt. The local in-toto Statement is unsigned. The verifier re-hashes the inputs and artifacts and replays acceptance against the approved fixture.
 
-Use fresh output directories for each run.
+Install the reviewed APM packages before running the full suite. Use fresh output directories for each factory run.
 
 ```sh
+apm install --target copilot --frozen
 node --test
 node factory/cli.mjs assemble
 node factory/cli.mjs run out/clean

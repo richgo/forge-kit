@@ -47,7 +47,7 @@ jobs:
   factory:
     name: Run the agentic factory
     if: ${{ !inputs.catalog_fixture && inputs.website_release != 'current' && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF || (!inputs.publish_pages && github.actor == github.repository_owner)) }}
-    uses: richgo/forge-kit-skills/.github/workflows/forge-factory.lock.yml@24a4e19903c6a83d34a434ed78ab748bafe71673
+    uses: richgo/forge-kit-skills/.github/workflows/forge-factory.lock.yml@8861afd5606136f3bbb55043d21ac732ed11df53
     permissions:
       actions: read
       attestations: write
@@ -62,7 +62,7 @@ jobs:
   reference:
     name: Rehearse the legacy catalog fixture
     if: ${{ inputs.catalog_fixture && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF || (!inputs.publish_pages && github.actor == github.repository_owner)) }}
-    uses: richgo/forge-kit-skills/.github/workflows/forge-reference.lock.yml@24a4e19903c6a83d34a434ed78ab748bafe71673
+    uses: richgo/forge-kit-skills/.github/workflows/forge-reference.lock.yml@8861afd5606136f3bbb55043d21ac732ed11df53
     permissions:
       contents: read
       actions: read
