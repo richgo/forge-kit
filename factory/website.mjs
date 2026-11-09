@@ -29,25 +29,47 @@ function trace(spec) {
     assert.ok([name, distance, terrain, description].every(value => typeof value === 'string' && value.length > 0));
     assert.equal(typeof stepFree, 'boolean');
   }
-  const rows = spec.epics.flatMap(epic => epic.features.flatMap(feature => feature.stories.flatMap(story =>
-    story.acceptanceCriteria.map(criterion => ({ epic: epic.id, feature: feature.id, story: story.id,
-      node: story.architectureNode, ...criterion })))));
-
-  assert.equal(new Set(rows.map(row => row.id)).size, rows.length, 'Duplicate acceptance IDs');
-  for (const row of rows) {
-    assert.ok(Object.hasOwn(actions, row.when), 'Unsupported website acceptance: ' + row.when);
-    assert.equal(row.node, actions[row.when], 'Wrong CALM owner for ' + row.id);
-    for (const [field, prefix] of [['epic', 'EPIC'], ['feature', 'FEAT'], ['story', 'STORY'], ['id', 'AC']]) {
-      assert.match(row[field], new RegExp('^' + prefix + '-[0-9]+$'));
+  const seen = new Set();
+  const register = (item, prefix, fields) => {
+    assert.equal(typeof item.id, 'string');
+    assert.match(item.id, new RegExp('^' + prefix + '-[0-9]+$'));
+    assert.ok(!seen.has(item.id), 'Duplicate requirements ID ' + item.id);
+    seen.add(item.id);
+    for (const field of fields) {
+      assert.ok(typeof item[field] === 'string' && item[field].trim(), 'Missing ' + item.id + ' ' + field);
     }
-    assert.deepEqual(Object.keys(row.then), ['visibleTrails']);
-    assert.ok(row.then.visibleTrails.length > 0 && row.then.visibleTrails.every(id => ids.has(id)));
+  };
+  const list = (items, label) => {
+    assert.ok(Array.isArray(items) && items.length > 0, 'Expected ' + label);
+    return items;
+  };
+  const rows = [];
+  for (const epic of list(spec.epics, 'epics')) {
+    register(epic, 'EPIC', ['title', 'outcome']);
+    for (const feature of list(epic.features, 'features')) {
+      register(feature, 'FEAT', ['title', 'outcome']);
+      for (const story of list(feature.stories, 'stories')) {
+        register(story, 'STORY', ['title', 'asA', 'iWant', 'soThat']);
+        for (const criterion of list(story.acceptanceCriteria, 'acceptance criteria')) {
+          register(criterion, 'AC', ['given', 'when']);
+          assert.deepEqual(Object.keys(criterion).sort(), ['given', 'id', 'then', 'when'], 'Unexpected acceptance fields');
+          const { id, given, when, then } = criterion;
+          assert.ok(Object.hasOwn(actions, when), 'Unsupported website acceptance: ' + when);
+          assert.equal(story.architectureNode, actions[when], 'Wrong CALM owner for ' + id);
+          assert.deepEqual(Object.keys(then), ['visibleTrails']);
+          const { visibleTrails } = then;
+          assert.ok(Array.isArray(visibleTrails) && visibleTrails.every(trail => ids.has(trail)) &&
+            new Set(visibleTrails).size === visibleTrails.length, 'Invalid expected trail IDs for ' + id);
+          rows.push({ epic: epic.id, feature: feature.id, story: story.id, node: story.architectureNode, id, given, when, then });
+        }
+      }
+    }
   }
   assert.ok(rows.some(row => row.when === 'open-catalog'), 'The catalog needs an acceptance criterion.');
   return rows;
 }
 
-function websiteModel({ hasFilter, hasSort }) {
+function websiteModel({ hasFilter, hasSort, combined }) {
   const node = (id, type, name, description) => ({ 'unique-id': id, 'node-type': type, name, description });
   const edge = (source, destination, description) => ({
     'unique-id': source + '-' + destination, description,
@@ -77,6 +99,7 @@ function websiteModel({ hasFilter, hasSort }) {
     architecture.relationships.push(edge('browser', 'distance_sort', 'Executes the inline distance sort.'),
       edge('distance_sort', 'trail_catalog', 'Reads distance values from the trail cards.'));
   }
+  if (combined) architecture.relationships.push(edge('distance_sort', 'step_free_filter', 'Preserves the active accessibility filter.'));
   const types = [...new Set(architecture.nodes.map(item => item['node-type']))];
   const element = type => type.replaceAll('-', '_');
   const view = [
@@ -133,10 +156,8 @@ function render(spec, architecture) {
     '})();',
     '</script>',
   ].join('\n') : '';
-  return [
-    '<!doctype html><html lang="en"><head><meta charset="utf-8">',
-    '<meta name="viewport" content="width=device-width,initial-scale=1"><title>Trail Desk</title>',
-    '<style>' + (hasSort ? '.toolbar{flex-wrap:wrap}' : ''),
+  const style = [
+    (hasSort ? '.toolbar{flex-wrap:wrap}' : ''),
     ':root{font-family:system-ui,sans-serif;color:#19342b;background:#eef2e8}*{box-sizing:border-box}',
     'body{margin:0}header{background:linear-gradient(125deg,#12352d,#295848);color:#f8f3df;padding:clamp(2.7rem,8vw,6rem) max(6vw,calc((100vw - 68rem)/2))}',
     'header p{font-size:1.2rem;max-width:35rem;color:#d5e1cc}h1{font-family:Georgia,serif;font-size:clamp(3rem,10vw,6rem);margin:.25em 0}',
@@ -148,7 +169,20 @@ function render(spec, architecture) {
     '.tag{color:#395d41}h2{font-family:Georgia,serif;font-size:1.8rem;margin:.5em 0}article p{line-height:1.5}',
     'article footer{border-top:1px solid #d7dfd1;padding-top:.8rem;margin-top:1.4rem;font-weight:650}',
     '.about{margin:2.6rem 0 0;color:#375f4e}.about a{color:inherit}',
-    '</style></head><body>',
+    '',
+  ].join('\n');
+  const hash = value => "'sha256-" + createHash('sha256').update(value).digest('base64') + "'";
+  const scriptHashes = [filterScript, sortScript].filter(Boolean)
+    .map(script => hash(script.slice('<script>'.length, -'</script>'.length)));
+  const policy = [
+    "default-src 'none'", "base-uri 'none'", "object-src 'none'", "form-action 'none'", "connect-src 'none'",
+    'script-src ' + (scriptHashes.join(' ') || "'none'"), 'style-src ' + hash(style),
+  ].join('; ');
+  return [
+    '<!doctype html><html lang="en"><head><meta charset="utf-8">',
+    '<meta http-equiv="Content-Security-Policy" content="' + policy + '">',
+    '<meta name="viewport" content="width=device-width,initial-scale=1"><title>Trail Desk</title>',
+    '<style>' + style + '</style></head><body>',
     '<header><span class="eyebrow">The field guide</span><h1>Trail Desk</h1><p>Pick a route before you head out. Compare distance, terrain, and access on three fictional trails.</p></header>',
     '<main><div class="toolbar"><strong id="count" aria-live="polite">' + spec.trails.length + ' trails</strong>' + filter + sort + '</div>',
     '<section class="grid" aria-label="Trail catalog">' + cards + '</section>',
@@ -167,10 +201,11 @@ export function buildWebsite(spec) {
       assert.ok(Number.isFinite(Number.parseFloat(trail.distance)), 'Distance must be finite');
     }
   }
-  if (acceptance.some(row => row.when === 'sort-longest-step-free')) {
+  const combined = acceptance.some(row => row.when === 'sort-longest-step-free');
+  if (combined) {
     assert.ok(hasFilter, 'Combined sorting requires the step-free filter');
   }
-  const { architecture, view } = websiteModel({ hasFilter, hasSort });
+  const { architecture, view } = websiteModel({ hasFilter, hasSort, combined });
   return { architecture, view, html: render(spec, architecture), acceptance };
 }
 
@@ -191,9 +226,15 @@ async function verifyWebsite(specFile, output) {
   assert.equal(await readFile(join(output, 'architecture.c4'), 'utf8'), expected.view, 'LikeC4 projection drift');
   const html = await readFile(join(output, 'index.html'));
   assert.equal(digest(html), digest(expected.html), 'Website HTML differs from the approved render');
+  const securityEntry = 'checks/website-security.mjs';
+  const securityPackage = process.env.FORGE_SECURITY_PACKAGE;
+  const { verifyWebsiteSecurity } = await import(securityPackage ?
+    pathToFileURL(resolve(securityPackage, securityEntry)) :
+    new URL('../apm_modules/richgo/forge-kit-skills/packages/security-review/' + securityEntry, import.meta.url));
   const { chromium } = await import(pathToFileURL(resolve(process.env.FORGE_PLAYWRIGHT)).href);
   const browser = await chromium.launch();
   try {
+    const security = await verifyWebsiteSecurity({ browser, html });
     const page = await browser.newPage();
     const observations = [];
     for (const { id, when, then } of expected.acceptance) {
@@ -221,6 +262,7 @@ async function verifyWebsite(specFile, output) {
     assert.deepEqual(JSON.parse(await readFile(join(output, 'candidate-evidence.json'))), report,
       'Candidate report does not match independent observations');
     await writeFile(join(output, 'requirements-verification.json'), json(report));
+    await writeFile(join(output, 'security-verification.json'), json(security));
     return observations;
   } finally {
     await browser.close();

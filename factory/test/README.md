@@ -40,13 +40,14 @@ A local unsigned receipt is suitable for development diagnostics but **must not*
 
 ## Running existing checks
 
-From the repository root:
+From the repository root, using APM 0.33.0. The planner runs from the restored architecture package.
 
 ```bash
-npm test
+apm install --target copilot --frozen
+node --test
 ```
 
-Inspect `package.json` for additional supported scripts before invoking them. For GitHub-hosted tests, use the workflows in `.github/workflows/` and follow `docs/hosted-rehearsal.md`. Credentialed live evaluations are separate from deterministic offline tests; do not silently substitute one for the other.
+For GitHub-hosted tests, use the workflows in `.github/workflows/` and follow `docs/hosted-rehearsal.md`. Credentialed live evaluations are separate from deterministic offline tests; do not silently substitute one for the other.
 
 ## Release gates and reporting
 
@@ -55,3 +56,12 @@ Inspect `package.json` for additional supported scripts before invoking them. Fo
 - Require independent verification and trusted signed provenance before any real promotion.
 - On every change to a package, policy, checker, architecture or workflow, rerun affected contracts plus reference E2E.
 - Preserve the complete failure and repair history for review.
+
+## Component runbooks
+
+- [Component checks](components.md)
+- [Architecture and product impact](architecture-impact.md)
+- [Typed Jev and local repair policy](jev.md)
+- [Independent website security](website-security.md)
+- [Hosted release, attestation and recovery](hosted-release.md)
+- [Qualification results](results.md)

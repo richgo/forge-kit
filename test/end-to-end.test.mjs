@@ -31,7 +31,7 @@ async function scenario(t, mode, source = paths.requirements) {
   const command = (...args) => exec(process.execPath, [
     fileURLToPath(cli),
     ...args, output, '--inputs', inputs,
-  ], { env: {}, timeout: 10000 });
+  ], { env: { FORGE_DECISION_PACKAGE: process.env.FORGE_DECISION_PACKAGE }, timeout: 10000 });
   const artifact = name => readFile(join(output, name), 'utf8');
   const receipt = async () => JSON.parse(await artifact('receipt.json'));
   return { inputs, output, command, artifact, receipt };

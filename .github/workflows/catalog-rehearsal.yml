@@ -33,7 +33,7 @@ on:
         type: boolean
         default: false
       publish_pages:
-        description: Publish and observe the public reference on GitHub Pages
+        description: Publish and observe the reference in a separate test repository
         type: boolean
         default: false
       catalog_fixture:
@@ -46,8 +46,8 @@ permissions: {}
 jobs:
   factory:
     name: Run the agentic factory
-    if: ${{ !inputs.catalog_fixture && inputs.website_release != 'current' && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF) }}
-    uses: richgo/forge-kit-skills/.github/workflows/forge-factory.lock.yml@ac4fb6835dfd485805f9cc60252d5f3266181b35
+    if: ${{ !inputs.catalog_fixture && (!inputs.publish_pages || github.repository != 'richgo/forge-kit') && inputs.website_release != 'current' && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF || (!inputs.publish_pages && github.actor == github.repository_owner)) }}
+    uses: richgo/forge-kit-skills/.github/workflows/forge-factory.lock.yml@66a34368048c9105da54e888673de0c21e59d258
     permissions:
       actions: read
       attestations: write
@@ -61,8 +61,8 @@ jobs:
 
   reference:
     name: Rehearse the legacy catalog fixture
-    if: ${{ inputs.catalog_fixture && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF) }}
-    uses: richgo/forge-kit-skills/.github/workflows/forge-reference.lock.yml@ac4fb6835dfd485805f9cc60252d5f3266181b35
+    if: ${{ inputs.catalog_fixture && !inputs.publish_pages && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF || (!inputs.publish_pages && github.actor == github.repository_owner)) }}
+    uses: richgo/forge-kit-skills/.github/workflows/forge-reference.lock.yml@66a34368048c9105da54e888673de0c21e59d258
     permissions:
       contents: read
       actions: read
@@ -72,7 +72,7 @@ jobs:
   result:
     name: Require evidence from the factory worker
     needs: factory
-    if: ${{ always() && !inputs.catalog_fixture }}
+    if: ${{ always() && (!inputs.catalog_fixture || inputs.publish_pages) }}
     runs-on: ubuntu-24.04
     permissions: {}
     timeout-minutes: 2

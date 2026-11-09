@@ -24,7 +24,10 @@ test('a product story travels through architecture, build, repair, deployment an
   ]);
   const cli = (command, ...args) => exec(process.execPath,
     ['factory/cli.mjs', command, output, '--inputs', inputs, '--story', 'STORY-001', ...args], {
-      env: { FORGE_REQUIREMENTS_PACKAGE: requirementsPackage },
+      env: {
+        FORGE_REQUIREMENTS_PACKAGE: requirementsPackage,
+        FORGE_DECISION_PACKAGE: process.env.FORGE_DECISION_PACKAGE,
+      },
       timeout: 15000,
     }
   );

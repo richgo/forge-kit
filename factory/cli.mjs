@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { gradeReview } from '../evals/review.mjs';
-import { apmManifest, assemble, requestJevRepair } from './integrations.mjs';
+import { apmManifest, assemble } from './assembly.mjs';
 import { readRequirementsEvidence, readVerifiedReceipt, run } from './slice.mjs';
 
 const [command, ...args] = process.argv.slice(2);
@@ -17,18 +17,26 @@ try {
       options.fault = { type: 'string' };
       options['faulty-first-build'] = { type: 'boolean' };
     }
+    if (command !== 'run') options['repair-advisor'] = { type: 'string' };
     if (command === 'grade') options.review = { type: 'string' };
     const { positionals, values } = parseArgs({ args, options, allowPositionals: true });
     const [output] = positionals;
     if (positionals.length !== 1) throw new Error('Supply exactly one output directory');
-    const selection = { inputDirectory: values.inputs, story: values.story };
+    const expectedRepairAdvisor = values['repair-advisor'];
+    if (expectedRepairAdvisor !== undefined && !['fixture-policy', 'typed-advisor'].includes(expectedRepairAdvisor)) {
+      throw new Error('Unknown expected repair advisor');
+    }
+    const selection = { inputDirectory: values.inputs, story: values.story, expectedRepairAdvisor };
     if (command === 'run') {
       const jevToken = process.env.FORGE_JEV_TOKEN;
       const receipt = await run(output, {
         faultyFirstBuild: Boolean(values['faulty-first-build']),
         fault: values.fault,
         ...selection,
-        recommendRepair: jevToken ? () => requestJevRepair(jevToken) : undefined,
+        recommendRepair: jevToken ? async (state, { timeoutMs }) => {
+          const { requestJevRepair } = await import('./decisions.mjs');
+          return requestJevRepair(jevToken, fetch, { state, timeoutMs });
+        } : undefined,
       });
       console.log(JSON.stringify(receipt.predicate, null, 2));
     } else if (command === 'requirements-evidence') {

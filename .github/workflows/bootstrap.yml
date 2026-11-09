@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       pages_drill:
-        description: Publish, probe, and roll back the synthetic Pages release
+        description: Publish and recover the synthetic release in a separate test repository
         type: boolean
         default: false
       pages_restore_only:
@@ -27,7 +27,7 @@ jobs:
     name: Preview Trail Desk architecture and website changes
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 8
     permissions:
       contents: read
     steps:
@@ -36,8 +36,22 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           persist-credentials: false
+      - name: Resolve the pinned architecture planner
+        id: architecture-package
+        run: |
+          set -euo pipefail
+          ref="$(node factory/cli.mjs assemble | jq -er '.packages.architecture')"
+          [[ "$ref" =~ ^richgo/forge-kit-skills/packages/architecture#[0-9a-f]{40}$ ]]
+          printf 'sha=%s\n' "${ref##*#}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: richgo/forge-kit-skills
+          ref: ${{ steps.architecture-package.outputs.sha }}
+          path: _architecture
+          persist-credentials: false
       - name: Generate both revisions from their tracked requirements
         env:
+          FORGE_ARCHITECTURE_PACKAGE: _architecture/packages/architecture
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
@@ -56,11 +70,42 @@ jobs:
           mkdir website-preview
           node "$base/factory/website.mjs" build "$prior" website-preview/before
           node factory/website.mjs build "$current" website-preview/after
+          node factory/impact.mjs \
+            --before-requirements "$prior" --before-calm website-preview/before/architecture.json --before-likec4 website-preview/before/architecture.c4 \
+            --after-requirements "$current" --after-calm website-preview/after/architecture.json --after-likec4 website-preview/after/architecture.c4 \
+            > website-preview/impact.json
+          node factory/impact.mjs \
+            --before-requirements "$base/examples/product-requirements.json" --before-calm "$base/architecture/slice.json" --before-likec4 "$base/architecture/slice.c4" \
+            --after-requirements examples/product-requirements.json --after-calm architecture/slice.json --after-likec4 architecture/slice.c4 \
+            > website-preview/readiness-impact.json
           for file in product-requirements.json architecture.json architecture.c4 index.html; do
             status=0
             git diff --no-index -- "website-preview/before/$file" "website-preview/after/$file" > "website-preview/$file.diff" || status=$?
             [[ "$status" -le 1 ]]
           done
+      - name: Validate the planned CALM and LikeC4 snapshots with the native tools
+        run: |
+          set -euo pipefail
+          [[ -d website-preview/after ]] || exit 0
+          for snapshot in website-preview/before website-preview/after; do
+            npx --yes --package @finos/calm-cli@1.68.0 calm validate --strict -a "$snapshot/architecture.json"
+            npx --yes --package likec4@1.60.0 likec4 validate "$snapshot"
+          done
+          bash factory/test/native-architecture.sh
+          npx --yes --package likec4@1.60.0 likec4 validate architecture
+      - name: Resolve the independent website security package
+        id: website-security
+        run: |
+          set -euo pipefail
+          ref="$(node factory/cli.mjs assemble | jq -er '.packages.securityReview')"
+          [[ "$ref" =~ ^richgo/forge-kit-skills/packages/security-review#[0-9a-f]{40}$ ]]
+          printf 'sha=%s\n' "${ref##*#}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: richgo/forge-kit-skills
+          ref: ${{ steps.website-security.outputs.sha }}
+          path: _security
+          persist-credentials: false
       - name: Replay Trail Desk acceptance in Chromium
         run: |
           set -euo pipefail
@@ -68,6 +113,7 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/website-browser" --no-fund --no-audit playwright@1.56.1
           "$RUNNER_TEMP/website-browser/node_modules/.bin/playwright" install chromium
           export FORGE_PLAYWRIGHT="$RUNNER_TEMP/website-browser/node_modules/playwright/index.mjs"
+          export FORGE_SECURITY_PACKAGE="_security/packages/security-review"
           node factory/website.mjs verify examples/trail-desk/current/product-requirements.json website-preview/after > website-preview/browser-evidence.json
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
@@ -76,18 +122,33 @@ jobs:
           if-no-files-found: ignore
 
   decision:
-    if: github.event_name == 'workflow_dispatch' && inputs.jev_probe && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
+    if: github.event_name == 'workflow_dispatch' && inputs.jev_probe && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF || github.actor == github.repository_owner)
     runs-on: ubuntu-24.04
     timeout-minutes: 3
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+      - name: Resolve the pinned repair decision policy
+        id: decision-package
+        run: |
+          set -euo pipefail
+          ref="$(node factory/cli.mjs assemble | jq -er '.packages.repairChecking')"
+          [[ "$ref" =~ ^richgo/forge-kit-skills/packages/repair-acceptance#[0-9a-f]{40}$ ]]
+          printf 'sha=%s\n' "${ref##*#}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: richgo/forge-kit-skills
+          ref: ${{ steps.decision-package.outputs.sha }}
+          path: _decisions
+          persist-credentials: false
+      - run: echo "FORGE_DECISION_PACKAGE=$GITHUB_WORKSPACE/_decisions/packages/repair-acceptance" >> "$GITHUB_ENV"
       - name: Exercise live Jev repair routing
         env:
           FORGE_JEV_TOKEN: ${{ secrets.FORGE_JEV_TOKEN }}
         run: node evals/jev-live.mjs > "$RUNNER_TEMP/jev-repair.json"
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: live-jev-repair
           path: ${{ runner.temp }}/jev-repair.json
@@ -100,6 +161,11 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+      - name: Require an isolated repository for Pages drills
+        if: github.event_name == 'workflow_dispatch' && inputs.pages_drill && github.repository == 'richgo/forge-kit'
+        run: |
+          echo '::error::Pages drills require a separate test repository. Use Forge Factory E2E for Trail Desk publication.'
+          exit 1
       - id: catalog
         name: Resolve the delivery package revision
         run: |
@@ -125,7 +191,36 @@ jobs:
           ref: ${{ steps.requirements.outputs.pin }}
           path: _requirements
           persist-credentials: false
+      - name: Resolve the pinned architecture planner
+        id: architecture-package
+        run: |
+          set -euo pipefail
+          ref="$(node factory/cli.mjs assemble | jq -er '.packages.architecture')"
+          [[ "$ref" =~ ^richgo/forge-kit-skills/packages/architecture#[0-9a-f]{40}$ ]]
+          printf 'sha=%s\n' "${ref##*#}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: richgo/forge-kit-skills
+          ref: ${{ steps.architecture-package.outputs.sha }}
+          path: _architecture
+          persist-credentials: false
+      - name: Resolve the pinned repair decision policy
+        id: decision-package
+        run: |
+          set -euo pipefail
+          ref="$(node factory/cli.mjs assemble | jq -er '.packages.repairChecking')"
+          [[ "$ref" =~ ^richgo/forge-kit-skills/packages/repair-acceptance#[0-9a-f]{40}$ ]]
+          printf 'sha=%s\n' "${ref##*#}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: richgo/forge-kit-skills
+          ref: ${{ steps.decision-package.outputs.sha }}
+          path: _decisions
+          persist-credentials: false
+      - run: echo "FORGE_DECISION_PACKAGE=$GITHUB_WORKSPACE/_decisions/packages/repair-acceptance" >> "$GITHUB_ENV"
       - run: node --test test/*.test.mjs
+        env:
+          FORGE_ARCHITECTURE_PACKAGE: _architecture/packages/architecture
       - name: Trace a product story through repair and independent acceptance
         env:
           FORGE_REQUIREMENTS_PACKAGE: _requirements/packages/requirements
@@ -143,18 +238,15 @@ jobs:
         run: |
           node --test _catalog/test/*.mjs
           node --test evals/catalog-scenarios.mjs
-      - name: Reproduce the catalog install from its lock
+      - name: Reproduce the frozen install and reject package tampering
         run: |
           set -euo pipefail
           scratch="$(mktemp -d)"
-          curl --fail --location --silent --show-error 'https://github.com/microsoft/apm/releases/download/v0.33.0/apm-linux-x86_64.tar.gz' -o "$scratch/apm.tar.gz"
+          curl --fail --location --silent --show-error --retry 2 -H 'Accept: application/octet-stream' 'https://api.github.com/repos/microsoft/apm/releases/assets/606234092?download=1' -o "$scratch/apm.tar.gz"
           printf '%s  %s\n' 'e6374402c74318f7c8bef97a90d8572d049fdab0dc3871492c6b0647ae9e881f' "$scratch/apm.tar.gz" | sha256sum --check
           tar -xzf "$scratch/apm.tar.gz" -C "$scratch"
           apm="$(find "$scratch" -type f -name apm -print -quit)"
-          mkdir "$scratch/project"
-          cp apm.yml apm.lock.yaml "$scratch/project/"
-          cd "$scratch/project"
-          "$apm" install --target copilot --frozen
+          bash factory/test/apm-integrity.sh "$apm"
       - name: Exercise clean and repaired builds
         run: |
           mkdir -p out
@@ -178,6 +270,20 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+      - name: Resolve the pinned repair decision policy
+        id: decision-package
+        run: |
+          set -euo pipefail
+          ref="$(node factory/cli.mjs assemble | jq -er '.packages.repairChecking')"
+          [[ "$ref" =~ ^richgo/forge-kit-skills/packages/repair-acceptance#[0-9a-f]{40}$ ]]
+          printf 'sha=%s\n' "${ref##*#}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: richgo/forge-kit-skills
+          ref: ${{ steps.decision-package.outputs.sha }}
+          path: _decisions
+          persist-credentials: false
+      - run: echo "FORGE_DECISION_PACKAGE=$GITHUB_WORKSPACE/_decisions/packages/repair-acceptance" >> "$GITHUB_ENV"
       - id: requirements
         run: |
           set -euo pipefail
@@ -219,7 +325,7 @@ jobs:
         run: |
           set -euo pipefail
           scratch="$(mktemp -d)"
-          curl --fail --location --silent --show-error 'https://github.com/danielmeppiel/apmx/releases/download/v0.8.0/apmx-0.8.0-linux-x86_64.tar.gz' -o "$scratch/apmx.tar.gz"
+          curl --fail --location --silent --show-error --retry 2 -H 'Accept: application/octet-stream' 'https://api.github.com/repos/danielmeppiel/apmx/releases/assets/699962963?download=1' -o "$scratch/apmx.tar.gz"
           printf '%s  %s\n' '524027362fe88728836ec6476d2c828d26b750d2067809c5741f27d950b93778' "$scratch/apmx.tar.gz" | sha256sum --check
           tar -xzf "$scratch/apmx.tar.gz" -C "$scratch"
           apmx="$(find "$scratch" -type f -name apmx -print -quit)"
@@ -252,23 +358,23 @@ jobs:
           cp pages/baseline/release.json proof/baseline.json
           cp pages/candidate/release.json proof/candidate.json
           [[ "$(jq -er '.release' proof/baseline.json)" != "$(jq -er '.release' proof/candidate.json)" ]]
-      - if: github.event_name == 'workflow_dispatch' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
+      - if: github.event_name == 'workflow_dispatch' && github.repository != 'richgo/forge-kit' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: pages-proof
           path: proof/
           if-no-files-found: error
-      - if: github.event_name == 'workflow_dispatch' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
+      - if: github.event_name == 'workflow_dispatch' && github.repository != 'richgo/forge-kit' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
         with:
           name: pages-baseline
           path: pages/baseline
-      - if: github.event_name == 'workflow_dispatch' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
+      - if: github.event_name == 'workflow_dispatch' && github.repository != 'richgo/forge-kit' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
         with:
           name: pages-candidate
           path: pages/candidate
-      - if: github.event_name == 'workflow_dispatch' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
+      - if: github.event_name == 'workflow_dispatch' && github.repository != 'richgo/forge-kit' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
         with:
           name: pages-rollback
@@ -277,7 +383,7 @@ jobs:
   pages:
     name: Publish, probe, and roll back on GitHub Pages
     needs: check
-    if: github.event_name == 'workflow_dispatch' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
+    if: github.event_name == 'workflow_dispatch' && github.repository != 'richgo/forge-kit' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     concurrency:

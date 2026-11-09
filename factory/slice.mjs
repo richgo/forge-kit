@@ -5,9 +5,9 @@ import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { pathToFileURL } from 'node:url';
-import { routeRepair } from './integrations.mjs';
 
 const execute = promisify(execFile);
+const approvedRepairBudget = Object.freeze({ timeLimitMs: 15000, spendLimitUnits: 1, retryCostUnits: 1 });
 const schema = 'https://calm.finos.org/release/1.2/meta/calm.json';
 const legacyPredicateType = 'https://github.com/richgo/forge-kit/attestations/bootstrap/v1';
 const predicateType = 'https://github.com/richgo/forge-kit/attestations/bootstrap/v2';
@@ -139,10 +139,10 @@ function observationFor(requirements, implementation) {
   };
 }
 
-async function observe(bytes, requirements, implementation) {
+async function observe(bytes, requirements, implementation, timeout = 3000) {
   assert.ok(allowedCandidate(bytes, implementation), 'Candidate is outside the architecture acceptance template');
   const observed = await execute(process.execPath, ['--input-type=module', '--eval', bytes.toString('utf8')], {
-    env: {}, timeout: 3000, maxBuffer: 1024,
+    env: {}, timeout, maxBuffer: 1024,
   });
   assert.deepEqual(observed, observationFor(requirements, implementation), 'Runtime acceptance does not match the requirement and architecture');
   return observed;
@@ -167,10 +167,14 @@ export async function run(output, {
   inputDirectory,
   story,
   maxRepairs = 1,
-  recommendRepair = () => ({ choice: 'retry-build', probability: 1 }),
+  repairBudget = approvedRepairBudget,
+  recommendRepair,
 } = {}) {
   assert.ok(maxRepairs === 0 || maxRepairs === 1, 'Fixture allows at most one repair');
   assert.ok(fault === undefined || ['wrong-output-once', 'wrong-output-always'].includes(fault), 'Unknown fixture fault');
+  assert.ok(Number.isSafeInteger(repairBudget.timeLimitMs) && repairBudget.timeLimitMs > 0 &&
+    Number.isSafeInteger(repairBudget.spendLimitUnits) && repairBudget.spendLimitUnits >= 0 &&
+    Number.isSafeInteger(repairBudget.retryCostUnits) && repairBudget.retryCostUnits > 0, 'Invalid repair budget');
   const stages = [];
   const advance = stage => {
     assert.ok(transitions[stages.at(-1) ?? 'start']?.includes(stage), 'Illegal stage transition');
@@ -189,7 +193,25 @@ export async function run(output, {
   const buildPath = join(output, 'candidate.mjs');
   const deployedPath = join(output, 'deployed.mjs');
   const rejected = [];
+  const decisions = [];
   let repairs = 0;
+  let spentUnits = 0;
+  let repairStarted;
+  const budget = () => ({
+    timeLimitMs: repairBudget.timeLimitMs,
+    spendLimitUnits: repairBudget.spendLimitUnits,
+    retryCostUnits: repairBudget.retryCostUnits,
+    used: repairs,
+    limit: maxRepairs,
+    spentUnits,
+    elapsedMs: repairStarted === undefined ? 0 : Math.floor(performance.now() - repairStarted),
+  });
+  const persistDecisions = () => writeFile(join(output, 'repair-decisions.json'), asJson(decisions));
+  const escalate = async message => {
+    advance('escalated');
+    await writeFile(join(output, 'state.json'), asJson(stages));
+    throw new Error(message);
+  };
   for (;;) {
     const inject = fault === 'wrong-output-always' || (fault === 'wrong-output-once' && repairs === 0);
     const wrongOutput = requirements.expectedOutput === 'broken' ? 'unavailable' : 'broken';
@@ -197,30 +219,60 @@ export async function run(output, {
     await writeFile(buildPath, candidate(inject ? wrongOutput : requirements.expectedOutput, implementation));
     advance('test');
     const built = await readFile(buildPath);
+    let passed = false;
     try {
-      await observe(built, requirements, implementation);
-      break;
+      const remaining = repairBudget.timeLimitMs - budget().elapsedMs;
+      await observe(built, requirements, implementation, repairs ? Math.max(1, Math.min(3000, remaining)) : 3000);
+      passed = true;
     } catch (error) {
+      if (repairs && budget().elapsedMs >= repairBudget.timeLimitMs) {
+        await escalate('Build repair deadline exceeded');
+      }
       // Unexpected infrastructure failures are not eligible for build repair.
       if (error.code !== 'ERR_ASSERTION') throw error;
     }
+    if (repairs && budget().elapsedMs >= repairBudget.timeLimitMs) {
+      await escalate('Build repair deadline exceeded');
+    }
+    if (passed) break;
     const name = repairs === 0 ? 'rejected.mjs' : 'rejected-2.mjs';
     await writeFile(join(output, name), built, { flag: 'wx' });
     rejected.push({ name, digest: digest(built) });
-    let recommendation;
-    if (repairs < maxRepairs) {
-      try {
-        recommendation = await recommendRepair();
-      } catch {
-        recommendation = null;
+    const { repairBudgetAllowsRetry, routeRepair } = await import('./decisions.mjs');
+    repairStarted ??= performance.now();
+    let recommendation = null;
+    let advisor = 'budget-exhausted';
+    let route = 'escalate';
+    if (repairBudgetAllowsRetry(budget())) {
+      if (recommendRepair) {
+        advisor = 'typed-advisor';
+        const state = { failure: 'readiness-mismatch', used: repairs, limit: maxRepairs };
+        const timeoutMs = Math.max(1, Math.min(5000, repairBudget.timeLimitMs - budget().elapsedMs));
+        let timer;
+        try {
+          const expiry = new Promise(resolve => { timer = setTimeout(resolve, timeoutMs, null); });
+          const signal = await Promise.race([expiry, Promise.resolve().then(() => recommendRepair(state, { timeoutMs }))]);
+          if (['retry-build', 'escalate'].includes(signal?.choice) &&
+              Number.isFinite(signal.probability) && signal.probability >= 0 && signal.probability <= 1) {
+            recommendation = { choice: signal.choice, probability: signal.probability };
+          }
+        } catch {
+          recommendation = null;
+        } finally {
+          clearTimeout(timer);
+        }
+        route = routeRepair(recommendation, budget());
+      } else {
+        // The local fixture knows exactly which fault it injected. No provider is consulted.
+        advisor = 'fixture-policy';
+        if (inject && repairBudgetAllowsRetry(budget())) route = 'retry-build';
       }
     }
-    if (routeRepair(recommendation, { used: repairs, limit: maxRepairs }) === 'escalate') {
-      advance('escalated');
-      await writeFile(join(output, 'state.json'), asJson(stages));
-      throw new Error('Build rejected and repair denied by policy');
-    }
+    decisions.push({ rejected: rejected.at(-1), advisor, recommendation, budget: budget(), route });
+    await persistDecisions();
+    if (route !== 'retry-build') await escalate('Build rejected and repair denied by policy');
     advance('repair');
+    spentUnits += repairBudget.retryCostUnits;
     repairs++;
   }
 
@@ -245,7 +297,40 @@ export async function run(output, {
   return receipt;
 }
 
-export async function readVerifiedReceipt(output, { inputDirectory, story } = {}) {
+async function verifyRepairDecisions(output, rejected, expectedAdvisor) {
+  let report;
+  try {
+    report = JSON.parse(await readFile(join(output, 'repair-decisions.json')));
+  } catch (error) {
+    if (error.code === 'ENOENT' && (!expectedAdvisor || !rejected.length)) return;
+    throw error;
+  }
+  assert.ok(Array.isArray(report) && report.length === rejected.length, 'Unexpected repair decision count');
+  if (report.length === 0) return;
+  const { repairBudgetAllowsRetry, routeRepair } = await import('./decisions.mjs');
+  for (const [index, entry] of report.entries()) {
+    assert.deepEqual(entry.rejected, rejected[index], 'Repair decision refers to a different rejected artifact');
+    const { advisor, recommendation, budget, route } = entry;
+    assert.ok(budget?.used === index && budget.limit === 1 &&
+      budget.spentUnits === index * budget.retryCostUnits && repairBudgetAllowsRetry(budget),
+    'Repair decision violates the retry budget');
+    if (expectedAdvisor) {
+      assert.equal(advisor, expectedAdvisor, 'Unexpected repair advisor');
+      for (const [key, limit] of Object.entries(approvedRepairBudget)) {
+        assert.equal(budget[key], limit, 'Unexpected repair budget for ' + key);
+      }
+    }
+    if (advisor === 'fixture-policy') {
+      assert.equal(recommendation, null, 'The deterministic fixture does not consult an advisor');
+    } else {
+      assert.equal(advisor, 'typed-advisor', 'Unknown repair advisor');
+      assert.equal(routeRepair(recommendation, budget), 'retry-build', 'Repair advice does not authorize a retry');
+    }
+    assert.equal(route, 'retry-build', 'A successful repaired build requires an authorized retry');
+  }
+}
+
+export async function readVerifiedReceipt(output, { inputDirectory, story, expectedRepairAdvisor } = {}) {
   const input = await loadInputs(inputDirectory, story);
   const { requirements, implementation } = input;
   const receipt = JSON.parse(await readFile(join(output, 'receipt.json'), 'utf8'));
@@ -258,7 +343,7 @@ export async function readVerifiedReceipt(output, { inputDirectory, story } = {}
   const stages = ['requirements', 'architecture', 'plan', 'build', 'test'];
   if (repairs) stages.push('repair', 'build', 'test');
   stages.push('deploy', 'observe', 'evidence', 'review-ready');
-  if (receipt.predicateType === legacyPredicateType && !inputDirectory && implementation.mode === 'direct') {
+  if (receipt.predicateType === legacyPredicateType && !expectedRepairAdvisor && !inputDirectory && implementation.mode === 'direct') {
     assert.deepEqual(receipt, {
       _type: 'https://in-toto.io/Statement/v1',
       subject: [{ name: 'deployed.mjs', digest: digest(deployed) }],
@@ -276,6 +361,7 @@ export async function readVerifiedReceipt(output, { inputDirectory, story } = {}
     await assert.rejects(observe(bytes, requirements, implementation), { code: 'ERR_ASSERTION' },
       'Rejected candidate satisfies acceptance');
   }
+  await verifyRepairDecisions(output, rejected, expectedRepairAdvisor);
   assert.deepEqual(receipt, statement(input, deployed, stages, rejected, observed));
   if (input.product) {
     const plan = JSON.parse(await readFile(join(output, 'plan.json')));
@@ -284,9 +370,9 @@ export async function readVerifiedReceipt(output, { inputDirectory, story } = {}
   return receipt;
 }
 
-export async function readRequirementsEvidence(output, { inputDirectory, story }) {
+export async function readRequirementsEvidence(output, { inputDirectory, story, expectedRepairAdvisor }) {
   assert.ok(inputDirectory && story, 'Supply --inputs and --story for requirements evidence');
-  const receipt = await readVerifiedReceipt(output, { inputDirectory, story });
+  const receipt = await readVerifiedReceipt(output, { inputDirectory, story, expectedRepairAdvisor });
   const product = await requirementsPackage();
   const requirements = await readFile(join(inputDirectory, 'product-requirements.json'));
   const plan = JSON.parse(await readFile(join(output, 'plan.json')));
