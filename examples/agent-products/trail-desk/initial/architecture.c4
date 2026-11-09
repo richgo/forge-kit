@@ -1,0 +1,19 @@
+// Generated from CALM sha256:030ad8990f80a9d70e9432af99060ed7facb72a73283f631fef5add6c7e6234c
+specification {
+  element component
+}
+model {
+  n_node__runtime = component "Node.js runtime"
+  n_trail__catalog = component "Trail catalog"
+  n_trail__cli = component "Trail Desk CLI"
+  n_trail__visitor = component "Trail visitor"
+  n_trail__cli -> n_trail__catalog "select_trails (connects)"
+  n_trail__catalog -> n_node__runtime "trail_deployment (deployed-in)"
+  n_trail__cli -> n_node__runtime "trail_deployment (deployed-in)"
+  n_trail__visitor -> n_trail__cli "visit_catalog (interacts)"
+}
+views {
+  view index {
+    include *
+  }
+}

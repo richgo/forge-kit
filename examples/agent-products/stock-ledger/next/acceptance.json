@@ -1,0 +1,178 @@
+[
+  {
+    "id": "AC-201",
+    "story": "STORY-201",
+    "input": {
+      "op": "balance",
+      "movements": [
+        {
+          "sku": "B2",
+          "delta": 10
+        },
+        {
+          "sku": "A1",
+          "delta": 2
+        },
+        {
+          "sku": "B2",
+          "delta": -4
+        },
+        {
+          "sku": "A1",
+          "delta": -2
+        }
+      ]
+    },
+    "expected": {
+      "balances": [
+        {
+          "sku": "A1",
+          "onHand": 0
+        },
+        {
+          "sku": "B2",
+          "onHand": 6
+        }
+      ]
+    }
+  },
+  {
+    "id": "AC-202",
+    "story": "STORY-201",
+    "input": {
+      "op": "balance",
+      "movements": []
+    },
+    "expected": {
+      "balances": []
+    }
+  },
+  {
+    "id": "AC-203",
+    "story": "STORY-202",
+    "input": {
+      "op": "balance",
+      "movements": [
+        {
+          "sku": "C3",
+          "delta": -1
+        },
+        {
+          "sku": "C3",
+          "delta": 5
+        }
+      ]
+    },
+    "expected": {
+      "error": "NEGATIVE_STOCK",
+      "sku": "C3"
+    }
+  },
+  {
+    "id": "AC-204",
+    "story": "STORY-202",
+    "input": {
+      "op": "balance",
+      "movements": [
+        {
+          "sku": "X1",
+          "delta": true
+        }
+      ]
+    },
+    "expected": {
+      "error": "INVALID_REQUEST"
+    }
+  },
+  {
+    "id": "AC-205",
+    "story": "STORY-202",
+    "input": {
+      "op": "snapshot",
+      "movements": []
+    },
+    "expected": {
+      "error": "INVALID_REQUEST"
+    }
+  },
+  {
+    "id": "AC-206",
+    "story": "STORY-203",
+    "input": {
+      "op": "reorder",
+      "movements": [
+        {
+          "sku": "B2",
+          "delta": 10
+        },
+        {
+          "sku": "A1",
+          "delta": 2
+        },
+        {
+          "sku": "B2",
+          "delta": -4
+        },
+        {
+          "sku": "A1",
+          "delta": -2
+        }
+      ],
+      "targets": {
+        "Z9": 3,
+        "B2": 6,
+        "A1": 4
+      }
+    },
+    "expected": {
+      "reorder": [
+        {
+          "sku": "A1",
+          "quantity": 4
+        },
+        {
+          "sku": "Z9",
+          "quantity": 3
+        }
+      ]
+    }
+  },
+  {
+    "id": "AC-207",
+    "story": "STORY-203",
+    "input": {
+      "op": "reorder",
+      "movements": [
+        {
+          "sku": "B2",
+          "delta": 1
+        },
+        {
+          "sku": "B2",
+          "delta": -2
+        }
+      ],
+      "targets": {
+        "B2": 5
+      }
+    },
+    "expected": {
+      "error": "NEGATIVE_STOCK",
+      "sku": "B2"
+    }
+  },
+  {
+    "id": "AC-208",
+    "story": "STORY-203",
+    "input": {
+      "op": "reorder",
+      "movements": [],
+      "targets": {
+        "A1": false
+      }
+    },
+    "expected": {
+      "error": "INVALID_REQUEST"
+    }
+  }
+]

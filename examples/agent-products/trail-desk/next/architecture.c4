@@ -1,0 +1,22 @@
+// Generated from CALM sha256:4837f7ef1b7f1407ffb7a6ac399edac399b28a5198cc8a8e3212c7f4e3b2752d
+specification {
+  element component
+}
+model {
+  n_distance__order = component "Distance ordering"
+  n_node__runtime = component "Node.js runtime"
+  n_trail__catalog = component "Trail catalog"
+  n_trail__cli = component "Trail Desk CLI"
+  n_trail__visitor = component "Trail visitor"
+  n_distance__order -> n_node__runtime "distance_deployment (deployed-in)"
+  n_trail__catalog -> n_distance__order "order_trails (connects)"
+  n_trail__cli -> n_trail__catalog "select_trails (connects)"
+  n_trail__catalog -> n_node__runtime "trail_deployment (deployed-in)"
+  n_trail__cli -> n_node__runtime "trail_deployment (deployed-in)"
+  n_trail__visitor -> n_trail__cli "visit_catalog (interacts)"
+}
+views {
+  view index {
+    include *
+  }
+}

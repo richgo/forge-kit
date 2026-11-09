@@ -1,0 +1,21 @@
+// Generated from CALM sha256:d1bbfa73e0effa22bbc2a7a3aa3f3eaf2efe52977ba6695f0480aec1cb9fc8ba
+specification {
+  element component
+}
+model {
+  n_movement__journal = component "Movement journal"
+  n_python__runtime = component "Python runtime"
+  n_stock__clerk = component "Stockroom clerk"
+  n_stock__cli = component "Stock Ledger CLI"
+  n_stock__ledger = component "Movement replay"
+  n_stock__ledger -> n_movement__journal "read_movements (connects)"
+  n_stock__cli -> n_stock__ledger "replay_stock (connects)"
+  n_stock__cli -> n_python__runtime "stock_deployment (deployed-in)"
+  n_stock__ledger -> n_python__runtime "stock_deployment (deployed-in)"
+  n_stock__clerk -> n_stock__cli "submit_inventory (interacts)"
+}
+views {
+  view index {
+    include *
+  }
+}

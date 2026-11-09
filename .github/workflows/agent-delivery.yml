@@ -1,0 +1,209 @@
+name: Agent-authored product delivery
+
+on:
+  workflow_call:
+    secrets:
+      COPILOT_GITHUB_TOKEN:
+        required: true
+
+permissions: {}
+
+jobs:
+  produce:
+    name: Author both revisions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - product: trail-desk
+            runtime: node
+          - product: stock-ledger
+            runtime: python
+    env:
+      PRODUCT: ${{ matrix.product }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - name: Fetch the immutable execution image
+        env:
+          PRODUCT_RUNTIME: ${{ matrix.runtime }}
+        run: |
+          set -euo pipefail
+          image="$(node --input-type=module -e 'import {runtimeImages} from "./factory/agent-verifier.mjs"; console.log(runtimeImages[process.argv[1]])' "$PRODUCT_RUNTIME")"
+          docker pull "$image"
+      - name: Install pinned GitHub Copilot CLI
+        run: npm install --global --no-audit --no-fund @github/copilot@1.0.107
+      - name: Plan, implement, review and preflight both revisions
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          node factory/agent-delivery.mjs produce "examples/agent-products/$PRODUCT" out/agent-audit.jsonl out/candidates.json
+      - name: Preserve agent proposals and decision evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: agent-producer-${{ matrix.product }}
+          path: out/
+          if-no-files-found: warn
+
+  verify:
+    name: Independently validate architecture and accept both revisions
+    needs: produce
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - product: trail-desk
+            runtime: node
+          - product: stock-ledger
+            runtime: python
+    env:
+      PRODUCT: ${{ matrix.product }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - name: Fetch the immutable execution image
+        env:
+          PRODUCT_RUNTIME: ${{ matrix.runtime }}
+        run: |
+          set -euo pipefail
+          image="$(node --input-type=module -e 'import {runtimeImages} from "./factory/agent-verifier.mjs"; console.log(runtimeImages[process.argv[1]])' "$PRODUCT_RUNTIME")"
+          docker pull "$image"
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: agent-producer-${{ matrix.product }}
+          path: out
+      - name: Validate reviewed CALM and LikeC4 snapshots with native tools
+        run: |
+          set -euo pipefail
+          for revision in initial next; do
+            snapshot="examples/agent-products/$PRODUCT/$revision"
+            npx --yes --package @finos/calm-cli@1.68.0 calm validate --strict -a "$snapshot/architecture.json"
+            npx --yes --package likec4@1.60.0 likec4 validate "$snapshot"
+          done
+      - name: Recompute impact and independently execute held-out cases
+        run: node factory/agent-delivery.mjs verify "examples/agent-products/$PRODUCT" out/candidates.json out/verified.json
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: agent-verified-${{ matrix.product }}
+          path: out/verified.json
+          if-no-files-found: error
+
+  sign:
+    name: Attest exact verified product bundle
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - product: trail-desk
+            runtime: node
+          - product: stock-ledger
+            runtime: python
+    steps:
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: agent-verified-${{ matrix.product }}
+          path: out
+      - uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26
+        id: signature
+        with:
+          subject-path: out/verified.json
+          predicate-type: https://github.com/richgo/forge-kit/attestations/agent-product/v1
+          predicate: '{"product":"${{ matrix.product }}","source":"${{ github.sha }}","acceptance":"independent"}'
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: agent-signature-${{ matrix.product }}
+          path: ${{ steps.signature.outputs.bundle-path }}
+          if-no-files-found: error
+
+  release:
+    name: Authenticate and rehearse release, fault and recovery
+    needs: sign
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      attestations: read
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - product: trail-desk
+            runtime: node
+          - product: stock-ledger
+            runtime: python
+    env:
+      PRODUCT: ${{ matrix.product }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - name: Fetch the immutable execution image
+        env:
+          PRODUCT_RUNTIME: ${{ matrix.runtime }}
+        run: |
+          set -euo pipefail
+          image="$(node --input-type=module -e 'import {runtimeImages} from "./factory/agent-verifier.mjs"; console.log(runtimeImages[process.argv[1]])' "$PRODUCT_RUNTIME")"
+          docker pull "$image"
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: agent-verified-${{ matrix.product }}
+          path: out
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: agent-signature-${{ matrix.product }}
+          path: signature
+      - name: Verify the signed bundle and reject changed bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          bundles=(signature/*.json)
+          [[ "${#bundles[@]}" == 1 && -f "${bundles[0]}" ]]
+          args=(--bundle "${bundles[0]}" --repo "$GITHUB_REPOSITORY"
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/agent-delivery.yml"
+            --signer-digest "$GITHUB_SHA" --source-ref "$GITHUB_REF" --source-digest "$GITHUB_SHA"
+            --deny-self-hosted-runners
+            --predicate-type https://github.com/richgo/forge-kit/attestations/agent-product/v1 --format json)
+          gh attestation verify out/verified.json "${args[@]}" > out/signature-verification.json
+          jq -e --arg product "$PRODUCT" --arg source "$GITHUB_SHA" '
+            any(.[].verificationResult.statement.predicate;
+              . == {product: $product, source: $source, acceptance: "independent"})
+          ' out/signature-verification.json > /dev/null
+          cp out/verified.json out/changed.json
+          printf 'tampered\n' >> out/changed.json
+          if gh attestation verify out/changed.json "${args[@]}" > /dev/null 2> out/tamper-rejection.log; then
+            echo '::error::Changed bundle passed signature verification'
+            exit 1
+          fi
+      - name: Promote both revisions, inject a failure and re-observe the restored release
+        run: node factory/agent-delivery.mjs exercise "examples/agent-products/$PRODUCT" out/verified.json out/recovery.json
+      - name: Preserve isolated release evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: agent-release-${{ matrix.product }}
+          path: |
+            out/signature-verification.json
+            out/tamper-rejection.log
+            out/recovery.json
+          if-no-files-found: warn

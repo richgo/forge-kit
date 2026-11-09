@@ -1,0 +1,219 @@
+{
+  "$schema": "https://calm.finos.org/release/1.2/meta/calm.json",
+  "nodes": [
+    {
+      "unique-id": "stock_clerk",
+      "node-type": "actor",
+      "name": "Stockroom clerk",
+      "description": "Reviews balances and restocking needs."
+    },
+    {
+      "unique-id": "stock_cli",
+      "node-type": "service",
+      "name": "Stock Ledger CLI",
+      "description": "Python command-line request and response router.",
+      "interfaces": [
+        {
+          "unique-id": "ledger_request"
+        }
+      ]
+    },
+    {
+      "unique-id": "stock_ledger",
+      "node-type": "service",
+      "name": "Movement replay",
+      "description": "Replays stock movements into a balance snapshot.",
+      "interfaces": [
+        {
+          "unique-id": "balance_snapshot"
+        }
+      ]
+    },
+    {
+      "unique-id": "movement_journal",
+      "node-type": "data-asset",
+      "name": "Movement journal",
+      "description": "Caller-owned ordered stock movements supplied with each request.",
+      "interfaces": [
+        {
+          "unique-id": "journal_rows"
+        }
+      ]
+    },
+    {
+      "unique-id": "python_runtime",
+      "node-type": "system",
+      "name": "Python runtime",
+      "description": "Runs the ledger modules with Python standard library."
+    },
+    {
+      "unique-id": "reorder_planner",
+      "node-type": "service",
+      "name": "Reorder planner",
+      "description": "Compares stock balances against target quantities.",
+      "interfaces": [
+        {
+          "unique-id": "reorder_quantities"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "unique-id": "submit_inventory",
+      "description": "Submit a stock journal and request a balance snapshot.",
+      "relationship-type": {
+        "interacts": {
+          "actor": "stock_clerk",
+          "nodes": [
+            "stock_cli"
+          ]
+        }
+      }
+    },
+    {
+      "unique-id": "replay_stock",
+      "description": "Replay the ordered journal.",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "stock_cli"
+          },
+          "destination": {
+            "node": "stock_ledger",
+            "interfaces": [
+              "balance_snapshot"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "unique-id": "read_movements",
+      "description": "Consume movement records in supplied order.",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "stock_ledger"
+          },
+          "destination": {
+            "node": "movement_journal",
+            "interfaces": [
+              "journal_rows"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "unique-id": "plan_reorder",
+      "description": "Request reorder quantities for validated targets.",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "stock_cli"
+          },
+          "destination": {
+            "node": "reorder_planner",
+            "interfaces": [
+              "reorder_quantities"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "unique-id": "use_balances",
+      "description": "Use the validated balance snapshot.",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "reorder_planner"
+          },
+          "destination": {
+            "node": "stock_ledger",
+            "interfaces": [
+              "balance_snapshot"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "unique-id": "stock_deployment",
+      "description": "Deploy the CLI and ledger replay together.",
+      "relationship-type": {
+        "deployed-in": {
+          "container": "python_runtime",
+          "nodes": [
+            "stock_cli",
+            "stock_ledger"
+          ]
+        }
+      }
+    },
+    {
+      "unique-id": "reorder_deployment",
+      "description": "Deploy the new reorder planner on the existing runtime.",
+      "relationship-type": {
+        "deployed-in": {
+          "container": "python_runtime",
+          "nodes": [
+            "reorder_planner"
+          ]
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "unique-id": "stock_balance",
+      "name": "Review current stock",
+      "description": "Produce balances from the ordered journal.",
+      "transitions": [
+        {
+          "relationship-unique-id": "submit_inventory",
+          "sequence-number": 1,
+          "description": "Supply journal data."
+        },
+        {
+          "relationship-unique-id": "replay_stock",
+          "sequence-number": 2,
+          "description": "Calculate running balances."
+        },
+        {
+          "relationship-unique-id": "read_movements",
+          "sequence-number": 3,
+          "description": "Validate and apply the movement records."
+        }
+      ]
+    },
+    {
+      "unique-id": "reorder_inventory",
+      "name": "Plan inventory restocks",
+      "description": "Derive a purchase quantity for each target SKU below its target balance.",
+      "transitions": [
+        {
+          "relationship-unique-id": "submit_inventory",
+          "sequence-number": 1,
+          "description": "Supply journal data and reorder targets."
+        },
+        {
+          "relationship-unique-id": "plan_reorder",
+          "sequence-number": 2,
+          "description": "Request reorder quantities."
+        },
+        {
+          "relationship-unique-id": "use_balances",
+          "sequence-number": 3,
+          "description": "Read replayed balances."
+        },
+        {
+          "relationship-unique-id": "read_movements",
+          "sequence-number": 4,
+          "description": "Validate and apply the movement records."
+        }
+      ]
+    }
+  ]
+}

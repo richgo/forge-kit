@@ -19,10 +19,25 @@ on:
         type: boolean
         default: false
 
+      agent_products:
+        description: Qualify agent-authored products in isolated runtimes
+        type: boolean
+        default: false
+
 permissions:
   contents: read
 
 jobs:
+  agent-products:
+    if: github.event_name == 'workflow_dispatch' && inputs.agent_products && github.actor == github.repository_owner
+    uses: ./.github/workflows/agent-delivery.yml
+    permissions:
+      attestations: write
+      contents: read
+      id-token: write
+    secrets:
+      COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+
   website-preview:
     name: Preview Trail Desk architecture and website changes
     if: github.event_name == 'pull_request'
