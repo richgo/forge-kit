@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       pages_drill:
-        description: Publish, probe, and roll back the synthetic Pages release
+        description: Publish and recover the synthetic release in a separate test repository
         type: boolean
         default: false
       pages_restore_only:
@@ -161,6 +161,11 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+      - name: Require an isolated repository for Pages drills
+        if: github.event_name == 'workflow_dispatch' && inputs.pages_drill && github.repository == 'richgo/forge-kit'
+        run: |
+          echo '::error::Pages drills require a separate test repository. Use Forge Factory E2E for Trail Desk publication.'
+          exit 1
       - id: catalog
         name: Resolve the delivery package revision
         run: |
@@ -353,23 +358,23 @@ jobs:
           cp pages/baseline/release.json proof/baseline.json
           cp pages/candidate/release.json proof/candidate.json
           [[ "$(jq -er '.release' proof/baseline.json)" != "$(jq -er '.release' proof/candidate.json)" ]]
-      - if: github.event_name == 'workflow_dispatch' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
+      - if: github.event_name == 'workflow_dispatch' && github.repository != 'richgo/forge-kit' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: pages-proof
           path: proof/
           if-no-files-found: error
-      - if: github.event_name == 'workflow_dispatch' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
+      - if: github.event_name == 'workflow_dispatch' && github.repository != 'richgo/forge-kit' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
         with:
           name: pages-baseline
           path: pages/baseline
-      - if: github.event_name == 'workflow_dispatch' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
+      - if: github.event_name == 'workflow_dispatch' && github.repository != 'richgo/forge-kit' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
         with:
           name: pages-candidate
           path: pages/candidate
-      - if: github.event_name == 'workflow_dispatch' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
+      - if: github.event_name == 'workflow_dispatch' && github.repository != 'richgo/forge-kit' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
         with:
           name: pages-rollback
@@ -378,7 +383,7 @@ jobs:
   pages:
     name: Publish, probe, and roll back on GitHub Pages
     needs: check
-    if: github.event_name == 'workflow_dispatch' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
+    if: github.event_name == 'workflow_dispatch' && github.repository != 'richgo/forge-kit' && inputs.pages_drill && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF)
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     concurrency:

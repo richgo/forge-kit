@@ -146,7 +146,7 @@ node factory/cli.mjs run out/repaired --faulty-first-build
 node factory/cli.mjs verify out/repaired
 ```
 
-- **Factory bootstrap** runs the reference checks and replays acceptance in a separate job. The optional Pages drill publishes a synthetic candidate, probes the live release, and restores the verified baseline. [Hosted rehearsal](docs/hosted-rehearsal.md)
+- **Factory bootstrap** runs the reference checks and replays acceptance in a separate job. The optional Pages drill uses a separate test repository to publish a synthetic candidate, probe it, and restore the verified baseline. [Hosted rehearsal](docs/hosted-rehearsal.md)
 - **APMX package rehearsal** exercises a pinned execution contract, an independent check, and signed evidence. **Factory rehearsals** with `catalog_fixture` calls the pinned GH-AW workflow and exercises a separate signed handoff, local promotion, rollback, and one repair. [APMX workflow](.github/workflows/apmx-rehearsal.yml) · [Catalog workflow](.github/workflows/catalog-rehearsal.yml)
 - **Optional Jev routing** uses `FORGE_JEV_TOKEN` to opt into a live choice call on an eligible fixture rejection. The fixture permits one retry at a selected-label probability of at least 0.8. [TypeSafe decision API](https://github.com/TypeSafeAI/typesafe-router/blob/main/REFERENCE.md)
 

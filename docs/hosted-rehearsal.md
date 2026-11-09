@@ -61,7 +61,7 @@ Select `catalog_fixture` to exercise the separate legacy catalog workflow.
 ## Component rehearsals
 
 
-Enable GitHub Pages with **GitHub Actions** as its source and restrict the
+Pages publication in **Factory rehearsals** and the bootstrap drill requires a separate test repository. Enable GitHub Pages there with **GitHub Actions** as its source and restrict the
 `github-pages` deployment environment to the approved release branch.
 **Factory bootstrap** runs the tests, verifies the two synthetic story
 revisions in an independent job, and builds their public static release

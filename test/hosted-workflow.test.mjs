@@ -14,3 +14,11 @@ test('production and no-deploy qualification share the same attested worker pin'
   assert.match(workflow, /name: factory-release-proof/);
   assert.match(workflow, /test -s proof\/verified-signature\.json/);
 });
+
+test('rehearsal publication cannot overwrite the production Pages site', async () => {
+  const bootstrap = await readFile(new URL('../.github/workflows/bootstrap.yml', import.meta.url), 'utf8');
+  const rehearsal = await readFile(new URL('../.github/workflows/catalog-rehearsal.yml', import.meta.url), 'utf8');
+  assert.match(bootstrap, /Require an isolated repository for Pages drills/);
+  assert.match(bootstrap.split('\n  pages:\n')[1], /github.repository != 'richgo\/forge-kit' && inputs.pages_drill/);
+  assert.match(rehearsal, /\(!inputs.publish_pages \|\| github.repository != 'richgo\/forge-kit'\)/);
+});
