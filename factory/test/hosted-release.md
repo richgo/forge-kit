@@ -64,3 +64,9 @@ break-glass publication, set `allow_publish_without_rollback=true` and
 leave `rollback_run_id` empty. This explicitly waives automated rollback
 for that release. The repository's `github-pages` environment controls
 deployment access.
+
+For isolated worker qualification, the repository owner can also set
+`qualify_worker_only=true` with `publish_pages=false`. This runs the
+same pinned worker, APM restore, Copilot APMX contract, independent
+checks and signature tests. It omits the GH-AW dispatcher and never
+qualifies a Pages deployment.

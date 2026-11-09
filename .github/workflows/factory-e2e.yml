@@ -12,6 +12,10 @@ on:
         description: Publish and observe the verified product on GitHub Pages
         type: boolean
         default: false
+      qualify_worker_only:
+        description: Check the pinned worker directly without GH-AW or Pages
+        type: boolean
+        default: false
       rollback_run_id:
         description: Successful main release run whose signed archive is still active
         type: string
@@ -27,7 +31,7 @@ permissions: {}
 jobs:
   factory:
     name: Run the agentic factory
-    if: ${{ (github.ref == 'refs/heads/main' || (!inputs.publish_pages && github.actor == github.repository_owner)) && inputs.website_release == 'current' }}
+    if: ${{ (github.ref == 'refs/heads/main' || (!inputs.publish_pages && github.actor == github.repository_owner)) && inputs.website_release == 'current' && !inputs.qualify_worker_only }}
     uses: richgo/forge-kit-skills/.github/workflows/forge-factory.lock.yml@67b24c51b83987828e79296eaaf13f85ac97fd5d
     permissions:
       actions: read
@@ -39,9 +43,22 @@ jobs:
     secrets:
       COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
 
+  worker:
+    name: Qualify the pinned worker without publication
+    if: ${{ inputs.qualify_worker_only && !inputs.publish_pages && github.actor == github.repository_owner && inputs.website_release == 'current' }}
+    uses: richgo/forge-kit-skills/.github/workflows/forge-factory-worker.yml@67b24c51b83987828e79296eaaf13f85ac97fd5d
+    permissions:
+      actions: read
+      attestations: write
+      contents: read
+      id-token: write
+      pages: write
+    secrets:
+      COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+
   result:
     name: Require independently checked release evidence
-    needs: factory
+    needs: [factory, worker]
     if: always()
     runs-on: ubuntu-24.04
     permissions: {}
@@ -49,7 +66,7 @@ jobs:
     steps:
       - name: Require the factory to have completed
         env:
-          FACTORY_RESULT: ${{ needs.factory.result }}
+          FACTORY_RESULT: ${{ inputs.qualify_worker_only && needs.worker.result || needs.factory.result }}
         run: test "$FACTORY_RESULT" = success
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:

@@ -22,3 +22,11 @@ test('rehearsal publication cannot overwrite the production Pages site', async (
   assert.match(bootstrap.split('\n  pages:\n')[1], /github.repository != 'richgo\/forge-kit' && inputs.pages_drill/);
   assert.match(rehearsal, /\(!inputs.publish_pages \|\| github.repository != 'richgo\/forge-kit'\)/);
 });
+
+test('direct worker qualification is restricted to the owner and cannot deploy', () => {
+  assert.match(workflow, /qualify_worker_only:/);
+  const worker = workflow.split('\n  worker:\n')[1]?.split('\n  result:\n')[0] ?? '';
+  assert.match(worker, /if: .*inputs.qualify_worker_only && !inputs.publish_pages && github.actor == github.repository_owner/);
+  assert.match(worker, /uses: .*forge-factory-worker\.yml@[0-9a-f]{40}/);
+  assert.match(workflow.split('\n  factory:\n')[1], /if: .* !inputs.qualify_worker_only/);
+});

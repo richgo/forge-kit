@@ -76,7 +76,10 @@ test('the APM installer and GitHub workflow use the reviewed catalog pins', asyn
   assert.match(assembly.orchestrator, /^richgo\/forge-kit-skills\/\.github\/workflows\/forge-factory\.lock\.yml@[a-f0-9]{40}$/);
   assert.equal(await readFile('apm.yml', 'utf8'), apmManifest(assembly.packages));
   const release = await readFile('.github/workflows/factory-e2e.yml', 'utf8');
-  assert.deepEqual([...release.matchAll(/^\s+uses: (richgo\/forge-kit-skills\/[^\s]+)$/gm)].map(match => match[1]), [assembly.orchestrator]);
+  assert.deepEqual([...release.matchAll(/^\s+uses: (richgo\/forge-kit-skills\/[^\s]+)$/gm)].map(match => match[1]), [
+    assembly.orchestrator,
+    assembly.orchestrator.replace('forge-factory.lock.yml', 'forge-factory-worker.yml'),
+  ]);
   assert.match(release, /options: \[current\]/);
   assert.doesNotMatch(release, /catalog_fixture|forge-reference|FORGE_REHEARSAL_REF|inject_fault|use_jev|baseline|step-free/);
   const workflow = await readFile('.github/workflows/catalog-rehearsal.yml', 'utf8');
