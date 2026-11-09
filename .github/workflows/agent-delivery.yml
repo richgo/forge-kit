@@ -3,6 +3,9 @@ name: Agent-authored product delivery
 on:
   workflow_call:
     inputs:
+      replay_drill:
+        type: boolean
+        default: false
       resume_drill:
         type: boolean
         default: false
@@ -13,6 +16,8 @@ on:
         required: true
 
 permissions: {}
+env:
+  FORGE_REPLAY_DRILL: ${{ inputs.replay_drill }}
 
 jobs:
   catalog:
@@ -30,6 +35,9 @@ jobs:
       - id: discover
         run: |
           set -euo pipefail
+          if [[ "$FORGE_REPLAY_DRILL" == true ]]; then
+            [[ "$GITHUB_REPOSITORY" == richgo/forge-kit && "${{ inputs.resume_drill }}" == true ]]
+          fi
           matrix="$(node factory/agent-catalog.mjs examples/agent-products)"
           printf 'matrix=%s\n' "$matrix" >> "$GITHUB_OUTPUT"
 
@@ -40,6 +48,7 @@ jobs:
     timeout-minutes: 25
     permissions:
       actions: read
+      attestations: read
       contents: read
     strategy:
       fail-fast: false
@@ -70,14 +79,19 @@ jobs:
           set -euo pipefail
           image="$(node --input-type=module -e 'import {runtimeImages} from "./factory/agent-verifier.mjs"; console.log(runtimeImages[process.argv[1]])' "$PRODUCT_RUNTIME")"
           docker pull "$image"
+      - name: Authenticate archived agent-authored evidence for the replay drill
+        if: inputs.replay_drill && steps.checkpoint.outputs.id == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash factory/restore-delivery-rehearsal.sh
       - name: Install pinned GitHub Copilot CLI
-        if: steps.checkpoint.outputs.id == ''
+        if: ${{ !inputs.replay_drill && steps.checkpoint.outputs.id == '' }}
         run: npm install --global --no-audit --no-fund @github/copilot@1.0.107
       - name: Plan, implement, review and preflight the revision
         if: steps.checkpoint.outputs.id == ''
         env:
-          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
-          FORGE_JEV_TOKEN: ${{ secrets.FORGE_JEV_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ !inputs.replay_drill && secrets.COPILOT_GITHUB_TOKEN || '' }}
+          FORGE_JEV_TOKEN: ${{ !inputs.replay_drill && secrets.FORGE_JEV_TOKEN || '' }}
         run: |
           set -euo pipefail
           mkdir -p out
@@ -103,6 +117,7 @@ jobs:
     timeout-minutes: 25
     permissions:
       actions: read
+      attestations: read
       contents: read
     strategy:
       fail-fast: false
@@ -160,14 +175,19 @@ jobs:
           set -euo pipefail
           image="$(node --input-type=module -e 'import {runtimeImages} from "./factory/agent-verifier.mjs"; console.log(runtimeImages[process.argv[1]])' "$PRODUCT_RUNTIME")"
           docker pull "$image"
+      - name: Authenticate archived agent-authored evidence for the replay drill
+        if: inputs.replay_drill && steps.checkpoint.outputs.id == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash factory/restore-delivery-rehearsal.sh
       - name: Install pinned GitHub Copilot CLI
-        if: steps.checkpoint.outputs.id == ''
+        if: ${{ !inputs.replay_drill && steps.checkpoint.outputs.id == '' }}
         run: npm install --global --no-audit --no-fund @github/copilot@1.0.107
       - name: Plan, implement, review and preflight the revision
         if: steps.checkpoint.outputs.id == ''
         env:
-          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
-          FORGE_JEV_TOKEN: ${{ secrets.FORGE_JEV_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ !inputs.replay_drill && secrets.COPILOT_GITHUB_TOKEN || '' }}
+          FORGE_JEV_TOKEN: ${{ !inputs.replay_drill && secrets.FORGE_JEV_TOKEN || '' }}
         run: |
           set -euo pipefail
           mkdir -p out

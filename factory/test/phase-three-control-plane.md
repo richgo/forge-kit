@@ -37,6 +37,19 @@ escalating advice denies repair. The deterministic checker still gates any
 candidate that the repair agent produces. No candidate source, acceptance
 inputs, or expected outputs are sent to Jev.
 
+## Replay the qualified source during a provider incident
+
+In `richgo/forge-kit`, set `agent_replay_drill=true` together with the resume
+drill to exercise the control plane without a live model dependency. This
+qualification-only path requires the retained artifacts from the
+[Phase 2 run](https://github.com/richgo/forge-kit/actions/runs/42686477934).
+It verifies the original signer workflow, commit, predicate and exact bundle
+digest. It checks the original audit and rejects any requirements drift before
+reusing source. The new attested bundle records the origin run, source commit
+and bundle digest. The replay runs the current acceptance, scanner, signing,
+reproduction and recovery controls. It does not create a new agent session or
+authorize production deployment. Expired source artifacts stop the drill.
+
 ## Evidence and promotion
 
 A runner without agent credentials independently validates CALM, LikeC4 and

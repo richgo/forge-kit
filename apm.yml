@@ -4,7 +4,7 @@ targets: [copilot]
 dependencies:
   apm:
     - 'richgo/forge-kit-skills/packages/acceptance#2ad068c4e1b2abe9b7dda65f5e8dab4835213558'
-    - 'richgo/forge-kit-skills/packages/agent-delivery#e6faa3cf958a9f350ae8bd45a773e0aa0391fde5'
+    - 'richgo/forge-kit-skills/packages/agent-delivery#ff811c2bb1fdd9ddeb4cab43475b94d851586955'
     - 'richgo/forge-kit-skills/packages/architecture#8861afd5606136f3bbb55043d21ac732ed11df53'
     - 'richgo/forge-kit-skills/packages/build-repair#2ad068c4e1b2abe9b7dda65f5e8dab4835213558'
     - 'richgo/forge-kit-skills/packages/delivery#2ad068c4e1b2abe9b7dda65f5e8dab4835213558'

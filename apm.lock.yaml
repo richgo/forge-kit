@@ -19,8 +19,8 @@ dependencies:
 - repo_url: richgo/forge-kit-skills
   name: forge-kit-agent-delivery
   host: github.com
-  resolved_commit: e6faa3cf958a9f350ae8bd45a773e0aa0391fde5
-  resolved_ref: e6faa3cf958a9f350ae8bd45a773e0aa0391fde5
+  resolved_commit: ff811c2bb1fdd9ddeb4cab43475b94d851586955
+  resolved_ref: ff811c2bb1fdd9ddeb4cab43475b94d851586955
   version: 1.0.0
   virtual_path: packages/agent-delivery
   is_virtual: true
@@ -30,7 +30,7 @@ dependencies:
   - .agents/skills/forge-agent-delivery/SKILL.md
   deployed_file_hashes:
     .agents/skills/forge-agent-delivery/SKILL.md: sha256:44d6173deca59b935de04cb4a32cf38560c8c282afae4dfe90b37fed4e4872f7
-  content_hash: sha256:aac58514866d384a37adc3ab7c728cc3b038388caf34fc1041676557edb2bdaa
+  content_hash: sha256:95f0acbcd8cb268f89e3131c562736f4dbe93fdfa1b4962270efb6160e9ce96b
 - repo_url: richgo/forge-kit-skills
   name: forge-kit-architecture
   host: github.com

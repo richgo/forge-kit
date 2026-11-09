@@ -24,6 +24,10 @@ on:
         type: boolean
         default: false
 
+      agent_replay_drill:
+        description: Authenticate and replay the archived Phase 2 source in the resume drill
+        type: boolean
+        default: false
       agent_resume_drill:
         description: Interrupt agent delivery once after the initial checkpoint
         type: boolean
@@ -38,6 +42,7 @@ jobs:
     uses: ./.github/workflows/agent-delivery.yml
     with:
       resume_drill: ${{ inputs.agent_resume_drill }}
+      replay_drill: ${{ inputs.agent_replay_drill }}
     permissions:
       actions: read
       attestations: write
