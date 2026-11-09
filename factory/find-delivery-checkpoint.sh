@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 name="$1"
-[[ "$name" =~ ^agent-(initial|producer)-[a-z][a-z0-9-]*$ ]]
+[[ "$name" =~ ^agent-(initial|producer|interruption)-[a-z][a-z0-9-]*$ ]]
 [[ "$GITHUB_RUN_ID" =~ ^[1-9][0-9]*$ && "$GITHUB_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]]
 if [[ "$GITHUB_RUN_ATTEMPT" == 1 ]]; then exit 0; fi
 id="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?name=$name&per_page=2" |

@@ -25,7 +25,7 @@ on:
         default: false
 
       agent_resume_drill:
-        description: Interrupt agent delivery after the initial checkpoint on the first attempt
+        description: Interrupt agent delivery once after the initial checkpoint
         type: boolean
         default: false
 

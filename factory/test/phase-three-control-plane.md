@@ -17,7 +17,8 @@ Keep `pages_drill=false`.
 The drill interrupts the evolution jobs after both initial revisions have
 passed preflight, passed the producer secret scan, and saved their immutable
 checkpoints. The initial jobs complete successfully before the injected
-failure.
+failure. An immutable interruption marker records which checkpoint was used
+and prevents injecting the same failure again on a retry.
 
 Rerun **failed jobs** on that run. The new attempt restores the original
 initial checkpoint by run and product. It checks the source commit,

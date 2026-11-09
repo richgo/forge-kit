@@ -66,11 +66,11 @@
     "agentDelivery": {
       "repository": "richgo/forge-kit-skills",
       "path": "packages/agent-delivery",
-      "ref": "dd827308d1eb8e8214fcd0b881345c08420fe998",
+      "ref": "27525470db43c235f87e5fcb6d1a8844a44efe51",
       "runtimeApi": 1,
       "sha256": {
         "exports.json": "c8d9f45751f27a1e58622628d6beb6f22c88b0b10538aadc2139f8904c3eb6f3",
-        "runtime/agent-production.mjs": "ed517a7e0ccacc23ca90ed79dc09ab95b6dc1abc51fb9945938237d1a06cbcae",
+        "runtime/agent-production.mjs": "fb3588748c0c96a6ec7357a971af5dd0124b4175356d8d7fde9ed17e3ce83f47",
         "runtime/agent-verifier.mjs": "ecaeee3ff4cf18f64319421f589c019d6788e7ac1c5317429f8300e8dbbf0783",
         "runtime/architecture-plan.mjs": "3a919bebaafdd2d94914bd9e21d1cc3284fb688245c25bbc944e9666937284c8"
       }

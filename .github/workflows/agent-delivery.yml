@@ -127,10 +127,26 @@ jobs:
         with:
           name: agent-initial-${{ matrix.product }}
           path: input
-      - name: Inject interruption after the durable initial checkpoint
-        if: inputs.resume_drill && github.run_attempt == 1
+      - id: interruption
+        if: inputs.resume_drill && steps.checkpoint.outputs.id == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash factory/find-delivery-checkpoint.sh "agent-interruption-$PRODUCT"
+      - name: Record the one-time interruption for this checkpoint
+        if: inputs.resume_drill && steps.checkpoint.outputs.id == '' && steps.interruption.outputs.id == ''
         run: |
+          set -euo pipefail
           test -s input/initial.json
+          sha256sum input/initial.json > interrupted-checkpoint.txt
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        if: inputs.resume_drill && steps.checkpoint.outputs.id == '' && steps.interruption.outputs.id == ''
+        with:
+          name: agent-interruption-${{ matrix.product }}
+          path: interrupted-checkpoint.txt
+          if-no-files-found: error
+      - name: Inject interruption after the durable initial checkpoint
+        if: inputs.resume_drill && steps.checkpoint.outputs.id == '' && steps.interruption.outputs.id == ''
+        run: |
           echo '::error::Controlled interruption before evolution. Rerun failed jobs to resume.'
           exit 1
       - name: Restore frozen, audited capabilities
