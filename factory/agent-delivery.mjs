@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { appendFile, readFile, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { planArchitecture } from './architecture-plan.mjs';
-import { acceptSource, approveArchitectureChanges, callCopilot, produceRevision } from './agent-production.mjs';
+import { acceptSource, approveArchitectureChanges, callCopilot, produceRevision, verifyAgentAudit } from './agent-production.mjs';
 import { exerciseRecovery, verifyCandidate } from './agent-verifier.mjs';
 
 const [mode, directory, input, output] = process.argv.slice(2);
@@ -79,7 +79,8 @@ if (mode === 'produce') {
   assert.notEqual(digest(candidates.initial.candidate), digest(candidates.next.candidate), 'Agent did not evolve the source');
   await write(output, { product: initial.product.id, source, candidates });
 } else {
-  const bundle = await json(input);
+  const bundleBytes = await readFile(input);
+  const bundle = JSON.parse(bundleBytes);
   assert.equal(bundle.product, initial.product.id, 'Bundle product mismatch');
   assert.equal(bundle.source, source, 'Bundle source commit mismatch');
   const snapshots = {};
@@ -102,10 +103,16 @@ if (mode === 'produce') {
   }
   assert.notEqual(digest(snapshots.initial.candidate), digest(snapshots.next.candidate), 'Missing source evolution');
   if (mode === 'verify') {
-    await write(output, { product: initial.product.id, source, candidates: bundle.candidates, evidence });
+    const authorship = verifyAgentAudit(await readFile(join(dirname(input), 'agent-audit.jsonl'), 'utf8'), bundle.candidates);
+    await write(output, { product: initial.product.id, source, candidates: bundle.candidates, evidence, authorship });
   } else {
-    const recovery = await exerciseRecovery(snapshots);
+    assert.match(bundle.authorship?.sha256 ?? '', /^[a-f0-9]{64}$/, 'Missing attested agent audit digest');
+    const bundleSha256 = createHash('sha256').update(bundleBytes).digest('hex');
+    const recovery = await exerciseRecovery(snapshots).catch(async error => {
+      if (error.evidence) await write(output, { product: initial.product.id, source, bundleSha256, recovery: error.evidence });
+      throw error;
+    });
     assert.equal(recovery.passed, true, 'Isolated recovery failed');
-    await write(output, { product: initial.product.id, source, bundleSha256: digest(bundle), recovery });
+    await write(output, { product: initial.product.id, source, bundleSha256, recovery });
   }
 }

@@ -53,10 +53,13 @@ function inputLine(input) {
   return json + '\n';
 }
 
-function invokeDocker(args, input = '') {
+function invokeDocker(config, args, input = '') {
+  const allowed = ['path', 'systemroot', 'home', 'userprofile', 'xdg_runtime_dir',
+    'docker_host'];
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => allowed.includes(key.toLowerCase())));
   return new Promise((resolve, reject) => {
-    const child = execFile('docker', args, {
-      encoding: 'utf8', timeout: 10_000, killSignal: 'SIGKILL', maxBuffer: byteLimit,
+    const child = execFile('docker', ['--config', config, ...args], {
+      env, encoding: 'utf8', timeout: 10_000, killSignal: 'SIGKILL', maxBuffer: byteLimit,
     }, (error, stdout, stderr) => {
       if (error) reject(Object.assign(new Error('Container command failed'), { stderr }));
       else resolve(stdout);
@@ -70,9 +73,15 @@ function invokeDocker(args, input = '') {
 export async function runInContainer({ runtime, entry, candidate, input }) {
   validateCandidate({ runtime, entry, files: Object.keys(candidate) }, candidate);
   const inputBytes = inputLine(input);
-  const source = await mkdtemp(join(tmpdir(), 'forge-agent-source-'));
+  const scratch = await mkdtemp(join(tmpdir(), 'forge-agent-source-'));
+  const source = join(scratch, 'workspace');
+  // Docker can inject proxy credentials from its configuration. Give the
+  // client an empty config directory and mount only the source tree.
+  const config = join(scratch, 'docker-config');
   const name = 'forge-candidate-' + randomUUID();
   try {
+    await mkdir(config, { mode: 0o700 });
+    await mkdir(source);
     await chmod(source, 0o755);
     for (const [path, content] of Object.entries(candidate)) {
       const file = join(source, path);
@@ -82,24 +91,24 @@ export async function runInContainer({ runtime, entry, candidate, input }) {
     const command = commands[runtime];
     // Docker parses --mount as CSV. Quote the field so a temp directory with
     // a comma or quote stays a single host path.
-    const mount = 'type=bind,"source=' + source.replaceAll('"', '""') + '",target=/work,readonly';
-    await invokeDocker([
+    const mount = 'type=bind,"source=' + source.replaceAll('"', '""') + '",target=/work,readonly,bind-recursive=disabled';
+    await invokeDocker(config, [
       'create', '-i', '--name', name, '--pull=never', '--network=none', '--ipc=none',
       '--read-only', '--cap-drop=ALL', '--security-opt=no-new-privileges',
       '--user=65534:65534', '--memory=192m', '--memory-swap=192m', '--cpus=1',
       '--pids-limit=64', '--log-driver=none', '--workdir=/work', '--mount', mount,
       '--entrypoint', command.entrypoint, runtimeImages[runtime], ...command.args, '/work/' + entry,
     ]);
-    return await invokeDocker(['start', '-a', '-i', name], inputBytes);
+    return await invokeDocker(config, ['start', '-a', '-i', name], inputBytes);
   } finally {
     // Killing an attached client on timeout or overflow does not kill the
     // container. Always remove it explicitly, including after failed creation.
     try {
-      await invokeDocker(['rm', '-f', name]);
+      await invokeDocker(config, ['rm', '-f', name]);
     } catch (error) {
       if (!/No such container/i.test(error.stderr ?? '')) throw new Error('Container cleanup failed', { cause: error });
     } finally {
-      await rm(source, { recursive: true, force: true });
+      await rm(scratch, { recursive: true, force: true });
     }
   }
 }
@@ -187,9 +196,11 @@ export async function exerciseRecovery({ initial, next }, run = runInContainer) 
       ? "process.stdin.resume(); process.stdin.on('end', () => console.log('forge-injected-fault'));\n"
       : "import sys\nsys.stdin.read()\nprint('forge-injected-fault')\n";
     const injected = await stage({ ...next, candidate: { ...next.candidate, [entry]: failure } });
+    const predecessor = await readFile(active, 'utf8');
+    assert.equal(predecessor, candidate, 'Active release changed after successful observation');
     await activate(injected, 'observe-injected', false);
-    await activate(baseline, 'observe-restored');
-    return { passed: true, events, restoredRelease: baseline };
+    await activate(predecessor, 'observe-restored');
+    return { passed: true, events, restoredRelease: predecessor };
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

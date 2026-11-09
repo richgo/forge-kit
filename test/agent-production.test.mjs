@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash, randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import * as delivery from '../factory/agent-production.mjs';
 
@@ -65,7 +66,27 @@ test('breaking architecture changes require a tracked migration story for each f
   const impact = { affectedNodes: ['api'], breaking: [{ kind: 'interface-changed', id: 'api-input', node: 'api' }] };
   assert.throws(() => delivery.approveArchitectureChanges(product, impact), /migration/);
   assert.throws(() => delivery.approveArchitectureChanges({ ...product,
-    migrations: [{ kind: 'interface-changed', id: 'api-input', story: 'STORY-999' }] }, impact), /migration/);
+    migrations: [{ kind: 'interface-changed', id: 'api-input', node: 'api', story: 'STORY-999' }] }, impact), /migration/);
   assert.doesNotThrow(() => delivery.approveArchitectureChanges({ ...product,
-    migrations: [{ kind: 'interface-changed', id: 'api-input', story: 'STORY-1' }] }, impact));
+    migrations: [{ kind: 'interface-changed', id: 'api-input', node: 'api', story: 'STORY-1' }] }, impact));
+});
+
+
+test('audit must bind the exact source accepted by the recorded agent sessions', async () => {
+  const candidate = { 'src/main.mjs': 'export {}' };
+  const events = [];
+  const agent = async role => ({
+    value: ({ plan: { plan: 'Echo input' }, test: { risks: [] }, review: { issues: [] } })[role] ?? { files: candidate },
+    trace: { sessionId: randomUUID(), responseSha256: 'a'.repeat(64), toolCalls: 0 },
+  });
+  const candidates = {};
+  for (const name of ['initial', 'next']) {
+    candidates[name] = await delivery.produceRevision(revision, null, {
+      agent, check: async () => ({ passed: true, checks: [] }), record: event => events.push({ revision: name, ...event }),
+    });
+  }
+  const text = events.map(event => JSON.stringify(event)).join('\n');
+  assert.equal(delivery.verifyAgentAudit(text, candidates).sha256, createHash('sha256').update(text).digest('hex'));
+  candidates.next.candidate['src/main.mjs'] += '\nconsole.log("tampered");';
+  assert.throws(() => delivery.verifyAgentAudit(text, candidates), /bind accepted source/);
 });

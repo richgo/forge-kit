@@ -93,6 +93,11 @@ jobs:
             npx --yes --package @finos/calm-cli@1.68.0 calm validate --strict -a "$snapshot/architecture.json"
             npx --yes --package likec4@1.60.0 likec4 validate "$snapshot"
           done
+      - name: Probe actual container isolation
+        if: matrix.runtime == 'node'
+        env:
+          FORGE_TEST_CONTAINER: '1'
+        run: node --test test/agent-verifier.test.mjs
       - name: Recompute impact and independently execute held-out cases
         run: node factory/agent-delivery.mjs verify "examples/agent-products/$PRODUCT" out/candidates.json out/verified.json
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f

@@ -46,7 +46,7 @@ test('unsafe paths and undeclared source cannot enter the execution workspace', 
   }
 });
 
-test('a recovery drill executes both versions, detects an injected fault and restores the verified baseline', async () => {
+test('a recovery drill executes both versions, detects an injected fault and restores the latest verified release', async () => {
   const observed = [];
   const evidence = await verifier.exerciseRecovery({
     initial: { product, cases, candidate: initial }, next: { product, cases, candidate: next },
@@ -62,12 +62,12 @@ test('a recovery drill executes both versions, detects an injected fault and res
     ['observe-next', true], ['observe-injected', false], ['observe-restored', true],
   ]);
   assert.notEqual(evidence.events[2].release, evidence.events[4].release);
-  assert.equal(evidence.events[0].release, evidence.events[5].release);
-  assert.equal(evidence.restoredRelease, evidence.events[0].release);
-  assert.equal(observed.at(-1), initial['src/main.mjs']);
+  assert.equal(evidence.events[2].release, evidence.events[5].release);
+  assert.equal(evidence.restoredRelease, evidence.events[2].release);
+  assert.equal(observed.at(-1), next['src/main.mjs']);
 });
 
-test('recovery fails closed if the independently re-observed baseline stays unhealthy', async () => {
+test('recovery fails closed if the independently re-observed previous release stays unhealthy', async () => {
   let invocations = 0;
   await assert.rejects(verifier.exerciseRecovery({
     initial: { product, cases, candidate: initial }, next: { product, cases, candidate: next },
@@ -87,3 +87,31 @@ test('a sandbox execution failure cannot qualify as observing the injected appli
     return '{"kilometres":6.4}';
   }), /observe-injected/);
 });
+
+if (process.env.FORGE_TEST_CONTAINER === '1') {
+  test('the actual container keeps host environment, network, and source writes out of reach', async () => {
+    const previous = process.env.FORGE_TEST_HOST_CANARY;
+    process.env.FORGE_TEST_HOST_CANARY = 'sentinel';
+    const source = {
+      'src/main.mjs': [
+        "import { readFileSync, writeFileSync } from 'node:fs';",
+        "import { networkInterfaces } from 'node:os';",
+        "const input = JSON.parse(readFileSync(0, 'utf8'));",
+        "let sourceWritable = true;",
+        "try { writeFileSync('/work/src/main.mjs', 'tampered'); } catch { sourceWritable = false; }",
+        "console.log(JSON.stringify({ input, sourceWritable, hostEnv: process.env.FORGE_TEST_HOST_CANARY ?? null,",
+        "  root: process.getuid() === 0, externalNetwork: Object.values(networkInterfaces()).flat().some(i => !i.internal) }));",
+      ].join('\n'),
+    };
+    try {
+      const result = await verifier.verifyCandidate(product, [{
+        id: 'AC-1', story: 'STORY-1', input: 'isolated',
+        expected: { input: 'isolated', sourceWritable: false, hostEnv: null, root: false, externalNetwork: false },
+      }], source);
+      assert.deepEqual(result, { passed: true, checks: [{ id: 'AC-1', story: 'STORY-1', passed: true }] });
+    } finally {
+      if (previous === undefined) delete process.env.FORGE_TEST_HOST_CANARY;
+      else process.env.FORGE_TEST_HOST_CANARY = previous;
+    }
+  });
+}
