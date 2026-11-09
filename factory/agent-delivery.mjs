@@ -5,6 +5,8 @@ import { dirname, join } from 'node:path';
 import { planArchitecture } from './architecture-plan.mjs';
 import { acceptSource, approveArchitectureChanges, callCopilot, produceRevision, verifyAgentAudit } from './agent-production.mjs';
 import { exerciseRecovery, verifyCandidate } from './agent-verifier.mjs';
+import { createCheckpoint, readCheckpoint } from './delivery-checkpoint.mjs';
+import { requestJevRepair } from './decisions.mjs';
 
 const [mode, directory, input, output] = process.argv.slice(2);
 const json = async path => JSON.parse(await readFile(path, 'utf8'));
@@ -55,64 +57,93 @@ async function readRevision(name, previous = null) {
     requirementsSha256: digest({ product, cases, snapshot }) };
 }
 
-assert.ok(['produce', 'verify', 'exercise'].includes(mode) && directory && input && output,
-  'Usage: agent-delivery.mjs produce|verify|exercise PRODUCT_ROOT INPUT OUTPUT');
-const source = process.env.GITHUB_SHA;
-assert.match(source ?? '', /^[a-f0-9]{40}$/, 'Trusted source commit required');
-const initial = await readRevision('initial');
-const next = await readRevision('next', initial.snapshot);
-assert.equal(next.product.id, initial.product.id, 'Revision changed product identity');
-const revisions = { initial, next };
-const check = (revision, candidate) => verifyCandidate(revision.product, revision.cases, candidate);
+async function main() {
+  assert.ok(['produce-initial', 'produce-next', 'verify', 'exercise'].includes(mode) && directory && input && output,
+    'Usage: agent-delivery.mjs produce-initial|produce-next|verify|exercise PRODUCT_ROOT INPUT OUTPUT');
+  const source = process.env.GITHUB_SHA;
+  assert.match(source ?? '', /^[a-f0-9]{40}$/, 'Trusted source commit required');
+  const run = process.env.GITHUB_RUN_ID;
+  assert.match(run ?? '', /^[1-9][0-9]*$/, 'Trusted workflow run required');
+  const capabilityLockSha256 = createHash('sha256').update(await readFile('apm.lock.yaml')).digest('hex');
+  const initial = await readRevision('initial');
+  const next = await readRevision('next', initial.snapshot);
+  assert.equal(next.product.id, initial.product.id, 'Revision changed product identity');
+  const revisions = { initial, next };
+  const check = (revision, candidate) => verifyCandidate(revision.product, revision.cases, candidate);
 
-if (mode === 'produce') {
-  const candidates = {};
-  let previous = null;
-  for (const [name, revision] of Object.entries(revisions)) {
-    const result = await produceRevision(revision, previous, {
-      agent: callCopilot, check,
-      record: event => appendFile(input, JSON.stringify({ revision: name, ...event }) + '\n'),
-    });
-    candidates[name] = result;
-    previous = result.candidate;
-  }
-  assert.notEqual(digest(candidates.initial.candidate), digest(candidates.next.candidate), 'Agent did not evolve the source');
-  await write(output, { product: initial.product.id, source, candidates });
-} else {
-  const bundleBytes = await readFile(input);
-  const bundle = JSON.parse(bundleBytes);
-  assert.equal(bundle.product, initial.product.id, 'Bundle product mismatch');
-  assert.equal(bundle.source, source, 'Bundle source commit mismatch');
-  const snapshots = {};
-  const evidence = {};
-  for (const [name, revision] of Object.entries(revisions)) {
-    const candidate = acceptSource(revision.product, { files: bundle.candidates[name]?.candidate });
-    snapshots[name] = { product: revision.product, cases: revision.cases, candidate };
+  const identity = { source, run, product: initial.product.id,
+    requirementsSha256: initial.requirementsSha256, capabilityLockSha256 };
+  const produce = (name, previous, record) => produceRevision(revisions[name], previous, {
+    agent: callCopilot, check, record: event => record({ revision: name, ...event }),
+    adviseRepair: state => requestJevRepair(process.env.FORGE_JEV_TOKEN, fetch, { state }),
+  });
+
+  if (mode === 'produce-initial') {
+    const audit = [];
+    const accepted = await produce('initial', null, event => audit.push(event));
+    await write(output, createCheckpoint(identity, accepted, audit));
+  } else if (mode === 'produce-next') {
+    const checkpoint = readCheckpoint(await json(input), identity);
+    const previous = acceptSource(initial.product, { files: checkpoint.candidate.candidate });
+    assert.ok((await check(initial, previous)).passed, 'Resumed checkpoint failed preflight');
+    const audit = join(dirname(output), 'agent-audit.jsonl');
+    const record = event => appendFile(audit, JSON.stringify(event) + '\n');
+    for (const event of checkpoint.audit) await record(event);
+    const accepted = await produce('next', previous, record);
+    const candidates = { initial: checkpoint.candidate, next: accepted };
+    assert.notEqual(digest(previous), digest(accepted.candidate), 'Agent did not evolve the source');
+    await write(output, { product: identity.product, source, run, capabilityLockSha256, candidates });
+  } else {
+    const bundleBytes = await readFile(input);
+    const bundle = JSON.parse(bundleBytes);
+    assert.equal(bundle.product, initial.product.id, 'Bundle product mismatch');
+    assert.equal(bundle.source, source, 'Bundle source commit mismatch');
+    assert.equal(bundle.run, run, 'Bundle workflow run mismatch');
+    assert.equal(bundle.capabilityLockSha256, capabilityLockSha256, 'Bundle capability lock mismatch');
+    const snapshots = {};
+    const evidence = {};
+    for (const [name, revision] of Object.entries(revisions)) {
+      const candidate = acceptSource(revision.product, { files: bundle.candidates[name]?.candidate });
+      snapshots[name] = { product: revision.product, cases: revision.cases, candidate };
+      if (mode === 'verify') {
+        const acceptance = await check(revision, candidate);
+        assert.ok(acceptance.passed, 'Independent acceptance failed for ' + name + ': ' +
+          acceptance.checks.filter(item => !item.passed).map(item => item.id).join(', '));
+        evidence[name] = { acceptance, candidateSha256: digest(candidate),
+          requirementsSha256: revision.requirementsSha256, architecture: revision.architecture };
+      } else {
+        const verified = bundle.evidence[name];
+        assert.equal(verified.candidateSha256, digest(candidate), 'Authenticated source bytes changed');
+        assert.equal(verified.requirementsSha256, revision.requirementsSha256, 'Authenticated requirements changed');
+        assert.equal(verified.acceptance.passed, true, 'Missing independent acceptance');
+      }
+    }
+    assert.notEqual(digest(snapshots.initial.candidate), digest(snapshots.next.candidate), 'Missing source evolution');
     if (mode === 'verify') {
-      const acceptance = await check(revision, candidate);
-      assert.ok(acceptance.passed, 'Independent acceptance failed for ' + name + ': ' +
-        acceptance.checks.filter(item => !item.passed).map(item => item.id).join(', '));
-      evidence[name] = { acceptance, candidateSha256: digest(candidate),
-        requirementsSha256: revision.requirementsSha256, architecture: revision.architecture };
+      const authorship = verifyAgentAudit(await readFile(join(dirname(input), 'agent-audit.jsonl'), 'utf8'),
+        bundle.candidates, { requireRepairPolicy: true });
+      await write(output, { product: initial.product.id, source, run, capabilityLockSha256, candidates: bundle.candidates, evidence, authorship });
     } else {
-      const verified = bundle.evidence[name];
-      assert.equal(verified.candidateSha256, digest(candidate), 'Authenticated source bytes changed');
-      assert.equal(verified.requirementsSha256, revision.requirementsSha256, 'Authenticated requirements changed');
-      assert.equal(verified.acceptance.passed, true, 'Missing independent acceptance');
+      assert.match(bundle.authorship?.sha256 ?? '', /^[a-f0-9]{64}$/, 'Missing attested agent audit digest');
+      const bundleSha256 = createHash('sha256').update(bundleBytes).digest('hex');
+      const recovery = await exerciseRecovery(snapshots).catch(async error => {
+        if (error.evidence) await write(output, { product: initial.product.id, source, bundleSha256, recovery: error.evidence });
+        throw error;
+      });
+      assert.equal(recovery.passed, true, 'Isolated recovery failed');
+      await write(output, { product: initial.product.id, source, bundleSha256, recovery });
     }
   }
-  assert.notEqual(digest(snapshots.initial.candidate), digest(snapshots.next.candidate), 'Missing source evolution');
-  if (mode === 'verify') {
-    const authorship = verifyAgentAudit(await readFile(join(dirname(input), 'agent-audit.jsonl'), 'utf8'), bundle.candidates);
-    await write(output, { product: initial.product.id, source, candidates: bundle.candidates, evidence, authorship });
-  } else {
-    assert.match(bundle.authorship?.sha256 ?? '', /^[a-f0-9]{64}$/, 'Missing attested agent audit digest');
-    const bundleSha256 = createHash('sha256').update(bundleBytes).digest('hex');
-    const recovery = await exerciseRecovery(snapshots).catch(async error => {
-      if (error.evidence) await write(output, { product: initial.product.id, source, bundleSha256, recovery: error.evidence });
-      throw error;
-    });
-    assert.equal(recovery.passed, true, 'Isolated recovery failed');
-    await write(output, { product: initial.product.id, source, bundleSha256, recovery });
-  }
+}
+
+try {
+  await main();
+} catch (error) {
+  // Assertion objects and parser errors can contain raw agent output. Log
+  // authored diagnostics only. The raw source must pass scanning before upload.
+  const explicit = error.code === 'ERR_ASSERTION' && error.generatedMessage === false;
+  const processFailure = /^Copilot (?:plan|code|test|review|repair) failed \([A-Za-z0-9_-]+\)$/.test(error.message);
+  process.stderr.write('Agent delivery failed: ' +
+    (explicit || processFailure ? error.message : 'invalid input, response, or worker execution') + '\n');
+  process.exitCode = 1;
 }

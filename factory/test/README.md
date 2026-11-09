@@ -65,3 +65,6 @@ For GitHub-hosted tests, use the workflows in `.github/workflows/` and follow `d
 - [Independent website security](website-security.md)
 - [Hosted release, attestation and recovery](hosted-release.md)
 - [Qualification results](results.md)
+
+
+- [Agent delivery control-plane qualification](phase-three-control-plane.md)

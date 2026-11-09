@@ -62,6 +62,22 @@
       "repository": "richgo/forge-kit-skills",
       "path": "packages/security-review",
       "ref": "8861afd5606136f3bbb55043d21ac732ed11df53"
+    },
+    "agentDelivery": {
+      "repository": "richgo/forge-kit-skills",
+      "path": "packages/agent-delivery",
+      "ref": "dd827308d1eb8e8214fcd0b881345c08420fe998",
+      "runtimeApi": 1,
+      "sha256": {
+        "exports.json": "c8d9f45751f27a1e58622628d6beb6f22c88b0b10538aadc2139f8904c3eb6f3",
+        "runtime/agent-production.mjs": "ed517a7e0ccacc23ca90ed79dc09ab95b6dc1abc51fb9945938237d1a06cbcae",
+        "runtime/agent-verifier.mjs": "ecaeee3ff4cf18f64319421f589c019d6788e7ac1c5317429f8300e8dbbf0783",
+        "runtime/architecture-plan.mjs": "3a919bebaafdd2d94914bd9e21d1cc3284fb688245c25bbc944e9666937284c8"
+      }
     }
-  }
+  },
+  "revoked": [
+    "richgo/forge-kit-skills/packages/agent-delivery#abf0e6cf25766d87ad9749888345f3986af9a22d",
+    "richgo/forge-kit-skills/packages/agent-delivery#d38aecc689af4338efab79a44e4c955721dd6728"
+  ]
 }

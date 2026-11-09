@@ -17,6 +17,21 @@ dependencies:
     .agents/skills/forge-acceptance/SKILL.md: sha256:caa66d4f4d30e2c65902dfb5f35927b3d436f213da87b8c6a07dd946b97a6493
   content_hash: sha256:6eae712e784f91f525f0d816ddd0453b1b392d36ca7b471d228e941e05110894
 - repo_url: richgo/forge-kit-skills
+  name: forge-kit-agent-delivery
+  host: github.com
+  resolved_commit: dd827308d1eb8e8214fcd0b881345c08420fe998
+  resolved_ref: dd827308d1eb8e8214fcd0b881345c08420fe998
+  version: 1.0.0
+  virtual_path: packages/agent-delivery
+  is_virtual: true
+  package_type: apm_package
+  deployed_files:
+  - .agents/skills/forge-agent-delivery
+  - .agents/skills/forge-agent-delivery/SKILL.md
+  deployed_file_hashes:
+    .agents/skills/forge-agent-delivery/SKILL.md: sha256:44d6173deca59b935de04cb4a32cf38560c8c282afae4dfe90b37fed4e4872f7
+  content_hash: sha256:0429382ed9f3c70dc8672932d63fbc9bc0815d86e87201f9c45a1cd351fc3cc2
+- repo_url: richgo/forge-kit-skills
   name: forge-kit-architecture
   host: github.com
   resolved_commit: 8861afd5606136f3bbb55043d21ac732ed11df53
@@ -172,6 +187,24 @@ deployments:
   - richgo/forge-kit-skills/packages/acceptance
   active_owner: richgo/forge-kit-skills/packages/acceptance
   content_hash: sha256:caa66d4f4d30e2c65902dfb5f35927b3d436f213da87b8c6a07dd946b97a6493
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/forge-agent-delivery
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/agent-delivery
+  active_owner: richgo/forge-kit-skills/packages/agent-delivery
+  content_hash: null
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/forge-agent-delivery/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/agent-delivery
+  active_owner: richgo/forge-kit-skills/packages/agent-delivery
+  content_hash: sha256:44d6173deca59b935de04cb4a32cf38560c8c282afae4dfe90b37fed4e4872f7
 - kind: project-relative
   target: copilot
   value: .agents/skills/forge-architecture

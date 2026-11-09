@@ -2,7 +2,13 @@ name: Agent-authored product delivery
 
 on:
   workflow_call:
+    inputs:
+      resume_drill:
+        type: boolean
+        default: false
     secrets:
+      FORGE_JEV_TOKEN:
+        required: false
       COPILOT_GITHUB_TOKEN:
         required: true
 
@@ -27,12 +33,13 @@ jobs:
           matrix="$(node factory/agent-catalog.mjs examples/agent-products)"
           printf 'matrix=%s\n' "$matrix" >> "$GITHUB_OUTPUT"
 
-  produce:
+  initial:
     needs: catalog
-    name: Author both revisions
+    name: Author initial revision
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     permissions:
+      actions: read
       contents: read
     strategy:
       fail-fast: false
@@ -43,7 +50,20 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           persist-credentials: false
+      - id: checkpoint
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash factory/find-delivery-checkpoint.sh "agent-initial-$PRODUCT"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        if: steps.checkpoint.outputs.id != ''
+        with:
+          artifact-ids: ${{ steps.checkpoint.outputs.id }}
+          path: out
+      - name: Restore frozen, audited capabilities
+        if: steps.checkpoint.outputs.id == ''
+        run: bash factory/restore-capabilities.sh
       - name: Fetch the immutable execution image
+        if: steps.checkpoint.outputs.id == ''
         env:
           PRODUCT_RUNTIME: ${{ matrix.runtime }}
         run: |
@@ -51,25 +71,108 @@ jobs:
           image="$(node --input-type=module -e 'import {runtimeImages} from "./factory/agent-verifier.mjs"; console.log(runtimeImages[process.argv[1]])' "$PRODUCT_RUNTIME")"
           docker pull "$image"
       - name: Install pinned GitHub Copilot CLI
+        if: steps.checkpoint.outputs.id == ''
         run: npm install --global --no-audit --no-fund @github/copilot@1.0.107
-      - name: Plan, implement, review and preflight both revisions
+      - name: Plan, implement, review and preflight the revision
+        if: steps.checkpoint.outputs.id == ''
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          FORGE_JEV_TOKEN: ${{ secrets.FORGE_JEV_TOKEN }}
         run: |
           set -euo pipefail
           mkdir -p out
-          node factory/agent-delivery.mjs produce "examples/agent-products/$PRODUCT" out/agent-audit.jsonl out/candidates.json
-      - name: Preserve agent proposals and decision evidence
-        if: ${{ !cancelled() }}
+          node factory/agent-delivery.mjs produce-initial "examples/agent-products/$PRODUCT" - out/initial.json
+      - name: Block secrets before checkpoint upload
+        if: steps.checkpoint.outputs.id == ''
+        run: |
+          set -euo pipefail
+          trivy="$(bash factory/supply-chain-tools.sh)"
+          node factory/supply-chain.mjs source out/initial.json - "$trivy"
+      - name: Preserve the immutable checkpoint
+        if: steps.checkpoint.outputs.id == ''
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: agent-initial-${{ matrix.product }}
+          path: out/
+          if-no-files-found: error
+
+  next:
+    needs: [catalog, initial]
+    name: Author next revision
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      actions: read
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.catalog.outputs.matrix) }}
+    env:
+      PRODUCT: ${{ matrix.product }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - id: checkpoint
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash factory/find-delivery-checkpoint.sh "agent-producer-$PRODUCT"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        if: steps.checkpoint.outputs.id != ''
+        with:
+          artifact-ids: ${{ steps.checkpoint.outputs.id }}
+          path: out
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        if: steps.checkpoint.outputs.id == ''
+        with:
+          name: agent-initial-${{ matrix.product }}
+          path: input
+      - name: Inject interruption after the durable initial checkpoint
+        if: inputs.resume_drill && github.run_attempt == 1
+        run: |
+          test -s input/initial.json
+          echo '::error::Controlled interruption before evolution. Rerun failed jobs to resume.'
+          exit 1
+      - name: Restore frozen, audited capabilities
+        if: steps.checkpoint.outputs.id == ''
+        run: bash factory/restore-capabilities.sh
+      - name: Fetch the immutable execution image
+        if: steps.checkpoint.outputs.id == ''
+        env:
+          PRODUCT_RUNTIME: ${{ matrix.runtime }}
+        run: |
+          set -euo pipefail
+          image="$(node --input-type=module -e 'import {runtimeImages} from "./factory/agent-verifier.mjs"; console.log(runtimeImages[process.argv[1]])' "$PRODUCT_RUNTIME")"
+          docker pull "$image"
+      - name: Install pinned GitHub Copilot CLI
+        if: steps.checkpoint.outputs.id == ''
+        run: npm install --global --no-audit --no-fund @github/copilot@1.0.107
+      - name: Plan, implement, review and preflight the revision
+        if: steps.checkpoint.outputs.id == ''
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          FORGE_JEV_TOKEN: ${{ secrets.FORGE_JEV_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          node factory/agent-delivery.mjs produce-next "examples/agent-products/$PRODUCT" input/initial.json out/candidates.json
+      - name: Block secrets before checkpoint upload
+        if: steps.checkpoint.outputs.id == ''
+        run: |
+          set -euo pipefail
+          trivy="$(bash factory/supply-chain-tools.sh)"
+          node factory/supply-chain.mjs source out/candidates.json out/agent-audit.jsonl "$trivy"
+      - name: Preserve the immutable checkpoint
+        if: steps.checkpoint.outputs.id == ''
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: agent-producer-${{ matrix.product }}
           path: out/
-          if-no-files-found: warn
+          if-no-files-found: error
 
   verify:
     name: Independently validate architecture and accept both revisions
-    needs: [catalog, produce]
+    needs: [catalog, next]
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     permissions:
@@ -83,6 +186,8 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           persist-credentials: false
+      - name: Restore frozen, audited capabilities
+        run: bash factory/restore-capabilities.sh
       - name: Fetch the immutable execution image
         env:
           PRODUCT_RUNTIME: ${{ matrix.runtime }}
@@ -90,7 +195,7 @@ jobs:
           set -euo pipefail
           image="$(node --input-type=module -e 'import {runtimeImages} from "./factory/agent-verifier.mjs"; console.log(runtimeImages[process.argv[1]])' "$PRODUCT_RUNTIME")"
           docker pull "$image"
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: agent-producer-${{ matrix.product }}
           path: out
@@ -115,9 +220,58 @@ jobs:
           path: out/verified.json
           if-no-files-found: error
 
+  secure:
+    name: Gate dependency, secret and SBOM evidence
+    needs: [catalog, verify]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.catalog.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - name: Restore frozen, audited capabilities
+        run: bash factory/restore-capabilities.sh
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: agent-verified-${{ matrix.product }}
+          path: out
+      - name: Scan exact accepted source and immutable execution image
+        env:
+          PRODUCT_RUNTIME: ${{ matrix.runtime }}
+        run: |
+          set -euo pipefail
+          image="$(node --input-type=module -e 'import {runtimeImages} from "./factory/agent-verifier.mjs"; console.log(runtimeImages[process.argv[1]])' "$PRODUCT_RUNTIME")"
+          docker pull "$image"
+          trivy="$(bash factory/supply-chain-tools.sh)"
+          if [[ "$PRODUCT_RUNTIME" == node ]]; then
+            FORGE_TEST_TRIVY="$trivy" node --test test/supply-chain.test.mjs
+          fi
+          node factory/supply-chain.mjs scan out/verified.json apm.lock.yaml "$image" out "$trivy"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: agent-security-${{ matrix.product }}
+          path: |
+            out/verified.json
+            out/promotion.json
+            out/security.json
+            out/sbom.cdx.json
+          if-no-files-found: error
+      - name: Preserve sanitized runtime scan on rejection
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: agent-security-rejected-${{ matrix.product }}-attempt-${{ github.run_attempt }}
+          path: out/security.json
+          if-no-files-found: ignore
+
   sign:
     name: Attest exact verified product bundle
-    needs: [catalog, verify]
+    needs: [catalog, secure]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -128,20 +282,48 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.catalog.outputs.matrix) }}
     steps:
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          name: agent-verified-${{ matrix.product }}
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: agent-security-${{ matrix.product }}
           path: out
+      - name: Refuse missing or mismatched evidence before signing
+        env:
+          PRODUCT: ${{ matrix.product }}
+          PRODUCT_RUNTIME: ${{ matrix.runtime }}
+        run: |
+          set -euo pipefail
+          lock="$(sha256sum apm.lock.yaml | cut -d ' ' -f1)"
+          jq -e --arg source "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" --arg product "$PRODUCT" --arg lock "$lock" \
+            '.source == $source and .run == $run and .product == $product and .capabilityLockSha256 == $lock' out/verified.json >/dev/null
+          image="$(jq -er .image out/promotion.json)"
+          [[ "$image" == "docker.io/library/$PRODUCT_RUNTIME@sha256:"* ]]
+          node factory/supply-chain.mjs verify out/verified.json apm.lock.yaml "$image" out
       - uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26
         id: signature
         with:
+          subject-path: out/promotion.json
+          predicate-type: https://github.com/richgo/forge-kit/attestations/agent-promotion/v1
+          predicate: '{"product":"${{ matrix.product }}","source":"${{ github.sha }}","acceptance":"independent","run":"${{ github.run_id }}"}'
+      - uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26
+        id: provenance
+        with:
           subject-path: out/verified.json
-          predicate-type: https://github.com/richgo/forge-kit/attestations/agent-product/v1
-          predicate: '{"product":"${{ matrix.product }}","source":"${{ github.sha }}","acceptance":"independent"}'
+      - name: Stage both signature bundles atomically for handoff
+        env:
+          PROMOTION_BUNDLE: ${{ steps.signature.outputs.bundle-path }}
+          SLSA_BUNDLE: ${{ steps.provenance.outputs.bundle-path }}
+        run: |
+          set -euo pipefail
+          mkdir -p signatures/promotion signatures/provenance
+          cp "$PROMOTION_BUNDLE" signatures/promotion/bundle.json
+          cp "$SLSA_BUNDLE" signatures/provenance/bundle.json
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
-          name: agent-signature-${{ matrix.product }}
-          path: ${{ steps.signature.outputs.bundle-path }}
+          name: agent-signatures-${{ matrix.product }}
+          path: signatures/
           if-no-files-found: error
 
   release:
@@ -161,6 +343,8 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           persist-credentials: false
+      - name: Restore frozen, audited capabilities
+        run: bash factory/restore-capabilities.sh
       - name: Fetch the immutable execution image
         env:
           PRODUCT_RUNTIME: ${{ matrix.runtime }}
@@ -168,46 +352,73 @@ jobs:
           set -euo pipefail
           image="$(node --input-type=module -e 'import {runtimeImages} from "./factory/agent-verifier.mjs"; console.log(runtimeImages[process.argv[1]])' "$PRODUCT_RUNTIME")"
           docker pull "$image"
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
-          name: agent-verified-${{ matrix.product }}
+          name: agent-security-${{ matrix.product }}
           path: out
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
-          name: agent-signature-${{ matrix.product }}
-          path: signature
+          name: agent-signatures-${{ matrix.product }}
+          path: signatures
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: agent-producer-${{ matrix.product }}
+          path: producer
       - name: Verify the signed bundle and reject changed bytes
         env:
           GH_TOKEN: ${{ github.token }}
+          PRODUCT_RUNTIME: ${{ matrix.runtime }}
         run: |
           set -euo pipefail
-          bundles=(signature/*.json)
+          bundles=(signatures/promotion/*.json)
           [[ "${#bundles[@]}" == 1 && -f "${bundles[0]}" ]]
-          args=(--bundle "${bundles[0]}" --repo "$GITHUB_REPOSITORY"
+          provenance_bundles=(signatures/provenance/*.json)
+          [[ "${#provenance_bundles[@]}" == 1 && -f "${provenance_bundles[0]}" ]]
+          args=(--repo "$GITHUB_REPOSITORY"
             --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/agent-delivery.yml"
             --signer-digest "$GITHUB_SHA" --source-ref "$GITHUB_REF" --source-digest "$GITHUB_SHA"
-            --deny-self-hosted-runners
-            --predicate-type https://github.com/richgo/forge-kit/attestations/agent-product/v1 --format json)
-          gh attestation verify out/verified.json "${args[@]}" > out/signature-verification.json
-          jq -e --arg product "$PRODUCT" --arg source "$GITHUB_SHA" '
+            --deny-self-hosted-runners --format json)
+          promotion=(--bundle "${bundles[0]}" --predicate-type https://github.com/richgo/forge-kit/attestations/agent-promotion/v1)
+          gh attestation verify out/promotion.json "${args[@]}" "${promotion[@]}" > out/signature-verification.json
+          gh attestation verify out/verified.json "${args[@]}" --bundle "${provenance_bundles[0]}" \
+            --predicate-type https://slsa.dev/provenance/v1 > out/slsa-verification.json
+          image="$(node --input-type=module -e 'import {runtimeImages} from "./factory/agent-verifier.mjs"; console.log(runtimeImages[process.argv[1]])' "$PRODUCT_RUNTIME")"
+          node factory/supply-chain.mjs verify out/verified.json apm.lock.yaml "$image" out
+          jq -e --arg product "$PRODUCT" --arg source "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" '
             any(.[].verificationResult.statement.predicate;
-              . == {product: $product, source: $source, acceptance: "independent"})
+              . == {product: $product, source: $source, acceptance: "independent", run: $run})
           ' out/signature-verification.json > /dev/null
-          cp out/verified.json out/changed.json
+          mkdir out/missing-evidence
+          cp out/promotion.json out/security.json out/missing-evidence/
+          if node factory/supply-chain.mjs verify out/verified.json apm.lock.yaml "$image" out/missing-evidence \
+              > /dev/null 2> out/missing-evidence-rejection.log; then
+            echo '::error::Promotion accepted a missing SBOM'
+            exit 1
+          fi
+          cp out/promotion.json out/changed.json
           printf 'tampered\n' >> out/changed.json
-          if gh attestation verify out/changed.json "${args[@]}" > /dev/null 2> out/tamper-rejection.log; then
+          if gh attestation verify out/changed.json "${args[@]}" "${promotion[@]}" > /dev/null 2> out/tamper-rejection.log; then
             echo '::error::Changed bundle passed signature verification'
             exit 1
           fi
+      - name: Independently reproduce exact verified bundle bytes
+        run: |
+          set -euo pipefail
+          node factory/agent-delivery.mjs verify "examples/agent-products/$PRODUCT" producer/candidates.json out/reproduced.json
+          cmp out/verified.json out/reproduced.json
+          sha256sum out/reproduced.json > out/reproduced-sha256.txt
       - name: Promote both revisions, inject a failure and re-observe the restored release
         run: node factory/agent-delivery.mjs exercise "examples/agent-products/$PRODUCT" out/verified.json out/recovery.json
       - name: Preserve isolated release evidence
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
-          name: agent-release-${{ matrix.product }}
+          name: agent-release-${{ matrix.product }}-attempt-${{ github.run_attempt }}
           path: |
             out/signature-verification.json
+            out/slsa-verification.json
+            out/reproduced-sha256.txt
             out/tamper-rejection.log
+            out/missing-evidence-rejection.log
             out/recovery.json
           if-no-files-found: warn
