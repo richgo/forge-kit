@@ -57,8 +57,12 @@ export async function planRuntimeRecovery({ url, candidate, baseline, attempted 
 
   const first = await check();
   if (first === 'healthy') return { action: 'healthy', observations };
-  if (first === 'different' && await observeRuntime(url, baseline, send) === 'healthy') {
-    return { action: 'already-restored', observations };
+  if (first === 'different') {
+    const result = await observeRuntime(url, baseline, send);
+    if (result === 'healthy') {
+      const baselineObservation = { release: baseline.release, result, at: new Date().toISOString() };
+      return { action: 'already-restored', observations, baselineObservation };
+    }
   }
   const second = await check();
   if (second === 'healthy') return { action: 'healthy', observations };

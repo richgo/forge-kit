@@ -6,16 +6,17 @@ endpoint="repos/$GITHUB_REPOSITORY/issues"
 run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
 [[ "$CANDIDATE_RUN" =~ ^[1-9][0-9]*$ ]]
 title="ForgeKit Pages incident for release run $CANDIDATE_RUN"
+key="<!-- forgekit: runtime incident for run $CANDIDATE_RUN -->"
 claim="<!-- forgekit: restoration-attempt-1 for run $CANDIDATE_RUN -->"
 case "$1" in
   open)
     issue="$(gh api --paginate --slurp "$endpoint?state=all&per_page=100" |
-      jq -er --arg title "$title" '
-        [ .[][] | select(.title == $title and .user.login == "github-actions[bot]" and (has("pull_request") | not)) ] |
+      jq -er --arg key "$key" '
+        [ .[][] | select(((.body // "") | startswith($key)) and .user.login == "github-actions[bot]" and (has("pull_request") | not)) ] |
         if length > 1 then error("Duplicate runtime incident") else (.[0].number // "") end')"
     if [[ -z "$issue" ]]; then
       issue="$(gh api "$endpoint" --method POST --raw-field title="$title" \
-        --raw-field body="Pages runtime observation failed. See $run_url for the authenticated release and incident evidence." \
+        --raw-field body="$key"$'\n'"Pages runtime observation failed. See $run_url for the authenticated release and incident evidence." \
         --jq .number)"
     fi
     [[ "$issue" =~ ^[1-9][0-9]*$ ]]

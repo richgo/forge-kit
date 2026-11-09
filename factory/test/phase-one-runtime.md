@@ -14,7 +14,9 @@ before granting Pages deployment. Keep the existing release gate and
    `factory-pages-observation` artifacts. The newer release must be active.
    Set `FORGE_RUNTIME_CANDIDATE_RUN` to its run ID and
    `FORGE_RUNTIME_BASELINE_RUN` to the approved healthy predecessor's run ID.
-   Update the pair after each approved release. The repository setting is an
+   The candidate's `factory-pages-rollback` artifact must be byte-for-byte
+   identical to the predecessor archive. Update the pair after each approved
+   release. The repository setting is an
    operator selection of the predecessor. Signatures and health are independently
    checked against the selected runs and the repository's Pages URL.
 2. Run **Qualify Pages runtime and recover incidents** on `main`. It also runs
@@ -45,6 +47,10 @@ additional read-only probe. Restoration requires two consecutive content
 mismatches with the active candidate manifest, an approved recommendation
 with probability at least 0.8, deterministic authorization, and another
 matching incident observation immediately before reserving the attempt.
+The latest other `github-pages` deployment must also be a successful GitHub
+Actions deployment for the authenticated candidate run, source and Pages URL.
+A newer or ambiguous deployment record requires operator review even when a
+CDN cache still serves the candidate.
 
 ## Budget, audit and incident ownership
 
@@ -58,7 +64,7 @@ claim is a GitHub Actions bot comment on the issue. The claim is persisted
 before Pages can receive the archive. A crash, timeout, cancellation, or
 ambiguous deploy response after the claim consumes the attempt. Preserve the
 bot issue and comments, including closed issues. Restrict issue moderation
-and configuration to trusted operators. A workflow rerun reads the original
+and configuration to trusted operators. Preserve the incident body marker. A workflow rerun reads the original
 claim. The worker checks the predecessor if the candidate manifest has
 changed so a healthy restoration remains recognizable until the configured
 run IDs are updated.
@@ -75,6 +81,21 @@ operator investigation because the worker cannot establish which release is
 active.
 
 ## Qualification evidence and remaining live gates
+
+On 9 November 2026, the [hosted no-publication qualification](https://github.com/richgo/forge-kit/actions/runs/42678663743)
+passed APMX contract replay, archive signing, independent signature validation
+and the archive and signer rejection cases. The Pages job was skipped.
+[ForgeKit Skills catalog CI](https://github.com/richgo/forge-kit-skills/actions/runs/42677583196)
+passed the typed-advisor revision.
+
+The public Pages manifest was readable and matched the source SHA of
+[the historical production run](https://github.com/richgo/forge-kit/actions/runs/42522158400).
+Its retained artifacts include a Pages observation but lack the signed Pages
+archive bundle. The [release gate](hosted-release.md) requires a signed active
+fallback before publishing. Production therefore requires an approved
+migration that establishes a signed baseline from the already-live release
+or a separately qualified production target. The old manifest, public site,
+and prior observation alone cannot establish that trust.
 
 - The ForgeKit tests inject corrupt HTML and CALM/LikeC4 bytes through the
   public probe interface, exercise retry and escalation, and verify healthy

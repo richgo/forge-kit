@@ -35,11 +35,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          [[ "$CANDIDATE_RUN" != "$BASELINE_RUN" ]]
-          mkdir evidence
           url="$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq .html_url)"
-          bash factory/authenticate-pages-run.sh "$CANDIDATE_RUN" evidence/candidate "$url"
-          bash factory/authenticate-pages-run.sh "$BASELINE_RUN" evidence/baseline "$url"
+          bash factory/authenticate-pages-run.sh "$url" evidence
           node factory/runtime-recovery-cli.mjs detect evidence "$url"
       - if: ${{ !cancelled() }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
@@ -84,11 +81,14 @@ jobs:
     concurrency:
       group: github-pages
       cancel-in-progress: false
-    environment: github-pages
+    environment:
+      name: github-pages
+      url: ${{ steps.restore.outputs.page_url }}
     permissions:
       actions: read
       attestations: read
       contents: read
+      deployments: read
       issues: write
       pages: write
       id-token: write
@@ -110,11 +110,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          [[ "$CANDIDATE_RUN" != "$BASELINE_RUN" ]]
-          mkdir evidence
           url="$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq .html_url)"
-          bash factory/authenticate-pages-run.sh "$CANDIDATE_RUN" evidence/candidate "$url"
-          bash factory/authenticate-pages-run.sh "$BASELINE_RUN" evidence/baseline "$url"
+          bash factory/authenticate-pages-run.sh "$url" evidence
           printf 'url=%s\n' "$url" >> "$GITHUB_OUTPUT"
       - id: budget
         env:
@@ -141,6 +138,7 @@ jobs:
           PAGE_URL: ${{ steps.authenticate.outputs.url }}
         run: |
           set -euo pipefail
+          bash factory/check-pages-deployment.sh "$PAGE_URL" evidence/candidate/release.json > evidence/current-deployment.json
           node factory/runtime-recovery-cli.mjs freshness evidence "$PAGE_URL"
           bash factory/runtime-incident.sh claim
       - id: restore
@@ -154,7 +152,14 @@ jobs:
         name: Independently probe restored HTTPS bytes
         env:
           PAGE_URL: ${{ steps.authenticate.outputs.url }}
-        run: node factory/website.mjs probe "$PAGE_URL" evidence/baseline/release.json > evidence/restored.json
+        run: |
+          set -euo pipefail
+          if node factory/website.mjs probe "$PAGE_URL" evidence/baseline/release.json > evidence/restored.json; then
+            exit 0
+          fi
+          jq -n --arg at "$(date -u +%FT%TZ)" --slurpfile expected evidence/baseline/release.json \
+            '{observed:"failed", at:$at, expected:$expected[0]}' > evidence/restored.json
+          exit 1
       - name: Preserve recovery evidence
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f

@@ -45,7 +45,10 @@ test('corrupt candidate authorizes only its authenticated predecessor and restor
   assert.equal(await worker.observeRuntime(system.context.url, baseline.manifest, system.context.send), 'different');
   system.restore();
   assert.equal(await worker.observeRuntime(system.context.url, baseline.manifest, system.context.send), 'healthy');
-  assert.equal((await worker.planRuntimeRecovery(system.context)).action, 'already-restored');
+  const after = await worker.planRuntimeRecovery(system.context);
+  assert.equal(after.action, 'already-restored');
+  assert.equal(after.baselineObservation.release, baseline.manifest.release);
+  assert.equal(after.baselineObservation.result, 'healthy');
 });
 
 test('an unrecognized deployment is never overwritten even with a restore recommendation', async () => {
