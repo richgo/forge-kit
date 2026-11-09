@@ -7,7 +7,7 @@ dependencies:
     - 'richgo/forge-kit-skills/packages/architecture#8861afd5606136f3bbb55043d21ac732ed11df53'
     - 'richgo/forge-kit-skills/packages/build-repair#2ad068c4e1b2abe9b7dda65f5e8dab4835213558'
     - 'richgo/forge-kit-skills/packages/delivery#2ad068c4e1b2abe9b7dda65f5e8dab4835213558'
-    - 'richgo/forge-kit-skills/packages/factory-workflows#67b24c51b83987828e79296eaaf13f85ac97fd5d'
+    - 'richgo/forge-kit-skills/packages/factory-workflows#66a34368048c9105da54e888673de0c21e59d258'
     - 'richgo/forge-kit-skills/packages/repair-acceptance#67b24c51b83987828e79296eaaf13f85ac97fd5d'
     - 'richgo/forge-kit-skills/packages/requirements#3625298b6c9b09344c314d6c413ff8e0b3abf4e4'
     - 'richgo/forge-kit-skills/packages/security-review#8861afd5606136f3bbb55043d21ac732ed11df53'

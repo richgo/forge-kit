@@ -77,9 +77,9 @@ dependencies:
 - repo_url: richgo/forge-kit-skills
   name: forge-kit-factory-workflows
   host: github.com
-  resolved_commit: 67b24c51b83987828e79296eaaf13f85ac97fd5d
-  resolved_ref: 67b24c51b83987828e79296eaaf13f85ac97fd5d
-  version: 0.7.0
+  resolved_commit: 66a34368048c9105da54e888673de0c21e59d258
+  resolved_ref: 66a34368048c9105da54e888673de0c21e59d258
+  version: 0.7.1
   virtual_path: packages/factory-workflows
   is_virtual: true
   package_type: apm_package
@@ -87,7 +87,7 @@ dependencies:
   - .github/prompts/forge-verify.prompt.md
   deployed_file_hashes:
     .github/prompts/forge-verify.prompt.md: sha256:7e1f5d0362aeeb10f289826f915eea29b652483b7bd1707390019c5d72dc9783
-  content_hash: sha256:afdff5367ad530a9a800d97d369d841f4ef93f0bdda1e3c8412051e61988c866
+  content_hash: sha256:cede4def9a70403ef5c22bc46a80794f50806ba036bdcd45e86beb9959952536
 - repo_url: richgo/forge-kit-skills
   name: forge-kit-repair-acceptance
   host: github.com
