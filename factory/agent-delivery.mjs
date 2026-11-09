@@ -142,8 +142,9 @@ try {
   // Assertion objects and parser errors can contain raw agent output. Log
   // authored diagnostics only. The raw source must pass scanning before upload.
   const explicit = error.code === 'ERR_ASSERTION' && error.generatedMessage === false;
+  const providerFailure = /^ERR_COPILOT_(?:EVENT_JSON|RESPONSE_JSON|PROVIDER_TIMEOUT|PROVIDER_EXIT|PROCESS)$/.test(error.code);
   const processFailure = /^Copilot (?:plan|code|test|review|repair) failed \([A-Za-z0-9_-]+\)$/.test(error.message);
   process.stderr.write('Agent delivery failed: ' +
-    (explicit || processFailure ? error.message : 'invalid input, response, or worker execution') + '\n');
+    (providerFailure ? error.code : explicit || processFailure ? error.message : 'invalid input, response, or worker execution') + '\n');
   process.exitCode = 1;
 }
