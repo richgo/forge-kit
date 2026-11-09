@@ -39,7 +39,10 @@ test('unverified or unhealthy baseline cannot authorize restoration', () => {
 });
 
 test('restoring the already unhealthy baseline is forbidden', () => {
-  assert.deepEqual(decideRecovery({ ...input(), candidate: { ...candidate, release: baseline.release } }),
+  const failure = input();
+  failure.candidate.release = baseline.release;
+  for (const observation of failure.incident.observations) observation.release = baseline.release;
+  assert.deepEqual(decideRecovery(failure),
     { action: 'escalate', reason: 'baseline-is-unhealthy' });
 });
 
