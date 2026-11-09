@@ -1,0 +1,119 @@
+[
+  {
+    "id": "AC-101",
+    "story": "STORY-101",
+    "input": {
+      "trails": [
+        {
+          "id": "fern",
+          "distanceMeters": 2100,
+          "stepFree": true
+        },
+        {
+          "id": "ridge",
+          "distanceMeters": 5800,
+          "stepFree": false
+        },
+        {
+          "id": "lake",
+          "distanceMeters": 3400,
+          "stepFree": true
+        }
+      ]
+    },
+    "expected": {
+      "trails": [
+        "fern",
+        "ridge",
+        "lake"
+      ]
+    }
+  },
+  {
+    "id": "AC-102",
+    "story": "STORY-101",
+    "input": {
+      "trails": []
+    },
+    "expected": {
+      "trails": []
+    }
+  },
+  {
+    "id": "AC-103",
+    "story": "STORY-102",
+    "input": {
+      "trails": [
+        {
+          "id": "fern",
+          "distanceMeters": 2100,
+          "stepFree": true
+        },
+        {
+          "id": "ridge",
+          "distanceMeters": 5800,
+          "stepFree": false
+        },
+        {
+          "id": "lake",
+          "distanceMeters": 3400,
+          "stepFree": true
+        }
+      ],
+      "stepFreeOnly": true
+    },
+    "expected": {
+      "trails": [
+        "fern",
+        "lake"
+      ]
+    }
+  },
+  {
+    "id": "AC-104",
+    "story": "STORY-102",
+    "input": {
+      "trails": [
+        {
+          "id": "oak",
+          "distanceMeters": 30,
+          "stepFree": false
+        },
+        {
+          "id": "pine",
+          "distanceMeters": 10,
+          "stepFree": true
+        }
+      ],
+      "stepFreeOnly": false
+    },
+    "expected": {
+      "trails": [
+        "oak",
+        "pine"
+      ]
+    }
+  },
+  {
+    "id": "AC-105",
+    "story": "STORY-102",
+    "input": {
+      "trails": [
+        {
+          "id": "duplicate",
+          "distanceMeters": 5,
+          "stepFree": true
+        },
+        {
+          "id": "duplicate",
+          "distanceMeters": 6,
+          "stepFree": false
+        }
+      ],
+      "stepFreeOnly": true
+    },
+    "expected": {
+      "error": "INVALID_REQUEST"
+    }
+  }
+]

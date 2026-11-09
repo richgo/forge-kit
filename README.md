@@ -160,6 +160,13 @@ flowchart TD
 
 In both examples, a rejected candidate stays out of the target environment. Repair starts from the approved inputs and uses Jev only as an advisory signal. If a repair needs a different requirement, architecture, or package set, it goes back through review and assembly before another build.
 
+## Deliver an agent-authored product
+
+The agent delivery workflow creates and evolves products from reviewed
+requirements, CALM, LikeC4, and independent acceptance cases. It uses the same
+pipeline for Trail Desk on Node.js and Stock Ledger on Python, signs the checked
+bundles, and rehearses release and recovery in an isolated runner. [Agent delivery qualification](factory/test/phase-two-agent-delivery.md)
+
 ## Try the reference implementation
 
 The deterministic Node.js 20+ fixture runs offline by default. It checks the CALM and LikeC4 inputs, builds and checks a small readiness program, copies the accepted bytes to a local deployment path, and runs the deployed program. The faulty-build case demonstrates one repair attempt. The local in-toto Statement is unsigned. The verifier re-hashes the inputs and artifacts and replays acceptance against the approved fixture.

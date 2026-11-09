@@ -1,0 +1,37 @@
+{
+  "id": "stock-ledger",
+  "runtime": "python",
+  "entry": "src/main.py",
+  "files": [
+    "src/main.py",
+    "src/ledger.py",
+    "src/reorder.py"
+  ],
+  "stories": [
+    {
+      "id": "STORY-201",
+      "description": "A stockroom clerk derives current inventory from an ordered movement journal. Read one JSON request from stdin. A balance request is an object with op equal to balance and movements as an array. Each movement has sku, a nonempty string of uppercase ASCII letters and digits, and delta, a nonzero JSON integer in the inclusive range -1000000 to 1000000 (booleans are invalid). Starting at zero per SKU, apply movements in order. Return {\"balances\":[{\"sku\":\"SKU\",\"onHand\":0}]} with one row for every SKU encountered, including zero balances, sorted by ascending ASCII SKU. An empty journal returns {\"balances\":[]}. Use src/main.py for Python standard-library stdin/stdout routing and src/ledger.py for movement validation and replay. Emit one JSON value to stdout and exit successfully even for invalid requests.",
+      "nodes": [
+        "stock_cli",
+        "stock_ledger"
+      ]
+    },
+    {
+      "id": "STORY-202",
+      "description": "Reject an invalid request object, unknown operation, missing or malformed movements, or invalid row with exactly {\"error\":\"INVALID_REQUEST\"}. Validate the shape of every row before applying any movement. If any intermediate balance becomes negative, return exactly {\"error\":\"NEGATIVE_STOCK\",\"sku\":\"SKU\"} for the first SKU that fails in journal order. A later restock cannot legalize a preceding overdraft.",
+      "nodes": [
+        "stock_cli",
+        "stock_ledger"
+      ]
+    },
+    {
+      "id": "STORY-203",
+      "description": "A stockroom clerk submits op reorder with the same movements and a targets object keyed by valid SKU. Every target must be a JSON integer from 0 to 1000000 (booleans are invalid). Validate targets and movement shapes before replaying. Retain the same journal errors and use zero on-hand for target SKUs absent from the journal. Return exactly {\"reorder\":[{\"sku\":\"SKU\",\"quantity\":1}]} for target SKUs whose target exceeds their final balance, with quantity equal to target minus on-hand and rows sorted by ascending ASCII SKU. A target at or below on-hand needs no row. Missing or malformed targets return INVALID_REQUEST. Implement target calculations in new src/reorder.py and retain balance behavior.",
+      "nodes": [
+        "stock_cli",
+        "stock_ledger",
+        "reorder_planner"
+      ]
+    }
+  ]
+}

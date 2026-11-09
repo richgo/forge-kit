@@ -1,0 +1,102 @@
+{
+  "$schema": "https://calm.finos.org/release/1.2/meta/calm.json",
+  "nodes": [
+    {
+      "unique-id": "trail_visitor",
+      "node-type": "actor",
+      "name": "Trail visitor",
+      "description": "Selects an accessible trail before leaving home."
+    },
+    {
+      "unique-id": "trail_cli",
+      "node-type": "service",
+      "name": "Trail Desk CLI",
+      "description": "Node.js command-line boundary for a single JSON request.",
+      "interfaces": [
+        {
+          "unique-id": "trail_request"
+        }
+      ]
+    },
+    {
+      "unique-id": "trail_catalog",
+      "node-type": "service",
+      "name": "Trail catalog",
+      "description": "Validates and filters caller-supplied trail rows.",
+      "interfaces": [
+        {
+          "unique-id": "catalog_selection"
+        }
+      ]
+    },
+    {
+      "unique-id": "node_runtime",
+      "node-type": "system",
+      "name": "Node.js runtime",
+      "description": "Runs the Trail Desk modules with Node.js standard library."
+    }
+  ],
+  "relationships": [
+    {
+      "unique-id": "visit_catalog",
+      "description": "Request available trails through the command-line interface.",
+      "relationship-type": {
+        "interacts": {
+          "actor": "trail_visitor",
+          "nodes": [
+            "trail_cli"
+          ]
+        }
+      }
+    },
+    {
+      "unique-id": "select_trails",
+      "description": "Select IDs from the validated catalog.",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "trail_cli"
+          },
+          "destination": {
+            "node": "trail_catalog",
+            "interfaces": [
+              "catalog_selection"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "unique-id": "trail_deployment",
+      "description": "Deploy the CLI and catalog together.",
+      "relationship-type": {
+        "deployed-in": {
+          "container": "node_runtime",
+          "nodes": [
+            "trail_cli",
+            "trail_catalog"
+          ]
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "unique-id": "trail_browse",
+      "name": "Browse the trail catalog",
+      "description": "List all or accessible trails in source order.",
+      "transitions": [
+        {
+          "relationship-unique-id": "visit_catalog",
+          "sequence-number": 1,
+          "description": "Submit the catalog and filter."
+        },
+        {
+          "relationship-unique-id": "select_trails",
+          "sequence-number": 2,
+          "description": "Validate rows and select visible trails."
+        }
+      ]
+    }
+  ]
+}
