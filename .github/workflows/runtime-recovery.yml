@@ -142,6 +142,7 @@ jobs:
           node factory/runtime-recovery-cli.mjs freshness evidence "$PAGE_URL"
           bash factory/runtime-incident.sh claim
       - id: restore
+        name: Deploy the authenticated predecessor
         if: steps.decision.outputs.action == 'restore'
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e
         with:

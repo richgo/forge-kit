@@ -31,6 +31,8 @@ test('the locked guard requires the candidate to be the current successful Pages
     '  *deployments\\?*) cat deployments.json ;;',
     '  *deployments/3/statuses*) cat 3.json ;;',
     '  *deployments/2/statuses*) cat 2.json ;;',
+    '  *actions/runs/126*) cat run.json ;;',
+    '  *actions/jobs/1*) cat job.json ;;',
     '  *) exit 2 ;;',
     'esac',
   ].join('\n') + '\n', { mode: 0o755 });
@@ -42,8 +44,18 @@ test('the locked guard requires the candidate to be the current successful Pages
     return JSON.parse(result.stdout);
   };
   assert.equal(guard().state, 'success');
+  json('run.json', { path: '.github/workflows/factory-e2e.yml', head_branch: 'main' });
   json('3.json', status(126, 'success'));
   assert.throws(guard, { status: 1 });
   json('3.json', status(126, 'failure'));
+  assert.throws(guard, { status: 1 });
+
+  json('run.json', { path: '.github/workflows/runtime-recovery.yml', head_branch: 'main' });
+  const steps = [{ name: 'Deploy the authenticated predecessor', conclusion: 'skipped' }];
+  json('job.json', { run_id: 126, status: 'completed', steps });
+  json('2.json', [...status(125, 'inactive'), ...status(125, 'success')]);
+  assert.equal(guard().state, 'success');
+  steps[0].conclusion = 'failure';
+  json('job.json', { run_id: 126, status: 'completed', steps });
   assert.throws(guard, { status: 1 });
 });
