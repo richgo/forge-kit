@@ -4,6 +4,34 @@
 
 **Forge Kit is an open-source software factory that helps teams turn a requested software change into a release they can trust.** A product team might ask for a new way to sort search results, or an engineering team might change how a service works behind the scenes. Both changes follow the same path.
 
+```mermaid
+flowchart LR
+    request["<b>Agree on the change</b><br/>Product and engineering"]
+    build["<b>Plan and build</b><br/>Forge Kit build job"]
+    check["<b>Check the result</b><br/>Independent check job"]
+    approve["<b>Sign and approve</b><br/>Signing job and<br/>release reviewers"]
+    live["<b>Go live and check</b><br/>Live environment"]
+    hold["<b>Hold the release</b><br/>Return to the team"]
+    recover["<b>Restore or escalate</b><br/>Operations"]
+
+    request --> build --> check -->|Pass| approve --> live
+    check -.->|Check fails| hold
+    live -.->|Live check fails| recover
+
+    classDef intent fill:#e0f2fe,stroke:#0369a1,color:#0c2d48,stroke-width:2px
+    classDef work fill:#ede9fe,stroke:#6d28d9,color:#2e1065,stroke-width:2px
+    classDef trust fill:#fef3c7,stroke:#a16207,color:#422006,stroke-width:2px
+    classDef service fill:#dcfce7,stroke:#15803d,color:#14532d,stroke-width:2px
+    classDef exception fill:#fff1f2,stroke:#be123c,color:#881337,stroke-width:2px
+    class request intent
+    class build work
+    class check,approve trust
+    class live service
+    class hold,recover exception
+```
+
+*Forge Kit executive workflow · Diagram by Codex*
+
 1. **Agree on the change.** The team describes what should improve, what must keep working, and how to tell whether the change succeeded.
 2. **Plan and build it.** Forge Kit works out what the request affects, brings together the tools needed for the job, and produces a version for review.
 3. **Check it independently.** A separate check confirms that the new version does what the team asked and still follows the rules for how the software is built. A failed check holds the release back.
