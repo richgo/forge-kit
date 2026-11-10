@@ -69,3 +69,5 @@ For GitHub-hosted tests, use the workflows in `.github/workflows/` and follow `d
 
 
 - [Agent delivery control-plane qualification](phase-three-control-plane.md)
+
+> **CLI-native migration:** The [copyable blueprint](../../blueprint/README.md) is the recommended new-project entrypoint. Legacy JavaScript runtime examples are retained for regression parity; see [implementation status](../../docs/implementation-status.md).
