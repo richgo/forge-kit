@@ -1,5 +1,7 @@
 # Forge Kit user guide
 
+> **Implementation note (November 2026):** The recommended new-project path is the [CLI-native blueprint](../blueprint/README.md) using pinned APMX/APM capabilities. The `factory/*.mjs` commands described below document the **legacy reference implementation** and remain for regression/migration parity; they are not the portable blueprint. See [migration gates](../docs/cli-native-migration.md) and [current status](../docs/implementation-status.md). No live deployment or full multi-language agent qualification should be inferred from local reference tests.
+
 Use Forge Kit to take an approved product or architecture change from a pull request to an independently checked release. Start with the role that owns your next decision. This guide assumes the **target workflow** is in place. The final section points to the parts you can try in the reference implementation today.
 
 A small team can share these responsibilities. The factory keeps the build, independent check, signing, and deployment in separate jobs with different permissions. [Factory architecture](architecture.md)
