@@ -1,11 +1,14 @@
 # Factory testing and end-to-end assurance
 
-**This directory is the canonical home for factory test plans, scenarios, rehearsal instructions, expected evidence and results.** Executable code may remain under `test/`, `evals/` and `.github/workflows/`; link to it from here. Keep architecture and product design in `docs/`, not test runbooks.
+Use this catalog to select factory checks and record their evidence.
+Start with the [verification guide](../../docs/testing.md) for commands and prerequisites.
 
 ## Test levels
 
 | Level | Goal | Current entry points |
 | --- | --- | --- |
+| Consumer conformance | Exercise the portable blueprint and protected project checks | [Static gate](../../scripts/check-blueprint-cli-native.sh) and [consumer acceptance](native-consumers.md) |
+| Hosted agent qualification | Produce a real patch, replay acceptance and verify the attested receipt | [Language qualification](apmx-language-qualification.md) |
 | Unit / contract | Validate individual requirements, architecture, packages, decisions and validators | `test/*.test.mjs` |
 | Integration | Validate APM/APMX, Jev, architecture and evidence boundaries | `evals/*.mjs`, `factory/*.mjs` |
 | Reference E2E | Verify intent → faulty build → independent check → bounded repair → observation | `test/end-to-end.test.mjs` |
@@ -44,10 +47,10 @@ From the repository root, using APM 0.33.0. The planner runs from the restored a
 
 ```bash
 apm install --target copilot --frozen
-node --test
+node --test test/*.test.mjs
 ```
 
-For GitHub-hosted tests, use the workflows in `.github/workflows/` and follow `docs/hosted-rehearsal.md`. Credentialed live evaluations are separate from deterministic offline tests; do not silently substitute one for the other.
+For GitHub-hosted tests, use the workflows in `.github/workflows/` and follow the [hosted runbook](../../docs/hosted-rehearsal.md). Credentialed live evaluations are separate from deterministic offline tests; do not silently substitute one for the other.
 
 ## Release gates and reporting
 
@@ -60,14 +63,11 @@ For GitHub-hosted tests, use the workflows in `.github/workflows/` and follow `d
 ## Component runbooks
 
 - [Component checks](components.md)
-- [Phase 4 traceability, operational thresholds and qualification](phase-four-qualification.md)
+- [Traceability, operational thresholds and qualification](phase-four-qualification.md)
 - [Architecture and product impact](architecture-impact.md)
 - [Typed Jev and local repair policy](jev.md)
 - [Independent website security](website-security.md)
 - [Hosted release, attestation and recovery](hosted-release.md)
 - [Qualification results](results.md)
 
-
 - [Agent delivery control-plane qualification](phase-three-control-plane.md)
-
-> **CLI-native migration:** The [copyable blueprint](../../blueprint/README.md) is the recommended new-project entrypoint. Legacy JavaScript runtime examples are retained for regression parity; see [implementation status](../../docs/implementation-status.md).

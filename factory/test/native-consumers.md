@@ -8,10 +8,10 @@ then calls the **same project-owned independent verifier** used by APMX.
 For each language it asserts:
 
 1. The accepted source patch passes the real independent acceptance suite.
-2. A patch modifying a protected reviewed file is rejected.
+2. A patch modifying the protected request file is rejected.
 3. An empty patch is rejected.
 
-GitHub Actions pins Python, Go, Node and TypeScript toolchains for the
-qualification job. This suite does not replace a real hosted APMX agent run
-and does not qualify attestations, release or rollback. It demonstrates
-language-neutral patch/checker interoperability without `factory/*.mjs`.
+The [CI workflow](../../.github/workflows/native-consumers.yml) pins Python,
+Go, Node.js and TypeScript. Its results demonstrate deterministic patch and
+checker interoperability across the three toolchains. Use the [hosted language checklist](apmx-language-qualification.md)
+to qualify agent execution, independent replay and the signed receipt.

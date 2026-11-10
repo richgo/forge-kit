@@ -1,61 +1,50 @@
-# ForgeKit: native APMX blueprint
+# ForgeKit consumer blueprint
 
-This directory is the copyable, language-agnostic **consumer blueprint**. It is
-not a second implementation of the APMX engine. The authoritative factory
-contracts and independent checks are maintained in the pinned external APM
-package at `richgo/forge-kit-skills/packages/software-factory`.
+The blueprint connects a project's approved change and independent acceptance
+suite to the ForgeKit APMX contracts. Copy the request and verifier templates
+into the project root. Use the same factory package with any application
+toolchain.
 
-## Copy into a project
+## Configure the project
 
-Copy `blueprint/.forge/verify-change` to `.forge/verify-change` in your
-application repository, review it, and replace the explicitly failing example
-commands with the project's real, pinned build, architecture, security and
-acceptance checks. Copy `blueprint/request.md` as `request.md` and write an
-approved change request. The application's language and build system remain
-entirely project-owned.
+1. Copy [request.md](request.md) and describe the reviewed outcome, allowed
+   source paths, protected interfaces and observable acceptance criteria.
+2. Copy [.forge/verify-change](.forge/verify-change) to the same relative
+   path in the project. Replace the fail-closed template with executable,
+   application-specific checks. The verifier receives an unapplied Git patch
+   as its first argument.
+3. Keep the check definitions and expected results in the approved base.
+   Have the verifier validate patch scope and run the patch in a disposable,
+   credential-free candidate tree. Run the required build, acceptance,
+   regression, architecture and security checks. Return nonzero on failure.
 
-Do not change the trust boundary: the independent checker must apply the
-candidate patch to an isolated copy of the **reviewed base** without
-credentials, then execute protected acceptance checks. Do not execute a
-candidate-supplied checker or permit the candidate patch to change it.
+Use the [architecture checklist](architecture/README.md) and
+[conformance checklist](tests/README.md) to review the checker.
 
-The factory is invoked directly through APMX (the version and package SHA
-must be pinned by the caller):
+## Run the contracts
+
+Install APMX 0.8.0, the project toolchain and the Copilot CLI. APMX checks
+for the selected harness when planning. From a clean copy of the approved project, inspect the contract plan and
+then run the pinned package with Copilot.
 
 ```sh
 apmx --from "richgo/forge-kit-skills/packages/software-factory#0132bcc69ede85681462d7ffae8ae02cf909de42" --plan
 apmx --from "richgo/forge-kit-skills/packages/software-factory#0132bcc69ede85681462d7ffae8ae02cf909de42" --on copilot
 ```
 
-For GitHub Actions use the existing
-`.github/workflows/apmx-factory.yml` reusable workflow pinned to a reviewed
-ForgeKit commit. It delegates to the upstream APMX runner and independently
-replays verification and attests the resulting delivery artifact.
+The [APMX runbook](../docs/apmx-factory.md) covers workspace setup,
+independent hosted replay and receipt attestation.
 
-## Interfaces
+## Inputs and outputs
 
-| Input/output | Owner | Meaning |
+| File | Owner | Purpose |
 | --- | --- | --- |
-| `request.md` | Reviewed project | Approved product/architecture change |
-| `.forge/verify-change` | Reviewed project | Independent acceptance of an unapplied Git patch |
-| `plan.md`, `specification.md` | APMX contracts | Derived agent handoffs |
-| `changes.diff`, `implementation.md` | APMX build | Bounded source patch and report |
-| `review.md` | APMX review | Advisory findings, not release authorization |
-| `apm.yml`, `apm.lock.yaml` | Project | Pinned external skills and agent configuration |
+| `request.md` | Project | Approved change and acceptance criteria |
+| `.forge/verify-change` | Project | Protected verifier for the unapplied patch |
+| `plan.md`, `specification.md` | APMX contracts | Reviewed inputs turned into scoped implementation guidance |
+| `changes.diff`, `implementation.md` | APMX build | Candidate source patch and implementation report |
+| `review.md` | APMX review | Advisory findings for the project reviewer |
+| `apm.yml`, `apm.lock.yaml` | Project | Manifest and lock for capabilities installed through APM |
 
-## Boundaries
-
-The APMX build output is a **checked patch**, not a deployed release. Protected
-branch review, signed provenance, deployment, observation and recovery are
-separate privileged stages and must not be bypassed by a successful APMX run.
-The legacy `factory/*.mjs` reference implementation remains in the repository
-until every security and production behavior has an independently qualified
-CLI-native replacement. This migration intentionally does not claim it is
-already removable.
-
-The template fails closed until the consumer supplies real checks. A
-language-agnostic blueprint must not silently substitute placeholder tests.
-
-## Status and navigation
-
-The reusable APMX blueprint is merged, but production parity is still being qualified. See [three consumer examples](../examples/consumers/README.md), [hosted APMX qualification](../factory/test/apmx-language-qualification.md), [migration gates](../docs/cli-native-migration.md) and [implementation status](../docs/implementation-status.md). The template checker must remain fail-closed until the consuming application provides independently reviewed checks.
+Compare the [Python, Go and TypeScript consumers](../examples/consumers/README.md)
+to see how different toolchains implement the same verifier interface.

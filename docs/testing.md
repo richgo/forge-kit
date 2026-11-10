@@ -1,11 +1,35 @@
-# Factory verification and evals
+# ForgeKit verification guide
 
-> **Implementation note (November 2026):** The recommended new-project path is the [CLI-native blueprint](../blueprint/README.md) using pinned APMX/APM capabilities. The `factory/*.mjs` commands described below document the **legacy reference implementation** and remain for regression/migration parity; they are not the portable blueprint. See [migration gates](../docs/cli-native-migration.md) and [current status](../docs/implementation-status.md). No live deployment or full multi-language agent qualification should be inferred from local reference tests.
+Use the test that matches the evidence you need. Static conformance checks
+the blueprint structure. The deterministic consumer suite runs real
+acceptance against generated source patches. Hosted APMX qualification
+exercises agent execution, independent replay and receipt attestation.
+The product release rehearsal adds environment approval, live observation
+and recovery checks.
 
-The suite uses two boundaries. Forge Kit's CLI cases start from product
-requirements, authoritative CALM and a LikeC4 view. Catalog cases run the
-pinned package's independent acceptance, signing and deployment code in
-a separate temporary environment.
+## Verify a consumer
+
+From the repository root, with Bash, Git, Python, Go, Node.js and TypeScript
+installed, run the static gate and the consumer acceptance suite.
+
+```sh
+bash scripts/check-blueprint-cli-native.sh
+bash scripts/qualify-native-consumers.sh
+```
+
+Compare the outputs with the [conformance checklist](../blueprint/tests/README.md)
+and [consumer runbook](../factory/test/native-consumers.md). For each
+consumer, collect evidence that the correct patch passes and that attempts
+to alter protected files fail. For an agent-generated candidate, follow
+the [hosted checklist](../factory/test/apmx-language-qualification.md)
+and authenticate the replayed receipt.
+
+## Readiness and catalog fixtures
+
+The readiness fixture exercises reviewed requirements, CALM topology,
+bounded repair and independent replay. The catalog suite exercises signed
+handoff and rollback in a temporary environment. The
+[component runbook](../factory/test/components.md) lists their inputs.
 
 | Scenario | Expected evidence |
 |---|---|
@@ -15,13 +39,16 @@ a separate temporary environment.
 | One faulty source revision | A known mutation builds valid JavaScript that prints the wrong response. It runs and fails acceptance before deployment. The rebuilt source passes, and the receipt binds both the rejected and deployed bytes. |
 | Persistent faulty source | Both attempts fail. The factory escalates after one retry with no deployment or success receipt. |
 | Tampered evidence or a false review claim | The verifier detects edited artifact bytes. The deterministic grader rejects wrong digests, unsupported signer or environment claims, and extra claims. |
-| Catalog receipt or delivery failure | The pinned catalog checks an independent signature and rejects the wrong signer or bytes. An additional scenario corrupts deployed bytes and confirms that rollback restores the previously observed release. |
+| Catalog receipt or delivery failure | The pinned catalog checks an independent signature and rejects the wrong signer or bytes. An additional scenario corrupts deployed bytes and confirms that rollback restores the authenticated baseline. |
 | Typed routing and package integrity | Missing, malformed or untrusted decision signals cannot authorize deployment. GitHub CI reproduces the APM lock in a fresh directory. |
 
-## Run the suite
+### Run the repository tests
+
+Use Bash, Node.js 20 or later and APM 0.33.0 from the repository root.
 
 ```sh
-node --test
+apm install --target copilot --frozen
+node --test test/*.test.mjs
 ```
 
 To reproduce the delegated repair case manually, use a fresh output directory.
@@ -54,7 +81,7 @@ The grader returns structured pass/fail results and exits unsuccessfully
 when any assertion fails. The local in-toto Statement is unsigned. The
 catalog rehearsal uses its separate signed handoff.
 
-## Credentialed evaluation
+### Credentialed evaluation
 
 Run live cases in disposable repositories and isolated deployment
 environments. Pin the model, catalog, requirement revision and architecture

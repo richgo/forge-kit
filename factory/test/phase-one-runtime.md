@@ -1,4 +1,4 @@
-# Phase 1 Pages qualification and incident recovery
+# Pages observation and incident recovery
 
 The production release worker in `richgo/forge-kit-skills` remains pinned by
 `factory/packages.json`. It independently checks the APMX contract, CALM,
@@ -20,7 +20,7 @@ before granting Pages deployment. Keep the existing release gate and
    operator selection of the predecessor. Signatures and health are independently
    checked against the selected runs and the repository's Pages URL.
 2. Run **Qualify Pages runtime and recover incidents** on `main`. It also runs
-   every three hours. A candidate run ID switches monitoring from the original
+   every three hours. A candidate run ID switches monitoring from the
    readiness-fixture monitor to the Trail Desk manifest and all three published
    files. In observation mode, failed checks create a GitHub issue and fail
    the workflow for review. Subscribe the responsible operators to repository
@@ -93,8 +93,8 @@ The public Pages manifest was readable and matched the source SHA of
 Its retained artifacts include a Pages observation but lack the signed Pages
 archive bundle. The [release gate](hosted-release.md) requires a signed active
 fallback before publishing. Production therefore requires an approved
-migration that establishes a signed baseline from the already-live release
-or a separately qualified production target. The old manifest, public site,
+process that establishes a signed baseline for the active release
+or a separately qualified production target. The served manifest, public site,
 and prior observation alone cannot establish that trust.
 
 - The ForgeKit tests inject corrupt HTML and CALM/LikeC4 bytes through the

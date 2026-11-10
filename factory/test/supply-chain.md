@@ -31,7 +31,7 @@ with detected secrets are excluded from artifacts.
 
 ## Runtime image qualification
 
-On 9 November 2026, a Trivy 0.76.2 registry scan of the Phase 2
+On 9 November 2026, a Trivy 0.76.2 registry scan of the agent delivery
 `node:22-bookworm-slim` digest `e21fc383…` on Linux/amd64 reported four
 fixable CRITICAL findings. The IDs were CVE-2026-13221, CVE-2026-42496,
 CVE-2026-8376, and CVE-2026-59873.

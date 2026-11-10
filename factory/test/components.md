@@ -1,11 +1,12 @@
 # Factory component checks
 
-Restore the lock with APM 0.33.0, then run `node --test` for the repository suite. The native architecture and
+Restore the lock with APM 0.33.0, then run `node --test test/*.test.mjs` for the repository suite. The native architecture and
 package checks below use real upstream binaries. The GitHub dispatches
 use repository credentials and record separate artifacts.
 
 | Component | Entry point and success evidence | Rejection and recovery coverage |
 | --- | --- | --- |
+| Blueprint and consumer acceptance | `bash scripts/check-blueprint-cli-native.sh` and `bash scripts/qualify-native-consumers.sh`. The same checker interface accepts a valid patch for each consumer. [Consumer qualification](native-consumers.md) | The static gate rejects a custom factory runtime in the blueprint. Consumer checks reject protected-path and empty patches. |
 | Product requirements and planning | `node --test test/impact.test.mjs test/website.test.mjs`. The planner emits changed CALM and requirement IDs, affected consumers and the acceptance criteria in scope. PR preview uploads the Trail Desk and readiness plans. | Duplicate IDs, a changed acceptance owner, unsupported criteria, missing CALM owners, removed dependencies and view drift. |
 | CALM and LikeC4 | `bash factory/test/native-architecture.sh` runs the pinned FINOS validator on direct and delegated fixtures. GitHub preview and the worker run native LikeC4 validation. [Architecture impact](architecture-impact.md) | Unexpected CALM warnings and schema errors block the gate. The sole warning allowed for a standalone service is CALM's unreferenced-node warning. The factory separately verifies the projection and owner. |
 | APM catalog and package lock | Run `node factory/cli.mjs assemble` to inspect every role, then run `apm install --target copilot --frozen` and `apm audit --ci` with APM 0.33.0, or run `bash factory/test/apm-integrity.sh /path/to/apm` to exercise the positive and adversarial cases in a scratch directory. The hosted assembly job checks the generated manifest and unchanged lock. | Tests reject mutable references. Frozen install rejects a missing lock and audit checks file integrity and replay drift. The reviewed manifest is the catalog trust policy for this repository. |
@@ -27,5 +28,3 @@ node --test evals/catalog-scenarios.mjs evals/requirements-scenarios.mjs
 catalog checkout at the `skills` pin. Both suites fail if their package
 input is missing. Run the browser security tests in the pinned catalog
 checkout using the Chromium instructions in the security runbook.
-
-> **CLI-native migration:** The [copyable blueprint](../../blueprint/README.md) is the recommended new-project entrypoint. Legacy JavaScript runtime examples are retained for regression parity; see [implementation status](../../docs/implementation-status.md).

@@ -1,20 +1,27 @@
 # Product requirements
 
-> **Implementation note (November 2026):** The recommended new-project path is the [CLI-native blueprint](../blueprint/README.md) using pinned APMX/APM capabilities. The `factory/*.mjs` commands described below document the **legacy reference implementation** and remain for regression/migration parity; they are not the portable blueprint. See [migration gates](../docs/cli-native-migration.md) and [current status](../docs/implementation-status.md). No live deployment or full multi-language agent qualification should be inferred from local reference tests.
+An epic states the desired outcome. A feature describes a capability that
+advances it. A story names the actor, the need, the benefit and the owning
+component. Give each acceptance criterion a stable ID and an observable
+Given, When and Then. Keep those IDs in the change request, the independent
+checks and the review evidence.
 
-Start with the [product example](../examples/product-requirements.json) or the
-authoring and JSON templates in the pinned Forge Kit Skills requirements
-package. An epic states an outcome. A feature describes a capability that
-advances that outcome. A story names its actor, need, benefit, and owning CALM
-node. Acceptance criteria use stable IDs and Given, When, Then fields.
+## Write a change request
 
-This reference runs one selected story per invocation. The supported action,
-`run-readiness-probe`, checks the program's exact standard output and exit
-code. The executable assertions live in `then`. The `given` field records
-fixture context for the reviewer. New behavior needs a corresponding
-executable checker before it can be accepted as a story.
+Copy the [request template](../blueprint/request.md) or read the
+[quote API example](../examples/consumers/python-api/request.md). Record
+the outcome, permitted paths, protected interfaces and behavior, and any
+affected architecture model. For the discount story, an acceptance check
+can start with a subtotal of 100, apply a discount of 30 and expect a total
+of 70. A second case can verify that a discount greater than the subtotal
+returns zero. The independent tests belong to the approved project base.
 
-## Run and verify
+## Trace a story through the readiness fixture
+
+The [structured product example](../examples/product-requirements.json)
+uses a CALM owner and stable acceptance IDs. Its `run-readiness-probe`
+action checks exact standard output and exit code. The executable
+assertions live in `then`. The `given` field records the review context.
 
 Install the pinned APM dependencies, then create a fresh working directory.
 
@@ -50,6 +57,3 @@ deployed artifact digest and recorded runtime observations. CI resolves the
 contract in APMX and runs its declared checker without a model. The local
 in-toto Statement is unsigned. The checker validates traceability and
 consistency of the evidence produced by the independent replay.
-
-The previous flat readiness fixture remains available for existing CLI
-examples and tests.

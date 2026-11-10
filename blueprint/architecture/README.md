@@ -1,13 +1,18 @@
 # Architecture inputs
 
-Place the product's authoritative FINOS CALM architecture and its LikeC4
-projection in the consuming project. Validate with the **pinned native**
-`calm` and `likec4` CLIs as part of the project's protected
-`.forge/verify-change` entry point.
+Keep the project's architecture models with its approved source and link the
+relevant components and interfaces from [the change request](../request.md).
+With CALM and LikeC4, use CALM for machine-readable nodes, interfaces and
+relationships and LikeC4 as the reviewable view of the relevant structure.
+Projects can provide other architecture inputs through the same checker.
 
-Do not infer architectural compatibility from a generated narrative.
-Breaking interfaces, dependencies and data-flow changes must be assessed by
-the project's independent acceptance suite. This blueprint deliberately does
-not impose a flat node-only model or a programming language.
+In [.forge/verify-change](../.forge/verify-change), check the proposed patch
+against the permitted source scope and validate the candidate's architecture
+in a disposable tree. Run pinned validators for the project's model and view.
+Add project rules for changed interfaces, forbidden dependencies, data flows
+and any downstream behavior the change can affect.
 
-> **Migration:** The native blueprint is the recommended path, but hosted multi-language and production recovery equivalence are not yet proven. See [implementation status](../../docs/implementation-status.md).
+For an architecture change, test the intended structural result as well as
+the public behavior. The [delegated readiness fixture](../../factory/test/architecture-impact.md)
+uses an independent check to observe the worker process while verifying the
+same readiness response.

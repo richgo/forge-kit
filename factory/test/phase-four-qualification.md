@@ -1,4 +1,4 @@
-# Phase 4 qualification and operating measurements
+# Factory qualification and operating measurements
 
 ## Component-to-test traceability
 
@@ -26,7 +26,7 @@ or the capability lock. This requires the existing trusted dispatch policy.
 Dispatch **Factory bootstrap** with `agent_products=true`,
 `agent_resume_drill=true`, `agent_replay_drill=true` and `pages_drill=false`.
 Attempt 1 persists initial artifacts and then deliberately stops. Rerun failed
-jobs. The original signed Phase 2 source is authenticated again and retained
+jobs. The signed agent-delivery source is authenticated again and retained
 as the origin in the new signed bundle. Both products then pass clean restore,
 independent verification, source and runtime scanning, signed evidence
 verification, reproduction and isolated recovery.
@@ -66,11 +66,10 @@ HTML, CALM and LikeC4 digests to
 [production run 42522158400](https://github.com/richgo/forge-kit/actions/runs/42522158400).
 The observed release still lacks a signed Pages rollback bundle. The
 `github-pages` environment reported a branch policy only. Production requires
-a signed baseline migration, confirmed reviewer and alert policies, and
-authorization for any live fault exercise. The hosted Phase 4 drill qualifies
+a signed baseline, confirmed reviewer and alert policies, and
+authorization for any live fault exercise. The hosted rehearsal qualifies
 the isolated path for Trail Desk and Stock Ledger. It uses archived agent
 source and measures the current pipeline from verified source through recovery.
-
 
 ## Qualification record
 
@@ -93,7 +92,7 @@ fault. Both passed the rehearsal thresholds. The lead times include one
 workflow rerun and elapsed queue time. The archived source audit records
 eight agent sessions per product and zero repair calls.
 The run's `qualification-attempt-2` artifact contains the report and measured
-stages. The [ForgeKit PR check](https://github.com/richgo/forge-kit/actions/runs/42774492638)
+stages. The [ForgeKit integration check](https://github.com/richgo/forge-kit/actions/runs/42774492638)
 passed the frozen install, tests, native validators and real container probes.
 All 117 local tests passed using the exact pinned capability files.
 

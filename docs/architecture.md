@@ -1,54 +1,24 @@
-# ForgeKit reference factory architecture
+# ForgeKit architecture
 
-> **Implementation note (November 2026):** The recommended new-project path is the [CLI-native blueprint](../blueprint/README.md) using pinned APMX/APM capabilities. The `factory/*.mjs` commands described below document the **legacy reference implementation** and remain for regression/migration parity; they are not the portable blueprint. See [migration gates](../docs/cli-native-migration.md) and [current status](../docs/implementation-status.md). No live deployment or full multi-language agent qualification should be inferred from local reference tests.
+ForgeKit composes a software factory from versioned APM packages, APMX contracts and project-owned checks. The factory treats application code as an input to the workflow. Bash and Git provide the patch-checking interface, and the project chooses the application runtime and build tools.
 
-> Target design, not a claim of full implementation. See [implementation status](implementation-status.md) and [factory testing](../factory/test/README.md).
+## Change and delivery lifecycle
 
-## Purpose and invariants
+1. **Approve intent.** Describe the outcome, allowed source scope, protected behavior and observable acceptance criteria. Link the story and architecture revisions that define the change.
+2. **Resolve the workflow.** Pin the APMX CLI and factory package. APMX resolves the declared contract inputs and outputs into an execution plan. Projects using installed agent capabilities pin those packages and their dependencies with APM.
+3. **Build a candidate.** The plan and specification guide the agent. The build contract exports an unapplied Git patch and an implementation report. The agent works within the approved scope and a bounded attempt and time budget.
+4. **Check independently.** Run the approved project's `.forge/verify-change` against the exact patch. Check allowed paths, apply the patch to a disposable copy of the approved base and run the required build, architecture, acceptance, regression and security checks. A failure blocks delivery.
+5. **Record evidence.** Inspect the advisory review and the checked patch. The hosted workflow replays the checks in a separate job and attests the checked delivery and binds it to the receipt.
+6. **Operate through a protected release workflow.** A product's release adapter authenticates the approved artifact, checks environment policy and observes the deployed result. Recovery policy may authorize a bounded restore of an authenticated fallback. Probe the restored release and escalate if its health cannot be confirmed.
 
-ForgeKit is an open-source enterprise software factory for building robust, independently verified and eventually self-healing products. It transforms product intent into observed deployed outcomes through reproducible, evidence-backed stages. Agents propose changes; independent checkers and deterministic policies authorize them.
+## Architecture as an input
 
-Build the factory **additively**: assemble, verify and activate one reusable capability at a time, retaining working slices. No unsafe promotion, unverifiable change or unbounded autonomous repair.
+CALM models describe components, interfaces and relationships. A LikeC4 view makes the relevant structure reviewable. Use native validation and project rules to keep the models aligned. The impact assessment connects changed nodes and downstream consumers to the acceptance criteria that need replay. A project can use other architecture tools through the same checker interface. [Blueprint architecture guidance](../blueprint/architecture/README.md)
 
-## End-to-end lifecycle
+## Authority and evidence
 
-1. Capture **Epic → Feature → Story**, owners, outcomes and stable executable **Given/When/Then** acceptance IDs.
-2. Model architecture in **FINOS CALM** as machine-readable input and **LikeC4** as a reviewable projection. Check drift and constraints before implementation.
-3. Assemble pinned external capabilities using **APM** and run their contracts through **APMX**.
-4. Orchestrate bounded planning, code, tests, security and build through **GitHub Actions / GitHub Agentic Workflows**.
-5. Independently check acceptance, architecture, security, policy and package integrity. Producers must not alter their own acceptance oracle.
-6. Produce **in-toto-compatible evidence** binding requirements, architecture, package lock, candidate digest, decisions, checker results and rejected attempts. Production promotion requires verified signatures and trusted identities.
-7. Deploy only verified bytes behind explicit environment and approval gates; observe actual runtime health.
-8. Diagnose failures, attempt **bounded repair**, independently reverify and repromote. Otherwise roll back and escalate.
+The approved base supplies requirements, check definitions and expected results. Candidate code executes with only the resources it needs, outside the agent workspace and without signing or deployment credentials. A trusted check result binds the candidate to its approved inputs. The release job authenticates that evidence before it can use privileged credentials.
 
-```text
-Intent → CALM / LikeC4 → plan → APM assembly → GH-AW execution
- → independent acceptance + APMX + security checks → provenance
- → approved deployment → runtime observation
-                       ├─ healthy → retain evidence
-                       └─ failed → bounded repair → reverify
-                                      └─ rollback / escalate
-```
+Typed decision APIs such as Jev can recommend a retry or escalation. Deterministic policy owns the allowed actions, confidence threshold, attempt and time budgets, and escalation conditions. A repair that changes the approved requirements, architecture or capability set goes back through review.
 
-## Decision-first design
-
-Prefer typed decision APIs such as **TypeSafe Jev** over freeform inference for standards, policy classification and allowed actions. Separate: (1) advisory decisions, (2) deterministic enforcement and (3) independently observed verification facts. Validate schema, action allowlists, confidence, budgets and provenance. Missing, invalid or low-confidence decisions fail closed. No decision API may override failed tests or authorize its own deployment.
-
-## Versioned external primitives
-
-**Every skill, agent definition and configuration, prompt, workflow primitive, MCP configuration, policy, contract and checker must be a versioned external APM package.** Pin exact origins, immutable revisions and transitive dependencies in a lockfile. Review source, licences, install effects, trust level and permissions. When a high-quality upstream primitive is not packaged, copy or wrap it as a separately versioned external APM package with attribution and a documented update path; do not silently vendor unversioned primitives into the factory.
-
-Candidate sources include **open-sdlc**, **Matt Pocock's skills**, **Anthropic**, **Hugging Face** and other high-calibre GitHub projects. Discovery does not imply approval: package provenance, security, fitness and test evidence determine admission.
-
-## Security and evidence boundaries
-
-- Independent acceptance, architecture, security, policy or provenance failure blocks promotion.
-- Untrusted producers cannot rewrite checkers, approved requirements, signing identities or deployment policy during their own evaluation.
-- Separate permissions for producer, verifier, attestor and deployer; apply least privilege and environment approvals.
-- Retain accepted and rejected candidates, digests, decisions, repair attempts, rollbacks and escalations.
-- Runtime health must be observed; an agent assertion or green CI badge is insufficient.
-- Repair loops have bounded attempts, time and spend, and explicit human escalation.
-
-## Reference versus target
-
-The current checked-in Node reference demonstrates a deterministic vertical slice, bounded fault/repair, local verification and rehearsal workflows. It is **not** a complete general-purpose enterprise factory or production self-healing system. See [implementation status](implementation-status.md) for gaps and [factory tests](../factory/test/README.md) for the evidence required to close them.
+See [component interfaces](components.md), [verification](testing.md) and [implementation status](implementation-status.md).

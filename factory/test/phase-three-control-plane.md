@@ -1,4 +1,4 @@
-# Phase 3 control-plane qualification
+# Capability restore, checkpoints and replay
 
 ## Clean-room capability restore
 
@@ -42,7 +42,7 @@ inputs, or expected outputs are sent to Jev.
 In `richgo/forge-kit`, set `agent_replay_drill=true` together with the resume
 drill to exercise the control plane without a live model dependency. This
 qualification-only path requires the retained artifacts from the
-[Phase 2 run](https://github.com/richgo/forge-kit/actions/runs/42686477934).
+[signed agent delivery run](https://github.com/richgo/forge-kit/actions/runs/42686477934).
 It verifies the original signer workflow, commit, predicate and exact bundle
 digest. It checks the original audit and rejects any requirements drift before
 reusing source. The new attested bundle records the origin run, source commit

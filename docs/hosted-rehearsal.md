@@ -1,8 +1,9 @@
-# Hosted end-to-end rehearsal
+# Trail Desk release and hosted rehearsals
 
-> **Implementation note (November 2026):** The recommended new-project path is the [CLI-native blueprint](../blueprint/README.md) using pinned APMX/APM capabilities. The `factory/*.mjs` commands described below document the **legacy reference implementation** and remain for regression/migration parity; they are not the portable blueprint. See [migration gates](../docs/cli-native-migration.md) and [current status](../docs/implementation-status.md). No live deployment or full multi-language agent qualification should be inferred from local reference tests.
+Trail Desk demonstrates a product-specific release adapter. For a project
+that needs a checked source patch, use the [APMX factory runbook](apmx-factory.md).
 
-## Run the factory in one GitHub Actions run
+## Verify the Trail Desk release
 
 Open **Actions → Forge Factory E2E → Run workflow** on the default branch.
 The GitHub Agentic Workflow uses its `call-workflow` safe output to start
@@ -11,59 +12,53 @@ The worker reads the original dispatch, executes the Forge Kit CLI, runs
 the pinned APMX contract against that candidate, and replays both the
 runtime and APMX checks in a fresh job before signing.
 
-The release workflow accepts only `website_release=current`. It runs on
-`main` and publishes to Pages by default. Turn off `publish_pages` to
-verify the current product without publishing.
+Select `website_release=current` and keep `publish_pages=false` for a
+verification-only run. Publication requires an explicit dispatch from
+`main` and an approved Pages environment. Follow the [release gate runbook](../factory/test/hosted-release.md)
+for fallback authentication and observation.
 
 Download `factory-verified` for the independent Chromium observations,
 requirements trace, and in-toto receipts. `factory-pages-observation`
 records the HTTPS checks of the public site and architecture files.
 
-
-## Release Trail Desk on Pages
+## Review a Trail Desk change
 
 Trail Desk is a fictional trail directory. Its reviewed product
 requirements are under `examples/trail-desk`. The requirements do not include an
 architecture or a website. The factory generates CALM, projects the LikeC4
 view from the CALM graph, and builds the static site.
 
-To replay the original example, open **Factory rehearsals** and select its
-`website_release` fixtures in this order:
-
-1. `baseline` publishes the three-trail catalog and checks AC-101.
-2. `step-free` keeps that story and adds the filter story. CALM adds
-   `step_free_filter` and its browser and catalog connections. Chromium
-   checks that filtering hides Juniper Ridge and clearing restores it.
-
-The worker validates the models with the FINOS CALM and LikeC4 CLIs. In a
-separate job, it checks Chromium behavior and replays the native APMX
-contract against the exact requirements, CALM, and HTML. Pages promotion
-requires the checked APMX attestation. The deployed site links to the
-generated CALM, LikeC4 and release manifest. The live HTTP probe hashes all
-three site files. Each run keeps its own `factory-candidate` and
-`factory-verified` artifacts so the revisions can be compared after the
-second release replaces the first at the same URL.
-
 For a product change, edit `examples/trail-desk/current/product-requirements.json`
 in a pull request. **Factory bootstrap** builds the base and proposed
 requirements and uploads their generated CALM, LikeC4, and HTML diffs in
 `trail-desk-pr-preview`. After review, dispatch **Forge Factory E2E** from `main`
-to run native APMX and promote the independently
-checked build. The current story adds distance sorting and verifies that
-it composes with the step-free filter.
+to qualify the build. Enable publication only for an approved release.
+The distance-sorting acceptance checks also cover its interaction with the
+step-free filter.
+
+## Rehearse readiness and catalog delivery
 
 In **Factory rehearsals**, leave `website_release` blank to run the built-in
-`STORY-001` readiness fixture. Choose a direct or delegated topology, and
+`STORY-001` readiness fixture. Choose a direct or delegated topology and
 optionally inject a fault or consult Jev. A custom readiness story needs a
 tracked directory with `product-requirements.json`, `architecture.json` and
 `architecture.c4`. Confirm `public_inputs` only for files safe to send to
 Copilot and retain in Actions artifacts. Custom inputs cannot publish to Pages.
-Select `catalog_fixture` to exercise the separate legacy catalog workflow.
+Select `catalog_fixture` to exercise the catalog lifecycle workflow.
+
+## Compare Trail Desk fixtures
+
+In **Factory rehearsals**, set `website_release` to `baseline` to check the
+three-trail catalog, or `step-free` to exercise the accessibility filter.
+Compare their `factory-verified` artifacts for CALM, LikeC4 and Chromium
+evidence. Keep `publish_pages=false` for verification. To compare live
+releases, use a separate Pages test repository and explicitly enable
+`publish_pages`. The live probe checks the served files and release manifest.
 
 ## Component rehearsals
 
-
-Pages publication in **Factory rehearsals** and the bootstrap drill requires a separate test repository. Enable GitHub Pages there with **GitHub Actions** as its source and restrict the
+The Pages bootstrap drill requires a separate test repository. Enable GitHub
+Pages there with **GitHub Actions** as its source and restrict the
 `github-pages` deployment environment to the approved release branch.
 **Factory bootstrap** runs the tests, verifies the two synthetic story
 revisions in an independent job, and builds their public static release
@@ -87,7 +82,7 @@ Run **APMX package rehearsal** with `live_story` enabled to verify the
 same baseline story through the pinned native APMX runner, its separate
 check job, and GitHub artifact signing. CI compares the checked-in
 rehearsal inputs with fresh independent outputs before publishing.
-The live story and legacy catalog fixture require the repository's
+The live story and catalog fixture require the repository's
 `COPILOT_GITHUB_TOKEN`.
 
 `FORGE_REHEARSAL_REF` is an optional repository variable for a reviewed
