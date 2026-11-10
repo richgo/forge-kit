@@ -24,3 +24,7 @@ The TypeScript example intentionally uses the system `tsc`; production
 consumers should pin the compiler through their own lockfile or toolchain
 image. These fixtures are not evidence of an actual agent-generated change
 until APMX execution and independent replay are performed.
+
+## Qualification
+
+[Hosted agent qualification](../../.github/workflows/apmx-consumers.yml) is distinct from [CLI-only adversarial verification](https://github.com/richgo/forge-kit/pull/28). Neither should be counted as complete without run evidence.

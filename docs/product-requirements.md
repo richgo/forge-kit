@@ -1,5 +1,7 @@
 # Product requirements
 
+> **Implementation note (November 2026):** The recommended new-project path is the [CLI-native blueprint](../blueprint/README.md) using pinned APMX/APM capabilities. The `factory/*.mjs` commands described below document the **legacy reference implementation** and remain for regression/migration parity; they are not the portable blueprint. See [migration gates](../docs/cli-native-migration.md) and [current status](../docs/implementation-status.md). No live deployment or full multi-language agent qualification should be inferred from local reference tests.
+
 Start with the [product example](../examples/product-requirements.json) or the
 authoring and JSON templates in the pinned Forge Kit Skills requirements
 package. An epic states an outcome. A feature describes a capability that

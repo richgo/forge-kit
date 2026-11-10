@@ -37,3 +37,5 @@ checksum-verified release artifacts to avoid that failing setup path.
 Production publication and rollback require a deployment-enabled run in
 the Pages environment. The read-only probe and isolated recovery test
 cover their respective boundaries.
+
+> **CLI-native migration:** The [copyable blueprint](../../blueprint/README.md) is the recommended new-project entrypoint. Legacy JavaScript runtime examples are retained for regression parity; see [implementation status](../../docs/implementation-status.md).

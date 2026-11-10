@@ -1,5 +1,7 @@
 # ForgeKit reference factory architecture
 
+> **Implementation note (November 2026):** The recommended new-project path is the [CLI-native blueprint](../blueprint/README.md) using pinned APMX/APM capabilities. The `factory/*.mjs` commands described below document the **legacy reference implementation** and remain for regression/migration parity; they are not the portable blueprint. See [migration gates](../docs/cli-native-migration.md) and [current status](../docs/implementation-status.md). No live deployment or full multi-language agent qualification should be inferred from local reference tests.
+
 > Target design, not a claim of full implementation. See [implementation status](implementation-status.md) and [factory testing](../factory/test/README.md).
 
 ## Purpose and invariants
