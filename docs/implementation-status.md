@@ -1,5 +1,19 @@
 # Reference factory implementation status
 
+## CLI-native migration status (2026-11-10)
+
+| Capability | Status | Qualification still required |
+| --- | --- | --- |
+| Copyable `blueprint/` | Merged in PR #24 | Clean-room native execution |
+| Python/Go/TypeScript consumers | Merged in PR #25 | Actual hosted agent changes and signed independent replay |
+| Hosted APMX qualification workflow | Merged in PR #26 | Dispatch all three and verify run artifacts and attestations |
+| CLI-native static conformance | Merged in PR #27 | This is a boundary check, not runtime equivalence |
+| CLI-only adversarial consumer acceptance | Open PR #28 | Merge, green CI and inspect output |
+| CALM/LikeC4, security, release, recovery CLI parity | Not yet qualified | Native tool migration, adversarial tests, authenticated live rehearsal |
+| Legacy `.mjs` removal | Not complete | Preserve existing behavior until equivalent checks pass |
+
+The older capability matrix below describes the legacy/reference paths and should not be interpreted as a native APMX production-readiness claim.
+
 This records the supported factory paths and their verification boundaries.
 See the [target architecture](architecture.md) and the [component checks](../factory/test/components.md).
 
