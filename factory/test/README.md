@@ -60,6 +60,7 @@ For GitHub-hosted tests, use the workflows in `.github/workflows/` and follow `d
 ## Component runbooks
 
 - [Component checks](components.md)
+- [Phase 4 traceability, operational thresholds and qualification](phase-four-qualification.md)
 - [Architecture and product impact](architecture-impact.md)
 - [Typed Jev and local repair policy](jev.md)
 - [Independent website security](website-security.md)
