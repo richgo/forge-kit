@@ -55,3 +55,7 @@ already removable.
 
 The template fails closed until the consumer supplies real checks. A
 language-agnostic blueprint must not silently substitute placeholder tests.
+
+## Status and navigation
+
+The reusable APMX blueprint is merged, but production parity is still being qualified. See [three consumer examples](../examples/consumers/README.md), [hosted APMX qualification](../factory/test/apmx-language-qualification.md), [migration gates](../docs/cli-native-migration.md) and [implementation status](../docs/implementation-status.md). The template checker must remain fail-closed until the consuming application provides independently reviewed checks.
