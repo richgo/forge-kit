@@ -1,0 +1,25 @@
+name: Blueprint CLI-native conformance
+on:
+  pull_request:
+    paths:
+      - 'blueprint/**'
+      - 'scripts/check-blueprint-cli-native.sh'
+      - '.github/workflows/blueprint-conformance.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'blueprint/**'
+      - 'scripts/check-blueprint-cli-native.sh'
+      - '.github/workflows/blueprint-conformance.yml'
+permissions:
+  contents: read
+jobs:
+  static:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - name: Assert blueprint has no legacy JavaScript execution dependency
+        run: bash scripts/check-blueprint-cli-native.sh
