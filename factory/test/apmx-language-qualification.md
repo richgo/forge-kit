@@ -30,3 +30,5 @@ run must demonstrate a real agent-authored source change, not a pre-canned
 fixture. These workflows do not qualify production release, observation or
 rollback. If the runner lacks the required toolchain, record the failure and
 fix the pinned runner configuration rather than weakening the checks.
+
+> **CLI-native migration:** The [copyable blueprint](../../blueprint/README.md) is the recommended new-project entrypoint. Legacy JavaScript runtime examples are retained for regression parity; see [implementation status](../../docs/implementation-status.md).
