@@ -457,4 +457,53 @@ jobs:
             out/tamper-rejection.log
             out/missing-evidence-rejection.log
             out/recovery.json
+            out/runtime-metrics.json
           if-no-files-found: warn
+
+
+  qualification:
+    name: Report operational qualification
+    needs: [catalog, release]
+    if: ${{ !cancelled() && needs.catalog.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - name: Record incomplete qualification
+        if: needs.release.result != 'success'
+        env:
+          RESULT: ${{ needs.release.result }}
+        run: |
+          printf '## Qualification incomplete\n\nRelease stage: %s. See the failed jobs and retained diagnostics.\n' "$RESULT" >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: agent-*
+          path: evidence
+      - name: Validate evidence and measure the product pipeline
+        env:
+          GH_TOKEN: ${{ github.token }}
+          QUALIFICATION_MATRIX: ${{ needs.catalog.outputs.matrix }}
+        run: |
+          set -euo pipefail
+          run="repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          gh api "$run" > run.json
+          gh api --paginate --slurp "$run/jobs?filter=all&per_page=100" | jq '{jobs: [.[].jobs[]]}' > jobs.json
+          node factory/qualification-metrics.mjs run.json jobs.json evidence qualification
+      - name: Publish summary even if a threshold was breached
+        if: ${{ !cancelled() }}
+        run: |
+          if [[ -f qualification/qualification.md ]]; then
+            cat qualification/qualification.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        if: ${{ !cancelled() }}
+        with:
+          name: qualification-attempt-${{ github.run_attempt }}
+          path: qualification/
+          if-no-files-found: ignore
