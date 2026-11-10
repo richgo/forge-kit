@@ -4,7 +4,8 @@ import { appendFile, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { planArchitecture } from './architecture-plan.mjs';
 import { acceptSource, approveArchitectureChanges, callCopilot, produceRevision, verifyAgentAudit } from './agent-production.mjs';
-import { exerciseRecovery, verifyCandidate } from './agent-verifier.mjs';
+import { runtimeMetrics } from './qualification-runtime.mjs';
+import { exerciseRecovery, runInContainer, verifyCandidate } from './agent-verifier.mjs';
 import { createCheckpoint, readCheckpoint } from './delivery-checkpoint.mjs';
 import { requestJevRepair } from './decisions.mjs';
 
@@ -167,12 +168,24 @@ async function main() {
     } else {
       assert.match(bundle.authorship?.sha256 ?? '', /^[a-f0-9]{64}$/, 'Missing attested agent audit digest');
       const bundleSha256 = createHash('sha256').update(bundleBytes).digest('hex');
-      const recovery = await exerciseRecovery(snapshots).catch(async error => {
+      const measurements = [];
+      const probe = async request => {
+        const start = performance.now();
+        try {
+          return await runInContainer(request);
+        } finally {
+          measurements.push([start, performance.now()]);
+        }
+      };
+      const recovery = await exerciseRecovery(snapshots, probe).catch(async error => {
         if (error.evidence) await write(output, { product: initial.product.id, source, bundleSha256, recovery: error.evidence });
         throw error;
       });
       assert.equal(recovery.passed, true, 'Isolated recovery failed');
       await write(output, { product: initial.product.id, source, bundleSha256, recovery });
+      await write(join(dirname(output), 'runtime-metrics.json'), {
+        product: initial.product.id, source, run, bundleSha256, ...runtimeMetrics(recovery, measurements),
+      });
     }
   }
 }

@@ -265,6 +265,12 @@ jobs:
       - name: Restore the audited delivery capability from the frozen lock
         run: bash factory/restore-capabilities.sh
       - run: node --test test/*.test.mjs
+      - name: Run adversarial cases in the pinned real container
+        run: |
+          set -euo pipefail
+          image="$(node --input-type=module -e 'import {runtimeImages} from "./factory/agent-verifier.mjs"; console.log(runtimeImages.node)')"
+          docker pull "$image"
+          FORGE_TEST_CONTAINER=1 node --test test/agent-verifier.test.mjs test/phase-four-adversarial.test.mjs
         env:
           FORGE_ARCHITECTURE_PACKAGE: _architecture/packages/architecture
       - name: Trace a product story through repair and independent acceptance
