@@ -1,5 +1,30 @@
 # Forge Kit
 
+## Current direction: CLI-native, copyable factory
+
+**ForgeKit's canonical direction is a language-agnostic blueprint executed by APMX, assembled from immutable APM packages.** The older `factory/*.mjs` engine is a legacy reference and migration baseline, **not** the recommended starting point for new consumers.
+
+- **Start here:** [copyable blueprint](blueprint/README.md) and [native APMX runbook](docs/apmx-factory.md).
+- **Try three stacks:** [Python, Go and TypeScript consumers](examples/consumers/README.md), each with project-owned protected acceptance.
+- **Hosted agent qualification:** [dispatchable APMX workflow](.github/workflows/apmx-consumers.yml) and [evidence requirements](factory/test/apmx-language-qualification.md).
+- **CLI-only fixture qualification:** [adversarial source-patch suite](scripts/qualify-native-consumers.sh) in [PR #28](https://github.com/richgo/forge-kit/pull/28), **pending merge and CI**.
+- **Migration and retirement gates:** [CLI-native migration](docs/cli-native-migration.md).
+- **Current capabilities versus intended lifecycle:** [implementation status](docs/implementation-status.md).
+
+The factory's native path is **request → APMX plan → specification → agent-authored patch → independent project checks → reviewable, attested delivery**. Publication, live observation and recovery require separately authorized product-specific workflows. They are **not** implied by a successful APMX build.
+
+### Run the native blueprint
+
+Copy `blueprint/` into a consumer project and replace its deliberately failing
+`.forge/verify-change` template with a reviewed, isolated, application-specific checker. Create an approved `request.md` and pin the external factory package:
+
+```sh
+apmx --from "richgo/forge-kit-skills/packages/software-factory#0132bcc69ede85681462d7ffae8ae02cf909de42" --plan
+apmx --from "richgo/forge-kit-skills/packages/software-factory#0132bcc69ede85681462d7ffae8ae02cf909de42" --on copilot
+```
+
+Use the [hosted reusable workflow](.github/workflows/apmx-factory.yml) for independently replayed and attested outputs. Configure the required agent credentials and toolchains before running; the above commands are instructions, **not evidence of a completed run**.
+
 ## Executive summary
 
 **Forge Kit is an open-source software factory that helps teams turn a requested software change into a release they can trust.** A product team might ask for a new way to sort search results, or an engineering team might change how a service works behind the scenes. Both changes follow the same path.
