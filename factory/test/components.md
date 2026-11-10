@@ -27,3 +27,5 @@ node --test evals/catalog-scenarios.mjs evals/requirements-scenarios.mjs
 catalog checkout at the `skills` pin. Both suites fail if their package
 input is missing. Run the browser security tests in the pinned catalog
 checkout using the Chromium instructions in the security runbook.
+
+> **CLI-native migration:** The [copyable blueprint](../../blueprint/README.md) is the recommended new-project entrypoint. Legacy JavaScript runtime examples are retained for regression parity; see [implementation status](../../docs/implementation-status.md).
