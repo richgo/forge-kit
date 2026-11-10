@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Reviewed, application-owned verifier. APMX supplies an unapplied Git patch.
+# This template deliberately refuses to approve changes until a project owner
+# installs real independent checks. Do not execute this in the agent workspace
+# with secrets or untrusted network access.
+patch="${1:?Expected an unapplied patch path}"
+[[ -s "$patch" && -f "$patch" && ! -L "$patch" ]] || {
+  echo 'Missing or symlinked candidate patch' >&2
+  exit 2
+}
+git apply --check -- "$patch"
+
+echo 'No project acceptance suite configured. Replace this template with an' >&2
+echo 'isolated reviewed-base verifier for your language and toolchain.' >&2
+exit 2
