@@ -189,6 +189,10 @@ node factory/cli.mjs verify out/repaired
 
 The reference adapters cover the readiness probe and the Trail Desk static site. The implementation status tracks the limits of those adapters and the work remaining for broader production use. [Implementation status](docs/implementation-status.md)
 
+## Run the native APMX factory
+
+Use the **APMX software factory** workflow to plan and implement changes in a reviewed project. A pinned Markdown contract graph drives the work and the independent replay. The project chooses its language, build tools, architecture, and acceptance checks. GitHub Actions signs the checked outputs for review. [Run the APMX software factory](docs/apmx-factory.md)
+
 ## Explore or extend the factory
 
 **Forge Factory E2E** is the GitHub Actions release entry point for the current Trail Desk product. The pinned GitHub Agentic Workflow builds the site, independently checks it with CALM, LikeC4, Chromium and APMX, and signs the checked archive. Publishing is an explicit dispatch choice from `main` and uses the Pages environment and rollback policy. The workflow uses `COPILOT_GITHUB_TOKEN`. The [hosted runbook](docs/hosted-rehearsal.md) covers release inputs, evidence, and the separate fixture workflows.

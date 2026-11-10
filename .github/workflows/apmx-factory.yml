@@ -1,0 +1,47 @@
+name: APMX software factory
+
+on:
+  workflow_dispatch:
+    inputs:
+      request:
+        description: Reviewed change request and acceptance criteria
+        required: true
+        type: string
+      workspace:
+        description: Project directory containing the reviewed .forge/verify-change
+        default: "."
+        type: string
+  workflow_call:
+    inputs:
+      request:
+        description: Reviewed change request and acceptance criteria
+        required: true
+        type: string
+      workspace:
+        description: Project directory containing the reviewed .forge/verify-change
+        default: "."
+        type: string
+    secrets:
+      COPILOT_GITHUB_TOKEN:
+        required: true
+
+permissions: {}
+
+jobs:
+  run:
+    name: Produce, independently check and sign the change
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    uses: danielmeppiel/apmx/.github/workflows/run.yml@fae2067a0dc6ff07beda714015ff9e648f41ce63 # v0.8.0
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    with:
+      factory: richgo/forge-kit-skills/packages/software-factory#0132bcc69ede85681462d7ffae8ae02cf909de42
+      workspace: ${{ inputs.workspace }}
+      request: ${{ inputs.request }}
+      apmx-version: "0.8.0"
+      apmx-ref: fae2067a0dc6ff07beda714015ff9e648f41ce63
+      attest: true
+    secrets:
+      agent-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}

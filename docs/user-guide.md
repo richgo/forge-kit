@@ -32,7 +32,7 @@ A small team can share these responsibilities. The factory keeps the build, inde
 ## Engineer
 
 1. **Start from the approved change.** Review the story, architecture, impact plan, and selected package revisions. Flag missing capabilities or tests before proceeding. Route changes to approved requirements, architecture, or check definitions through their owners for review.
-2. **Build a candidate.** Use the reviewed workflow. APM installs the locked capabilities, and the GitHub workflow coordinates the build and any APMX contracts. Inspect the candidate and its build results against the impact plan.
+2. **Build a candidate.** Use the reviewed workflow. APM installs the locked capabilities, and the GitHub workflow coordinates the build and any APMX contracts. Inspect the candidate and its build results against the impact plan. [Run the native APMX factory](apmx-factory.md)
 3. **Respond to rejection.** Use the independent check findings to propose a fix. Submit a new candidate for replay. If the factory attempts an automated repair, inspect its decision, results, and remaining budget before handing the new candidate back.
 
 **Handoff.** Share the candidate reference, source revision, acceptance IDs, and build and repair history with the verifier. [Verification and evals](testing.md)
