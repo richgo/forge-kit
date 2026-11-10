@@ -20,7 +20,7 @@ on:
         default: false
 
       agent_products:
-        description: Qualify agent-authored products in isolated runtimes
+        description: Run the historical Phase 2/3 agent delivery qualification
         type: boolean
         default: false
 

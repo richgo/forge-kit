@@ -30,3 +30,13 @@ test('direct worker qualification is restricted to the owner and cannot deploy',
   assert.match(worker, /uses: .*forge-factory-worker\.yml@[0-9a-f]{40}/);
   assert.match(workflow.split('\n  factory:\n')[1], /if: .* !inputs.qualify_worker_only/);
 });
+
+test('native factory delegates production, independent replay and signing to pinned APMX', async () => {
+  const native = await readFile(new URL('../.github/workflows/apmx-factory.yml', import.meta.url), 'utf8');
+  assert.match(native, /workflow_call:/);
+  assert.match(native, /workflow_dispatch:/);
+  assert.match(native, /uses: danielmeppiel\/apmx\/\.github\/workflows\/run\.yml@[0-9a-f]{40}/);
+  assert.match(native, /factory: richgo\/forge-kit-skills\/packages\/software-factory#[0-9a-f]{40}/);
+  assert.match(native, /attest: true/);
+  assert.doesNotMatch(native, /target-repository:|pages: write|agent-delivery\.mjs|runtime:/);
+});
