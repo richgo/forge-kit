@@ -1,5 +1,7 @@
 # Factory verification and evals
 
+> **Implementation note (November 2026):** The recommended new-project path is the [CLI-native blueprint](../blueprint/README.md) using pinned APMX/APM capabilities. The `factory/*.mjs` commands described below document the **legacy reference implementation** and remain for regression/migration parity; they are not the portable blueprint. See [migration gates](../docs/cli-native-migration.md) and [current status](../docs/implementation-status.md). No live deployment or full multi-language agent qualification should be inferred from local reference tests.
+
 The suite uses two boundaries. Forge Kit's CLI cases start from product
 requirements, authoritative CALM and a LikeC4 view. Catalog cases run the
 pinned package's independent acceptance, signing and deployment code in
