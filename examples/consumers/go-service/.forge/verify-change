@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+patch="${1:?Expected unapplied patch}"
+[[ -f "$patch" && -s "$patch" && ! -L "$patch" ]] || exit 2
+patch="$(realpath "$patch")"
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$root"
+git apply --check -- "$patch"
+while IFS= read -r -d '' record; do
+  path="${record#*$'\t'}"
+  path="${path#*$'\t'}"
+  case "$path" in
+    src/*) ;;
+    *) echo "Rejected protected or out-of-scope path: $path" >&2; exit 1 ;;
+  esac
+done < <(git apply --numstat -z -- "$patch")
+candidate="$(mktemp -d)"
+trap 'rm -rf -- "$candidate"' EXIT
+cp -R "$root/src" "$root/tests" "$candidate/"
+cp "$root/go.mod" "$candidate/"
+
+cd "$candidate"
+git apply -- "$patch"
+GOWORK=off GOPROXY=off go test ./...
