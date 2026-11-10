@@ -84,3 +84,7 @@ the signed changes in a project review or protected release workflow.
 Publication and runtime recovery remain responsibilities of the project's
 approved delivery adapter. Forge Kit's Trail Desk Pages workflow illustrates
 a separate product-specific deployment path. [Trail Desk hosted release](hosted-rehearsal.md)
+
+## Consumer qualification and evidence
+
+Three independent seed consumers are available in [examples/consumers](../examples/consumers/README.md). The [manual hosted qualification workflow](../.github/workflows/apmx-consumers.yml) selects one consumer per run. A passing local CLI test is not evidence of an agent-authored patch; verify the hosted APMX receipt, replay results and attestation before recording qualification. The CLI-only adversarial tests are proposed in [PR #28](https://github.com/richgo/forge-kit/pull/28).
