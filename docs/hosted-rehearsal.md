@@ -1,5 +1,7 @@
 # Hosted end-to-end rehearsal
 
+> **Implementation note (November 2026):** The recommended new-project path is the [CLI-native blueprint](../blueprint/README.md) using pinned APMX/APM capabilities. The `factory/*.mjs` commands described below document the **legacy reference implementation** and remain for regression/migration parity; they are not the portable blueprint. See [migration gates](../docs/cli-native-migration.md) and [current status](../docs/implementation-status.md). No live deployment or full multi-language agent qualification should be inferred from local reference tests.
+
 ## Run the factory in one GitHub Actions run
 
 Open **Actions → Forge Factory E2E → Run workflow** on the default branch.
