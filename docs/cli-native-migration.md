@@ -49,3 +49,7 @@ until a separately approved cutover.
 
 The checker template intentionally fails until the consumer configures
 real checks. Do not convert it to a success stub to make CI green.
+
+## Migration progress
+
+PRs #24–#27 are merged: blueprint, three language consumers, hosted qualification entrypoints and blueprint conformance. PR #28 is pending and adds deterministic adversarial consumer tests. No legacy runtime has been removed; no completed hosted three-language attestation or live CLI-native rollback has been verified. See [implementation status](implementation-status.md).
