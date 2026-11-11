@@ -164,6 +164,10 @@ jobs:
           export FORGE_PLAYWRIGHT="$RUNNER_TEMP/website-browser/node_modules/playwright/index.mjs"
           export FORGE_SECURITY_PACKAGE="_security/packages/security-review"
           node factory/website.mjs verify examples/trail-desk/current/product-requirements.md website-preview/after > website-preview/browser-evidence.json
+          for scenario in miles catalog-api; do
+            node scripts/rehearse-trail-desk.mjs rehearse "$scenario" "$RUNNER_TEMP/trail-desk-$scenario" \
+              > "website-preview/$scenario-evidence.json"
+          done
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: trail-desk-pr-preview

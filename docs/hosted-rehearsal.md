@@ -38,6 +38,10 @@ to qualify the build. Enable publication only for an approved release.
 The distance-sorting acceptance checks also cover its interaction with the
 step-free filter.
 
+Use the [two Trail Desk change rehearsals](../examples/trail-desk/rehearsals/README.md)
+to exercise a product request and an architecture-only request through the
+portable APMX factory and its project verifier.
+
 ## Rehearse readiness and catalog delivery
 
 In **Factory rehearsals**, leave `website_release` blank to run the built-in
