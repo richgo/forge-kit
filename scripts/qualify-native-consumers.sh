@@ -48,23 +48,28 @@ PY
     git checkout -q -- src
 
     # A good candidate must pass the actual protected checker and acceptance.
-    bash .forge/verify-change "$tmp/$language.valid.diff"
-
-    # The candidate must not be allowed to change the independent tests.
-    printf '\n# malicious acceptance weakening\n' >> request.md
-    git diff -- request.md > "$tmp/$language.protected.diff"
-    git checkout -q -- request.md
-    if bash .forge/verify-change "$tmp/$language.protected.diff"; then
-      echo "FAIL: $language accepted protected file modification" >&2
+    bash .forge/verify-change "$tmp/$language.valid.diff" quote.acceptance
+    if bash .forge/verify-change "$tmp/$language.valid.diff" quote.unknown; then
+      echo "FAIL: $language accepted an unknown check" >&2
       exit 1
     fi
+
+    for protected in request.md product-requirements.md "$(git ls-files tests)"; do
+      printf '\n# malicious acceptance weakening\n' >> "$protected"
+      git diff -- "$protected" > "$tmp/$language.protected.diff"
+      git checkout -q -- "$protected"
+      if bash .forge/verify-change "$tmp/$language.protected.diff" quote.acceptance; then
+        echo "FAIL: $language accepted modification to $protected" >&2
+        exit 1
+      fi
+    done
 
     # Empty and absent patches must be rejected.
     : > "$tmp/$language.empty.diff"
-    if bash .forge/verify-change "$tmp/$language.empty.diff"; then
+    if bash .forge/verify-change "$tmp/$language.empty.diff" quote.acceptance; then
       echo "FAIL: $language accepted empty patch" >&2
       exit 1
     fi
-    echo "PASS: $language independent acceptance and protected-scope rejection"
+    echo "PASS: $language independent acceptance, check selection and protected-scope rejection"
   )
 done

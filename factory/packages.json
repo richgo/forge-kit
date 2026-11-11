@@ -10,38 +10,38 @@
     "orchestration": {
       "repository": "richgo/forge-kit-skills",
       "path": "packages/factory-workflows",
-      "ref": "66a34368048c9105da54e888673de0c21e59d258",
+      "ref": "40a7a6b54ce5603f450e4935beb9dac4f466b95a",
       "workflow": ".github/workflows/forge-factory.lock.yml"
     },
     "execution": {
       "repository": "richgo/forge-kit-skills",
       "path": "packages/acceptance",
-      "ref": "2ad068c4e1b2abe9b7dda65f5e8dab4835213558"
+      "ref": "40a7a6b54ce5603f450e4935beb9dac4f466b95a"
     },
     "checking": {
       "repository": "richgo/forge-kit-skills",
       "path": "packages/acceptance",
-      "ref": "2ad068c4e1b2abe9b7dda65f5e8dab4835213558"
+      "ref": "40a7a6b54ce5603f450e4935beb9dac4f466b95a"
     },
     "skills": {
       "repository": "richgo/forge-kit-skills",
       "path": "packages/requirements",
-      "ref": "3625298b6c9b09344c314d6c413ff8e0b3abf4e4"
+      "ref": "40a7a6b54ce5603f450e4935beb9dac4f466b95a"
     },
     "mcp": {
       "repository": "richgo/forge-kit-skills",
       "path": "packages/factory-workflows",
-      "ref": "66a34368048c9105da54e888673de0c21e59d258"
+      "ref": "40a7a6b54ce5603f450e4935beb9dac4f466b95a"
     },
     "websiteChecking": {
       "repository": "richgo/forge-kit-skills",
       "path": "packages/website-acceptance",
-      "ref": "ac4fb6835dfd485805f9cc60252d5f3266181b35"
+      "ref": "40a7a6b54ce5603f450e4935beb9dac4f466b95a"
     },
     "architecture": {
       "repository": "richgo/forge-kit-skills",
       "path": "packages/architecture",
-      "ref": "8861afd5606136f3bbb55043d21ac732ed11df53"
+      "ref": "40a7a6b54ce5603f450e4935beb9dac4f466b95a"
     },
     "repairChecking": {
       "repository": "richgo/forge-kit-skills",

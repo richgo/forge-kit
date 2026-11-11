@@ -12,8 +12,20 @@ export function createRelease({ artifact, report, receipt }, source) {
   assert.match(report.requirementsSha256, /^[a-f0-9]{64}$/);
   assert.equal(digest(artifact), report.artifactSha256, 'Candidate digest mismatch');
   assert.deepEqual(receipt.subject, [{ name: 'deployed.mjs', digest: { sha256: report.artifactSha256 } }]);
-  assert.deepEqual(receipt.predicate.materials.filter(material => material.name === 'product-requirements.json'),
-    [{ name: 'product-requirements.json', digest: { sha256: report.requirementsSha256 } }]);
+  const requirementsSource = report.requirements ? 'product-requirements.md' : 'product-requirements.json';
+  assert.deepEqual(receipt.predicate.materials.filter(material => material.name === requirementsSource),
+    [{ name: requirementsSource, digest: { sha256: report.requirementsSha256 } }]);
+  if (report.requirements) {
+    const { sourceSha256, acceptanceSha256, normalizedSha256, compiler } = report.requirements;
+    assert.equal(receipt.predicateType, 'https://github.com/richgo/forge-kit/attestations/bootstrap/v4');
+    assert.equal(sourceSha256, report.requirementsSha256);
+    assert.match(acceptanceSha256, /^[a-f0-9]{64}$/);
+    assert.match(normalizedSha256, /^[a-f0-9]{64}$/);
+    assert.equal(compiler, 'forgekit-requirements/markdown-v1');
+    assert.deepEqual(receipt.predicate.requirements, report.requirements);
+    assert.deepEqual(receipt.predicate.materials.filter(material => material.name === 'acceptance.json'),
+      [{ name: 'acceptance.json', digest: { sha256: acceptanceSha256 } }]);
+  }
   assert.deepEqual(receipt.predicate.trace, report.trace);
   const { epic, feature, story, criteria } = report.trace;
   assert.equal(receipt.predicate.requirement, story);
@@ -34,6 +46,7 @@ export function createRelease({ artifact, report, receipt }, source) {
   const proof = {
     source, epic, feature, story, status, acceptance: criteria.map(item => item.id),
     requirementsSha256: report.requirementsSha256, artifactSha256: report.artifactSha256,
+    ...(report.requirements && { requirements: report.requirements }),
   };
   const release = digest(JSON.stringify(proof));
   const html = [

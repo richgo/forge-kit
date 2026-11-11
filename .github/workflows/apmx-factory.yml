@@ -3,22 +3,14 @@ name: APMX software factory
 on:
   workflow_dispatch:
     inputs:
-      request:
-        description: Reviewed change request and acceptance criteria
-        required: true
-        type: string
       workspace:
-        description: Project directory containing the reviewed .forge/verify-change
+        description: Project directory containing the reviewed request.md, product-requirements.md and .forge/verify-change
         default: "."
         type: string
   workflow_call:
     inputs:
-      request:
-        description: Reviewed change request and acceptance criteria
-        required: true
-        type: string
       workspace:
-        description: Project directory containing the reviewed .forge/verify-change
+        description: Project directory containing the reviewed request.md, product-requirements.md and .forge/verify-change
         default: "."
         type: string
     secrets:
@@ -37,9 +29,8 @@ jobs:
       id-token: write
       attestations: write
     with:
-      factory: richgo/forge-kit-skills/packages/software-factory#0132bcc69ede85681462d7ffae8ae02cf909de42
+      factory: richgo/forge-kit-skills/packages/software-factory#40a7a6b54ce5603f450e4935beb9dac4f466b95a
       workspace: ${{ inputs.workspace }}
-      request: ${{ inputs.request }}
       apmx-version: "0.8.0"
       apmx-ref: fae2067a0dc6ff07beda714015ff9e648f41ce63
       attest: true

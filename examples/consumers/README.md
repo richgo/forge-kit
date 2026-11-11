@@ -2,9 +2,10 @@
 
 The quote examples apply a nonnegative discount and clamp the total at zero
 while preserving each project's invalid-input behavior. Each example uses the
-same pinned APMX factory and a project-owned `.forge/verify-change`. The
-checker restricts patches to `src/`, applies the candidate in a disposable
-tree and runs tests copied from the approved base.
+same pinned APMX factory and a project-owned `.forge/verify-change`. Each
+checked-in request selects a story from the project's `product-requirements.md`
+and permits changes to one source file. The checker applies the candidate in a
+disposable tree and runs the selected acceptance suite from the approved base.
 
 | Consumer | Approved request | Protected acceptance command |
 | --- | --- | --- |
@@ -23,14 +24,14 @@ bash scripts/qualify-native-consumers.sh
 ```
 
 The suite generates one valid patch per project and checks rejection of
-protected-path and empty patches. The checked-in source is a seed, so its
+unknown check IDs, protected-path patches, and empty patches. The checked-in source is a seed, so its
 new behavior tests pass after applying the requested change.
 [Expected results](../../factory/test/native-consumers.md)
 
 ## Run with an agent
 
-Stage one consumer in a clean directory with its approved request, tests,
-source and verifier. Install the corresponding toolchain and follow the
+Stage one consumer in a clean directory with its approved request,
+requirements, tests, source and verifier. Install the corresponding toolchain and follow the
 [APMX runbook](../../docs/apmx-factory.md). For a hosted run, use
 [Qualify APMX language consumers](../../factory/test/apmx-language-qualification.md)
 to select the fixture and collect independent replay evidence.

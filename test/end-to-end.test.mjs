@@ -12,7 +12,7 @@ import { gradeReview } from '../evals/review.mjs';
 const exec = promisify(execFile);
 const cli = new URL('../factory/cli.mjs', import.meta.url);
 const paths = {
-  requirements: 'examples/requirements.json',
+  requirements: 'test/fixtures/delegated/requirements.json',
   direct: ['architecture/slice.json', 'architecture/slice.c4'],
   delegated: ['test/fixtures/delegated/architecture.json', 'test/fixtures/delegated/architecture.c4'],
 };

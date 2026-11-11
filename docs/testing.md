@@ -51,17 +51,20 @@ apm install --target copilot --frozen
 node --test test/*.test.mjs
 ```
 
-To reproduce the delegated repair case manually, use a fresh output directory.
+Running `node factory/cli.mjs run out/readiness` uses the reviewed Markdown
+readiness story and direct architecture. To reproduce the delegated repair
+case, stage the same story and the delegated architecture in a fresh directory.
 
 ```sh
 mkdir -p out/inputs
-cp examples/requirements.json test/fixtures/delegated/architecture.json test/fixtures/delegated/architecture.c4 out/inputs/
-node factory/cli.mjs run out/delegated --inputs out/inputs --fault wrong-output-once
-node factory/cli.mjs verify out/delegated --inputs out/inputs
+cp examples/product-requirements.md examples/acceptance.json out/inputs/
+cp test/fixtures/delegated/architecture.json test/fixtures/delegated/architecture.c4 out/inputs/
+node factory/cli.mjs run out/delegated --inputs out/inputs --story STORY-001 --fault wrong-output-once
+node factory/cli.mjs verify out/delegated --inputs out/inputs --story STORY-001
 ```
 
-The checker job in GitHub uses a fresh copy of the approved requirements and
-architecture from its own checkout. It downloads only the producer's
+The checker job in GitHub reads the approved Markdown requirements, independent
+assertions and architecture from its own checkout. It downloads only the producer's
 outputs. Locally, keep the approved inputs available for independent replay.
 The fixture accepts a constrained Node implementation and executes only exact
 matches of its known templates. The code mutation is confined to fixture
@@ -74,7 +77,7 @@ The deterministic review grader accepts a JSON report with six fields.
 reviewer or model, then score it against a verified receipt.
 
 ```sh
-node factory/cli.mjs grade out/delegated --inputs out/inputs --review review.json
+node factory/cli.mjs grade out/delegated --inputs out/inputs --story STORY-001 --review review.json
 ```
 
 The grader returns structured pass/fail results and exits unsuccessfully

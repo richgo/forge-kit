@@ -8,14 +8,20 @@
       }
     }
   ],
-  "predicateType": "https://github.com/richgo/forge-kit/attestations/bootstrap/v3",
+  "predicateType": "https://github.com/richgo/forge-kit/attestations/bootstrap/v4",
   "predicate": {
     "requirement": "STORY-001",
     "materials": [
       {
-        "name": "product-requirements.json",
+        "name": "product-requirements.md",
         "digest": {
-          "sha256": "8617ae524eb70951cd451f3c10339c97d08240009ab3ee8a36e06cf4f3b16ac8"
+          "sha256": "a58992a4147f1b64e6b5f1a63c3f066bb7f2435c7b02f6c1575519caba60c90d"
+        }
+      },
+      {
+        "name": "acceptance.json",
+        "digest": {
+          "sha256": "49ebf94a61f7985949d68672c1ac3b8558e0b4303b79a00a293ad66d2020103d"
         }
       },
       {
@@ -84,6 +90,12 @@
           }
         }
       ]
+    },
+    "requirements": {
+      "compiler": "forgekit-requirements/markdown-v1",
+      "sourceSha256": "a58992a4147f1b64e6b5f1a63c3f066bb7f2435c7b02f6c1575519caba60c90d",
+      "normalizedSha256": "53297121a67e182cc32aa4a257d12d534534032d3ae2f75c1129ae393ecd446d",
+      "acceptanceSha256": "49ebf94a61f7985949d68672c1ac3b8558e0b4303b79a00a293ad66d2020103d"
     }
   }
 }

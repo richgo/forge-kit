@@ -1,17 +1,18 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { appendFile, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { appendFile, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { test } from 'node:test';
 import { buildWebsite } from '../factory/website.mjs';
+import { readProductRequirements } from '../factory/requirements.mjs';
 
 const execute = promisify(execFile);
-const spec = async release => JSON.parse(await readFile(new URL(
-  '../examples/trail-desk/' + release + '/product-requirements.json', import.meta.url)));
+const spec = async release => (await readProductRequirements(fileURLToPath(new URL(
+  '../examples/trail-desk/' + release + '/product-requirements.md', import.meta.url)), { website: true })).document;
 
 test('the feature change generates a browser component and ships a filter', async () => {
   const baseline = buildWebsite(await spec('baseline'));
@@ -36,7 +37,7 @@ test('the checker rejects injected HTML before opening a browser', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'trail-desk-test-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
   const cli = fileURLToPath(new URL('../factory/website.mjs', import.meta.url));
-  const input = fileURLToPath(new URL('../examples/trail-desk/step-free/product-requirements.json', import.meta.url));
+  const input = fileURLToPath(new URL('../examples/trail-desk/step-free/product-requirements.md', import.meta.url));
   const output = join(dir, 'site');
   await execute(process.execPath, [cli, 'build', input, output]);
   await appendFile(join(output, 'index.html'), '<script>globalThis.injected = true;</script>');

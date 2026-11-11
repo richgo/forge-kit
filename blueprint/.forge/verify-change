@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Reviewed, application-owned verifier. APMX supplies an unapplied Git patch.
+# Reviewed, application-owned verifier. APMX supplies an unapplied Git patch
+# followed by the selected acceptance check IDs.
 # This template deliberately refuses to approve changes until a project owner
 # installs real independent checks. Do not execute this in the agent workspace
 # with secrets or untrusted network access.

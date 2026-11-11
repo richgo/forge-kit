@@ -8,8 +8,8 @@ then calls the **same project-owned independent verifier** used by APMX.
 For each language it asserts:
 
 1. The accepted source patch passes the real independent acceptance suite.
-2. A patch modifying the protected request file is rejected.
-3. An empty patch is rejected.
+2. A patch modifying the request, requirements or acceptance tests is rejected.
+3. An unknown check ID or an empty patch is rejected.
 
 The [CI workflow](../../.github/workflows/native-consumers.yml) pins Python,
 Go, Node.js and TypeScript. Its results demonstrate deterministic patch and

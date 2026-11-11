@@ -27,11 +27,6 @@ jobs:
       attestations: write
     with:
       workspace: examples/consumers/python-api
-      request: >-
-        Implement the approved request.md for the Python quote API.
-        Update src/quote.py only. Preserve the independent tests and
-        .forge/verify-change. Apply nonnegative discounts, clamp totals
-        at zero, and preserve invalid-input behavior.
     secrets:
       COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
 
@@ -45,11 +40,6 @@ jobs:
       attestations: write
     with:
       workspace: examples/consumers/go-service
-      request: >-
-        Implement the approved request.md for the Go quote service.
-        Update src/quote.go only. Preserve the independent tests and
-        .forge/verify-change. Apply nonnegative discounts, clamp totals
-        at zero, and preserve negative-input errors.
     secrets:
       COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
 
@@ -63,10 +53,5 @@ jobs:
       attestations: write
     with:
       workspace: examples/consumers/typescript-web
-      request: >-
-        Implement the approved request.md for the TypeScript price
-        calculator. Update src/quote.ts only. Preserve independent tests
-        and .forge/verify-change. Apply nonnegative discounts, clamp
-        totals at zero, and reject invalid inputs.
     secrets:
       COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}

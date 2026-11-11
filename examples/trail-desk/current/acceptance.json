@@ -1,0 +1,84 @@
+[
+  {
+    "id": "ac-101",
+    "story": "STORY-101",
+    "when": "open-catalog",
+    "then": {
+      "visibleTrails": [
+        "fern",
+        "ridge",
+        "lake"
+      ]
+    }
+  },
+  {
+    "id": "ac-102",
+    "story": "STORY-102",
+    "when": "filter-step-free",
+    "then": {
+      "visibleTrails": [
+        "fern",
+        "lake"
+      ]
+    }
+  },
+  {
+    "id": "ac-103",
+    "story": "STORY-102",
+    "when": "clear-filter",
+    "then": {
+      "visibleTrails": [
+        "fern",
+        "ridge",
+        "lake"
+      ]
+    }
+  },
+  {
+    "id": "ac-104",
+    "story": "STORY-103",
+    "when": "sort-shortest",
+    "then": {
+      "visibleTrails": [
+        "fern",
+        "lake",
+        "ridge"
+      ]
+    }
+  },
+  {
+    "id": "ac-105",
+    "story": "STORY-103",
+    "when": "sort-longest",
+    "then": {
+      "visibleTrails": [
+        "ridge",
+        "lake",
+        "fern"
+      ]
+    }
+  },
+  {
+    "id": "ac-106",
+    "story": "STORY-103",
+    "when": "sort-longest-step-free",
+    "then": {
+      "visibleTrails": [
+        "lake",
+        "fern"
+      ]
+    }
+  },
+  {
+    "id": "ac-107",
+    "story": "STORY-103",
+    "when": "reset-sort",
+    "then": {
+      "visibleTrails": [
+        "fern",
+        "ridge",
+        "lake"
+      ]
+    }
+  }
+]

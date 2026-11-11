@@ -11,7 +11,7 @@ for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
   assert.ok(entry.isDirectory(), 'Catalog entries must be product directories');
   assert.match(entry.name, /^[a-z][a-z0-9-]*$/);
   const read = async revision =>
-    JSON.parse(await readFile(join(root, entry.name, revision, 'product.json'), 'utf8'));
+    JSON.parse(await readFile(join(root, entry.name, revision, 'execution.json'), 'utf8'));
   const [initial, next] = await Promise.all([read('initial'), read('next')]);
   assert.equal(initial.id, entry.name, 'Product ID must match its directory');
   assert.equal(next.id, initial.id, 'Product ID changed');

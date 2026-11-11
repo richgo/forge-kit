@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { buildWebsite } from './website.mjs';
+import { readProductRequirements, requirementsPackage } from './requirements.mjs';
 
 const entry = 'checks/impact.mjs';
 const location = process.env.FORGE_ARCHITECTURE_PACKAGE;
@@ -27,12 +28,23 @@ async function loadSnapshot(values, side) {
   const viewPath = values[side + '-likec4'];
   assert.ok(requirementsPath, 'Missing --' + side + '-requirements');
   assert.equal(Boolean(calmPath), Boolean(viewPath), 'Provide both --' + side + '-calm and --' + side + '-likec4');
-  const requirements = await readJson(requirementsPath);
+  const { document: requirements, files, identity } = await readProductRequirements(requirementsPath, {
+    website: calmPath ? undefined : true,
+  });
+  let generated;
   if (!calmPath) {
     assert.equal(requirements?.product, 'Trail Desk', 'Model generation supports Trail Desk. Supply authored CALM and LikeC4 for other products.');
-    const { architecture, view } = buildWebsite(requirements);
-    return { requirements, calm: architecture, view, source: 'generated' };
+    generated = buildWebsite(requirements);
   }
+  if (identity) {
+    const { parseMarkdownRequirements } = await requirementsPackage('checks/markdown-requirements.mjs');
+    const source = parseMarkdownRequirements(files['product-requirements.md']);
+    const criteria = document => document.epics.flatMap(epic => epic.features.flatMap(feature =>
+      feature.stories.flatMap(story => story.acceptanceCriteria)));
+    const intent = new Map(criteria(source).map(({ id, ...criterion }) => [id, criterion]));
+    for (const criterion of criteria(requirements)) criterion.intent = intent.get(criterion.id);
+  }
+  if (generated) return { requirements, calm: generated.architecture, view: generated.view, source: 'generated' };
   const [calm, view] = await Promise.all([readJson(calmPath), readFile(viewPath, 'utf8')]);
   return { requirements, calm, view, source: 'authored' };
 }

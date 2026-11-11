@@ -1,0 +1,14 @@
+[
+  {
+    "id": "ac-101",
+    "story": "STORY-101",
+    "when": "open-catalog",
+    "then": {
+      "visibleTrails": [
+        "fern",
+        "ridge",
+        "lake"
+      ]
+    }
+  }
+]

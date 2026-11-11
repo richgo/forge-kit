@@ -18,9 +18,9 @@ test('a new reviewed product is discovered without changing the workflow', async
   for (const revision of ['initial', 'next']) {
     const directory = join(root, id, revision);
     await mkdir(directory, { recursive: true });
-    await writeFile(join(directory, 'product.json'), JSON.stringify({ id, runtime: 'python' }));
+    await writeFile(join(directory, 'execution.json'), JSON.stringify({ id, runtime: 'python' }));
   }
   assert.deepEqual(await discover(root), { include: [{ product: id, runtime: 'python' }] });
-  await writeFile(join(root, id, 'next', 'product.json'), JSON.stringify({ id, runtime: 'node' }));
+  await writeFile(join(root, id, 'next', 'execution.json'), JSON.stringify({ id, runtime: 'node' }));
   await assert.rejects(discover(root), /Runtime migration/);
 });

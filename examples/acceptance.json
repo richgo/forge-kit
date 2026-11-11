@@ -1,0 +1,18 @@
+[
+  {
+    "id": "ac-001",
+    "story": "STORY-001",
+    "when": "run-readiness-probe",
+    "then": {
+      "stdout": "ready"
+    }
+  },
+  {
+    "id": "ac-002",
+    "story": "STORY-001",
+    "when": "run-readiness-probe",
+    "then": {
+      "exitCode": 0
+    }
+  }
+]

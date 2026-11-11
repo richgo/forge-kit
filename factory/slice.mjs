@@ -4,7 +4,8 @@ import { createHash } from 'node:crypto';
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
+import { readProductRequirements, requirementsPackage } from './requirements.mjs';
 
 const execute = promisify(execFile);
 const approvedRepairBudget = Object.freeze({ timeLimitMs: 15000, spendLimitUnits: 1, retryCostUnits: 1 });
@@ -12,7 +13,8 @@ const schema = 'https://calm.finos.org/release/1.2/meta/calm.json';
 const legacyPredicateType = 'https://github.com/richgo/forge-kit/attestations/bootstrap/v1';
 const predicateType = 'https://github.com/richgo/forge-kit/attestations/bootstrap/v2';
 const productPredicateType = 'https://github.com/richgo/forge-kit/attestations/bootstrap/v3';
-const defaultInputs = ['examples/requirements.json', 'architecture/slice.json', 'architecture/slice.c4'];
+const markdownPredicateType = 'https://github.com/richgo/forge-kit/attestations/bootstrap/v4';
+const defaultArchitecture = ['architecture/slice.json', 'architecture/slice.c4'];
 const fixtureInputs = ['requirements.json', 'architecture.json', 'architecture.c4'];
 const transitions = {
   start: ['requirements'],
@@ -83,34 +85,49 @@ export function validateArchitecture(calm, requirements, view) {
   return implementation;
 }
 
-async function requirementsPackage() {
-  const entry = 'checks/product-requirements.mjs';
-  const location = process.env.FORGE_REQUIREMENTS_PACKAGE;
-  return import(location ? pathToFileURL(join(location, entry)) :
-    new URL('../apm_modules/richgo/forge-kit-skills/packages/requirements/' + entry, import.meta.url));
-}
+const repositoryPath = name => fileURLToPath(new URL('../' + name, import.meta.url));
+const markdownSource = 'product-requirements.md';
 
-async function loadInputs(inputDirectory, story) {
-  assert.ok(!story || inputDirectory, 'Select a product story with --inputs and --story');
-  const names = story ? ['product-requirements.json', ...fixtureInputs.slice(1)] :
-    inputDirectory ? fixtureInputs : defaultInputs;
-  const data = await Promise.all(names.map(name => readFile(
-    inputDirectory ? join(inputDirectory, name) : new URL('../' + name, import.meta.url)
-  )));
-  const [req, model, view] = data;
-  const document = JSON.parse(req);
-  const product = story ? await requirementsPackage() : null;
-  const requirements = product ? product.selectStory(document, story) : document;
-  if (!product) {
+async function loadInputs(inputDirectory, story, { archived = false } = {}) {
+  const architecture = inputDirectory ?
+    fixtureInputs.slice(1).map(name => join(inputDirectory, name)) :
+    defaultArchitecture.map(repositoryPath);
+  const names = inputDirectory ? fixtureInputs.slice(1) : defaultArchitecture;
+  const [model, view] = await Promise.all(architecture.map(path => readFile(path)));
+  const root = inputDirectory ?? repositoryPath('examples');
+  const markdown = join(root, markdownSource);
+  let approved;
+  if (!archived) {
+    const exists = await readFile(markdown).then(() => true, error => {
+      if (error.code !== 'ENOENT') throw error;
+      return false;
+    });
+    if (exists) approved = await readProductRequirements(markdown);
+    else if (!inputDirectory) throw new Error('Missing approved ' + markdownSource);
+  }
+  if (!approved && story) approved = await readProductRequirements(join(root, 'product-requirements.json'));
+  let requirements;
+  let product;
+  let materials;
+  if (approved) {
+    const { selectStory, verifyTrace } = await requirementsPackage();
+    requirements = selectStory(approved.document, story ?? 'STORY-001');
+    const [source, acceptance] = Object.values(approved.files);
+    product = { source, acceptance, verifyTrace, identity: approved.identity };
+    materials = Object.entries(approved.files).map(([name, bytes]) => ({ name, digest: digest(bytes) }));
+  } else {
+    const path = inputDirectory ? join(root, fixtureInputs[0]) : repositoryPath('test/fixtures/delegated/requirements.json');
+    const source = await readFile(path);
+    requirements = JSON.parse(source);
     assert.match(requirements.id, /^REQ-[0-9]+$/);
     assert.ok(typeof requirements.summary === 'string' && requirements.summary.trim());
     assert.match(requirements.expectedOutput, /^[a-z]{1,32}$/);
+    materials = [{ name: inputDirectory ? fixtureInputs[0] : 'examples/requirements.json', digest: digest(source) }];
   }
   return {
-    requirements,
-    product: product && { requirements: req, verify: product.verifyTrace },
+    requirements, product,
     implementation: validateArchitecture(JSON.parse(model), requirements, view.toString('utf8')),
-    materials: names.map((name, index) => ({ name, digest: digest(data[index]) })),
+    materials: [...materials, { name: names[0], digest: digest(model) }, { name: names[1], digest: digest(view) }],
   };
 }
 
@@ -152,11 +169,12 @@ function statement({ materials, requirements, implementation, product }, artifac
   return {
     _type: 'https://in-toto.io/Statement/v1',
     subject: [{ name: 'deployed.mjs', digest: digest(artifact) }],
-    predicateType: product ? productPredicateType : predicateType,
+    predicateType: product?.identity ? markdownPredicateType : product ? productPredicateType : predicateType,
     predicate: {
       requirement: requirements.id, materials, stages, repairs: rejected.length,
       implementation, rejected, observation,
       ...(product && { trace: requirements.trace, observation: { ...observation, exitCode: 0 } }),
+      ...(product?.identity && { requirements: product.identity }),
     },
   };
 }
@@ -292,7 +310,7 @@ export async function run(output, {
   advance('evidence');
   advance('review-ready');
   const receipt = statement(input, deployed, stages, rejected, observation);
-  if (input.product) input.product.verify(input.product.requirements, plan, receipt, deployed);
+  if (input.product) input.product.verifyTrace(input.product.source, plan, receipt, deployed, input.product.acceptance);
   await writeFile(join(output, 'receipt.json'), asJson(receipt), { flag: 'wx' });
   return receipt;
 }
@@ -331,9 +349,10 @@ async function verifyRepairDecisions(output, rejected, expectedAdvisor) {
 }
 
 export async function readVerifiedReceipt(output, { inputDirectory, story, expectedRepairAdvisor } = {}) {
-  const input = await loadInputs(inputDirectory, story);
-  const { requirements, implementation } = input;
   const receipt = JSON.parse(await readFile(join(output, 'receipt.json'), 'utf8'));
+  const archived = [legacyPredicateType, predicateType, productPredicateType].includes(receipt.predicateType);
+  const input = await loadInputs(inputDirectory, story, { archived });
+  const { requirements, implementation } = input;
   const deployed = await readFile(join(output, 'deployed.mjs'));
   assert.deepEqual(receipt.subject, [{ name: 'deployed.mjs', digest: digest(deployed) }], 'Artifact digest mismatch');
   const observed = await observe(deployed, requirements, implementation);
@@ -365,7 +384,7 @@ export async function readVerifiedReceipt(output, { inputDirectory, story, expec
   assert.deepEqual(receipt, statement(input, deployed, stages, rejected, observed));
   if (input.product) {
     const plan = JSON.parse(await readFile(join(output, 'plan.json')));
-    input.product.verify(input.product.requirements, plan, receipt, deployed);
+    input.product.verifyTrace(input.product.source, plan, receipt, deployed, input.product.acceptance);
   }
   return receipt;
 }
@@ -373,11 +392,10 @@ export async function readVerifiedReceipt(output, { inputDirectory, story, expec
 export async function readRequirementsEvidence(output, { inputDirectory, story, expectedRepairAdvisor }) {
   assert.ok(inputDirectory && story, 'Supply --inputs and --story for requirements evidence');
   const receipt = await readVerifiedReceipt(output, { inputDirectory, story, expectedRepairAdvisor });
-  const product = await requirementsPackage();
-  const requirements = await readFile(join(inputDirectory, 'product-requirements.json'));
+  const { product } = await loadInputs(inputDirectory, story);
   const plan = JSON.parse(await readFile(join(output, 'plan.json')));
   const artifact = await readFile(join(output, 'deployed.mjs'));
-  return product.verifyTrace(requirements, plan, receipt, artifact);
+  return product.verifyTrace(product.source, plan, receipt, artifact, product.acceptance);
 }
 
 export async function verifyRun(output, options) {

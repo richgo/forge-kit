@@ -18,7 +18,8 @@ test('a product story travels through architecture, build, repair, deployment an
   const output = join(root, 'run');
   await mkdir(inputs);
   await Promise.all([
-    copyFile('examples/product-requirements.json', join(inputs, 'product-requirements.json')),
+    copyFile('examples/product-requirements.md', join(inputs, 'product-requirements.md')),
+    copyFile('examples/acceptance.json', join(inputs, 'acceptance.json')),
     copyFile('test/fixtures/delegated/architecture.json', join(inputs, 'architecture.json')),
     copyFile('test/fixtures/delegated/architecture.c4', join(inputs, 'architecture.c4')),
   ]);
@@ -45,7 +46,9 @@ test('a product story travels through architecture, build, repair, deployment an
 
   const { stdout } = await cli('requirements-evidence');
   const report = JSON.parse(stdout);
-  await copyFile(join(inputs, 'product-requirements.json'), join(output, 'product-requirements.json'));
+  for (const name of ['product-requirements.md', 'acceptance.json']) {
+    await copyFile(join(inputs, name), join(output, name));
+  }
   const reportPath = join(output, 'requirements-verification.json');
   await writeFile(reportPath, stdout);
   const apmxCheck = () => exec(process.execPath, [checker], { cwd: output, env: {}, timeout: 10000 });
@@ -58,9 +61,10 @@ test('a product story travels through architecture, build, repair, deployment an
   await writeFile(reportPath, JSON.stringify(report));
   await assert.rejects(apmxCheck(), /verification report/);
 
-  const productPath = join(inputs, 'product-requirements.json');
-  const product = JSON.parse(await readFile(productPath));
-  product.epics[0].features[0].stories[0].acceptanceCriteria[0].then.stdout = 'changed';
-  await writeFile(productPath, JSON.stringify(product));
-  await assert.rejects(cli('verify'), /Runtime acceptance/);
+  const productPath = join(inputs, 'product-requirements.md');
+  const product = await readFile(productPath, 'utf8');
+  await writeFile(productPath, product.replace('Print the readiness result', 'Display the readiness result'));
+  await assert.rejects(cli('verify'), /Expected values to be strictly deep-equal/);
+  await writeFile(productPath, product.replace('ac-001', 'unknown'));
+  await assert.rejects(cli('verify'), /Unknown or mismatched independent check/);
 });

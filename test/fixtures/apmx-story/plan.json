@@ -1,0 +1,31 @@
+{
+  "requirement": "STORY-001",
+  "target": "health_probe",
+  "implementation": {
+    "mode": "delegated",
+    "worker": "readiness_worker"
+  },
+  "maxRepairs": 1,
+  "trace": {
+    "epic": "EPIC-001",
+    "feature": "FEAT-001",
+    "story": "STORY-001",
+    "node": "health_probe",
+    "criteria": [
+      {
+        "id": "AC-001",
+        "when": "run-readiness-probe",
+        "then": {
+          "stdout": "ready"
+        }
+      },
+      {
+        "id": "AC-002",
+        "when": "run-readiness-probe",
+        "then": {
+          "exitCode": 0
+        }
+      }
+    ]
+  }
+}

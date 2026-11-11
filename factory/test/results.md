@@ -1,5 +1,9 @@
 # Qualification results
 
+The recorded runs below are evidence for the revisions they tested. Use the
+[hosted language checklist](apmx-language-qualification.md) to record a hosted
+qualification of the Markdown requirements workflow.
+
 The release qualification recorded on 9 November 2026 tested ForgeKit at
 `d8c1104f2bf963af553203cc883df8d3fa86b38e`, with catalog worker
 `66a34368048c9105da54e888673de0c21e59d258`.

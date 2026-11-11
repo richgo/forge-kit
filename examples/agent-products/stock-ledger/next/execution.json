@@ -1,0 +1,10 @@
+{
+  "id": "stock-ledger",
+  "runtime": "python",
+  "entry": "src/main.py",
+  "files": [
+    "src/main.py",
+    "src/ledger.py",
+    "src/reorder.py"
+  ]
+}
