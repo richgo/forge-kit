@@ -1,32 +1,15 @@
-# Reference factory implementation status
+# Implementation and qualification status
 
-## CLI-native migration status (2026-11-10)
+Use this matrix to distinguish a runnable entry point from the evidence needed to qualify it. [Recorded results](../factory/test/results.md) identify tested revisions, observed outcomes and their scope.
 
-| Capability | Status | Qualification still required |
+| Capability | Runnable path | Evidence and scope |
 | --- | --- | --- |
-| Copyable `blueprint/` | Merged in PR #24 | Clean-room native execution |
-| Python/Go/TypeScript consumers | Merged in PR #25 | Actual hosted agent changes and signed independent replay |
-| Hosted APMX qualification workflow | Merged in PR #26 | Dispatch all three and verify run artifacts and attestations |
-| CLI-native static conformance | Merged in PR #27 | This is a boundary check, not runtime equivalence |
-| CLI-only adversarial consumer acceptance | Open PR #28 | Merge, green CI and inspect output |
-| CALM/LikeC4, security, release, recovery CLI parity | Not yet qualified | Native tool migration, adversarial tests, authenticated live rehearsal |
-| Legacy `.mjs` removal | Not complete | Preserve existing behavior until equivalent checks pass |
-
-The older capability matrix below describes the legacy/reference paths and should not be interpreted as a native APMX production-readiness claim.
-
-This records the supported factory paths and their verification boundaries.
-See the [target architecture](architecture.md) and the [component checks](../factory/test/components.md).
-
-| Capability | Runnable path | Boundary |
-| --- | --- | --- |
-| Product intent | Tracked Epic → Feature → Story documents with stable acceptance IDs. The impact planner traces edits through story ownership and transitive consumers. | Readiness and Trail Desk have executable adapters. Other product documents can be planned with authored model pairs. |
-| Architecture | FINOS CALM and LikeC4 native validation, exact flat projection comparison, generated Trail Desk models and authored direct/delegated readiness models. | The planner supports flat CALM 1.2 node-level connections. It rejects broader topology or view syntax. |
-| Package assembly | APM 0.33.0 restores and audits the nine immutable catalog packages before the hosted build. Native APMX runs and independently replays the approved contract. | The reviewed repository lock is the package trust policy. The catalog admits new packages through review. |
-| Planning and execution | GitHub Agentic Workflows calls one pinned worker. The worker prepares a scoped plan, builds from reviewed inputs, and uses Copilot through APMX. | The product adapters generate code deterministically. The hosted agent coordinates and produces contract output. |
-| Decisions and repair | TypeSafe Jev advises an eligible readiness retry. Local policy enforces action, confidence, attempts, time, and work units. Independent replay checks the repair evidence. | The budget accounts for local work units. The readiness repair adapter has one retry. |
-| Independent verification | A clean runner verifies the approved inputs, plan, architecture, behavior, security, package integrity and the contract. The website security checker comes from a pinned external APM package. | The acceptance and security rules are specific to the supported products. |
-| Provenance and release | Separate GitHub jobs sign and authenticate the exact Pages archive, the APMX receipt and the independent evidence. The deployer needs the authenticated archive and the Pages environment. | The local unsigned receipt is for diagnostics. GitHub archive signatures apply to the hosted release path. |
-| Observe and recover | The Pages adapter probes the public manifest and files. It authenticates and probes a selected prior release before publication and makes one restoration attempt after a deployment or probe failure. | Prior artifacts are kept for 90 days. Pages publication and rollback need the deployment environment. Continuous monitoring and broader remediation remain open. |
-
-The [factory test records](../factory/test/README.md) distinguish local
-checks, live provider calls, hosted qualification and production operations.
+| CLI-native blueprint | [Copyable inputs](../blueprint/README.md) and [static conformance](../.github/workflows/blueprint-conformance.yml) | The conformance gate checks the template and its CLI boundary. Clean-room execution requires an approved request and working project checks. |
+| Language-neutral source acceptance | [Deterministic consumer suite](../factory/test/native-consumers.md) | Python, Go and TypeScript project verifiers exercise valid source patches, protected-path rejection and empty-patch rejection. |
+| Hosted agent delivery across languages | [Manual consumer workflow](../.github/workflows/apmx-consumers.yml) calls the pinned [APMX factory](../.github/workflows/apmx-factory.yml). | The recorded results cover deterministic acceptance. Hosted qualification requires a real agent-authored patch, independent replay and authenticated evidence for each stack. See the [evidence checklist](../factory/test/apmx-language-qualification.md). |
+| Package integrity | [Frozen APM installation and audit](../factory/test/components.md) | The repository pins ten catalog packages. The integrity suite exercises missing locks and modified installed files. Projects own their package and lock policy. |
+| Product and architecture checks | [Readiness and Trail Desk fixtures](../factory/test/architecture-impact.md) exercise product traceability, CALM and LikeC4. | The fixture planner handles flat CALM 1.2 node-level relationships. Each consumer supplies its own architecture validation, compatibility rules and acceptance checks. |
+| Advisory decisions and repair | [Jev readiness fixture](../factory/test/jev.md) and [agent delivery rehearsal](../factory/test/phase-two-agent-delivery.md) | The readiness fixture allows one policy-gated retry. Hosted and local observations apply to the tested fixture and provider configuration. |
+| Isolated product delivery and recovery | [Trail Desk and Stock Ledger rehearsal](../factory/test/phase-four-qualification.md#qualification-record) | Recorded evidence covers signed bundle reproduction and restored health for both products using archived agent output in an isolated runner. |
+| Provenance and publication | The [APMX workflow](apmx-factory.md) attests the delivery and binds it to the checked receipt. The [Pages adapter](hosted-rehearsal.md) authenticates a checked Trail Desk release archive. | The signed Trail Desk qualification ran with publication disabled. Local unsigned receipts are diagnostic evidence. Live release qualification requires an authorized deployment and live checks. |
+| Observation and recovery | [Pages observation and recovery](../factory/test/phase-one-runtime.md), [scheduled runtime](../factory/test/scheduled-runtime.md) and the [isolated Pages drill](hosted-rehearsal.md#component-rehearsals). | A public read-only probe verifies served bytes. Isolated recovery evidence applies to its fixture environment. Production restoration requires an authenticated baseline, an authorized deployment and independent re-observation. |

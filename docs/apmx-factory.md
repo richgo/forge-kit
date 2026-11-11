@@ -1,66 +1,55 @@
 # Run the APMX software factory
 
-Forge Kit runs a pinned package of Markdown contracts against a reviewed
-project. The project supplies the application language, architecture,
-toolchain, and acceptance checks. Node.js and Python in older Forge Kit
-examples are fixture choices.
-
-```text
-Approved request → Plan → Specification → Checked source patch → Advisory review
-```
-
-APMX resolves these handoffs from the contracts' declared inputs and outputs.
-Its build contract uses the bounded patch exporter to deliver actual edits.
-It runs the project's approved checks on the patch before admitting the build
-output. The review report is advisory. A failed project check blocks delivery.
-The build contract allows two attempts within a shared time budget.
-[Factory package and contracts](https://github.com/richgo/forge-kit-skills/tree/0132bcc69ede85681462d7ffae8ae02cf909de42/packages/software-factory)
+The [pinned factory package](https://github.com/richgo/forge-kit-skills/tree/0132bcc69ede85681462d7ffae8ae02cf909de42/packages/software-factory)
+declares the file handoffs from `request.md` through `plan.md` and
+`specification.md` to `changes.diff`, `implementation.md` and `review.md`.
+The build contract exports an unapplied source patch, allows two attempts
+within a shared 600-second budget and runs the project's verifier before accepting
+the output. The review report supplies advisory findings.
 
 ## Prepare a project
 
-1. Review the base revision, including the source, architecture, build
-   instructions, and existing acceptance tests. Use the project's own build
-   tools and runtimes. The approved source must fit the selected APMX release's
-   project capture and patch limits.
-2. Add a reviewed Bash entry point at `.forge/verify-change` in the project
-   root. The factory calls it with the path to the unapplied patch as its first
-   argument. Have it enforce the project's allowed change scope, apply the
-   patch in a disposable candidate tree, and run the required build, architecture,
-   acceptance, and regression checks. A failure must exit nonzero.
-3. Keep the independent tests and their expected outcomes under control of
-   the approved base. Keep candidate execution in an isolated, credential-free
-   environment. Use a pinned project toolchain or container as needed. Changes
-   to the trusted checker or delivery policy go through their own review.
+1. Review the base source, architecture, build instructions and acceptance
+   tests. Keep the project within the pinned APMX release's capture and patch
+   limits and reserve the factory's output filenames at the workspace root.
+2. Add the reviewed Bash entry point at `.forge/verify-change`. It receives
+   the unapplied patch path as its first argument. Validate its scope, apply
+   it in a disposable candidate tree and run the project's required checks.
+3. Keep the checker and expected outcomes under control of the approved base.
+   Use an isolated execution environment with the pinned project toolchain,
+   no credentials and no untrusted network access. A disposable directory
+   gives the checker a fresh tree. Use runner or container controls to
+   enforce process, filesystem and network isolation.
 
-A project can check CALM and LikeC4, compile Go or Rust, run browser tests, or
-use another toolchain through the same entry point. Bash and Git run the
-factory's common verification step. The entry point chooses the tools for
-the product.
+See the [consumer blueprint](../blueprint/README.md) and
+[example verifiers](../examples/consumers/README.md).
 
-## Preview locally
+## Preview and run locally
 
-Install APMX 0.8.0 and a supported agent harness, then stage a copy of the
-approved project in a clean directory outside the Git checkout. Put the
-approved change in `request.md` at the project root. Run the plan to see
-the contracts, artifacts, and checks without invoking the model.
+Install [APMX 0.8.0](https://github.com/danielmeppiel/apmx/releases/tag/v0.8.0),
+Bash, Git and the Copilot CLI. Put Copilot on the executable path for
+planning and authenticate it for agent execution. Stage the approved project in a clean directory outside the Git
+checkout, put the approved change in `request.md` and run from that directory.
+The plan lists the contracts, handoffs and checks without invoking a model.
 
 ```sh
 apmx --from "richgo/forge-kit-skills/packages/software-factory#0132bcc69ede85681462d7ffae8ae02cf909de42" --plan
+apmx --from "richgo/forge-kit-skills/packages/software-factory#0132bcc69ede85681462d7ffae8ae02cf909de42" --on copilot
 ```
 
-For an interactive run, use the same command without `--plan`. Native APMX
-runs use host tools. Only run the approved factory and checker in an
-appropriately isolated environment. [Upstream factory example](https://github.com/danielmeppiel/apmx/tree/fae2067a0dc6ff07beda714015ff9e648f41ce63/examples/contracts/software-factory)
+Inspect the patch and reports under `.apm/chains/<run-id>/artifacts/`. Use the approved project's
+acceptance criteria and verify the patch identity when handing it off for
+review.
 
 ## Run in GitHub Actions
 
-Call [APMX software factory](../.github/workflows/apmx-factory.yml) as a
-reusable workflow from your project's default branch, pinned to a reviewed
-Forge Kit commit. Pass the reviewed request, the project directory relative to
-the checkout, and your configured `COPILOT_GITHUB_TOKEN`. The calling job
-needs contents read, attestation write, and OIDC write permissions.
-For a project staged in this repository, you can also dispatch **APMX software
-factory** on the default branch and select its directory.
+Call the [APMX software factory workflow](../.github/workflows/apmx-factory.yml)
+from the project's default branch. Pin it to a reviewed ForgeKit commit.
+Supply the full approved request, the project directory relative to the
+checkout and the Copilot token. The workflow writes the request input to
+`request.md` in the staged workspace. The pinned runner uses Ubuntu 24.04.
+Use tools available on that image or supply missing tools through a reviewed
+checker or workflow adaptation.
 
 ```yaml
 jobs:
@@ -77,14 +66,24 @@ jobs:
       COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
 ```
 
-The upstream workflow uses a separate job to replay the contract checks
-against the approved base and exact outputs, then signs the checked receipt
-and delivery files. Inspect `apmx-receipt` and `apmx-delivery` before using
-the signed changes in a project review or protected release workflow.
-Publication and runtime recovery remain responsibilities of the project's
-approved delivery adapter. Forge Kit's Trail Desk Pages workflow illustrates
-a separate product-specific deployment path. [Trail Desk hosted release](hosted-rehearsal.md)
+For a project already staged in this repository, dispatch **APMX software
+factory** on the default branch and supply the same workspace and request.
 
-## Consumer qualification and evidence
+## Review the evidence
 
-Three independent seed consumers are available in [examples/consumers](../examples/consumers/README.md). The [manual hosted qualification workflow](../.github/workflows/apmx-consumers.yml) selects one consumer per run. A passing local CLI test is not evidence of an agent-authored patch; verify the hosted APMX receipt, replay results and attestation before recording qualification. The CLI-only adversarial tests are proposed in [PR #28](https://github.com/richgo/forge-kit/pull/28).
+The independent job rebuilds the approved check environment and replays
+the contract checks. Download `apmx-receipt` and `apmx-delivery`. The
+attestations identify the delivered files by digest and bind them to the
+checked receipt. Verify signer and source identity against the approved run.
+
+Use `receipt.intoto.jsonl` to locate `changes.diff` and the check logs under
+`evidence/sha256/` in `apmx-receipt`. The `apmx-delivery` artifact contains
+the materialized files and records deletions in `.apmx-deleted` when applicable.
+Use the [APMX audit guide](https://github.com/danielmeppiel/apmx/blob/fae2067a0dc6ff07beda714015ff9e648f41ce63/docs/audit.md)
+to verify the signed delivery with a trusted signer policy.
+
+The product's protected release workflow governs publication, observation
+and recovery.
+
+Use the [hosted language checklist](../factory/test/apmx-language-qualification.md)
+to qualify an agent run on a consumer toolchain.
