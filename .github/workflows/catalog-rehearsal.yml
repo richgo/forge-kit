@@ -37,7 +37,7 @@ on:
         type: boolean
         default: false
       catalog_fixture:
-        description: Run only the legacy skills catalog fixture
+        description: Run only the Skills catalog handoff and recovery fixture
         type: boolean
         default: false
 
@@ -60,7 +60,7 @@ jobs:
       FORGE_JEV_TOKEN: ${{ secrets.FORGE_JEV_TOKEN }}
 
   reference:
-    name: Rehearse the legacy catalog fixture
+    name: Rehearse the Skills catalog handoff and recovery
     if: ${{ inputs.catalog_fixture && !inputs.publish_pages && (github.ref == 'refs/heads/main' || github.ref == vars.FORGE_REHEARSAL_REF || (!inputs.publish_pages && github.actor == github.repository_owner)) }}
     uses: richgo/forge-kit-skills/.github/workflows/forge-reference.lock.yml@40a7a6b54ce5603f450e4935beb9dac4f466b95a
     permissions:

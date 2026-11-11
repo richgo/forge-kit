@@ -18,8 +18,9 @@ verification-only run. Publication requires an explicit dispatch from
 for fallback authentication and observation.
 
 Download `factory-verified` for the independent Chromium observations,
-requirements trace, and in-toto receipts. `factory-pages-observation`
-records the HTTPS checks of the public site and architecture files.
+requirements trace, and in-toto receipts, and `factory-release-proof` for
+signature verification. Publishing runs also provide `factory-pages-observation`
+with HTTPS checks of the public site and architecture files.
 
 ## Review a Trail Desk change
 
@@ -36,6 +37,10 @@ requirements and uploads their generated CALM, LikeC4, and HTML diffs in
 to qualify the build. Enable publication only for an approved release.
 The distance-sorting acceptance checks also cover its interaction with the
 step-free filter.
+
+Use the [two Trail Desk change rehearsals](../examples/trail-desk/rehearsals/README.md)
+to exercise a product request and an architecture-only request through the
+portable APMX factory and its project verifier.
 
 ## Rehearse readiness and catalog delivery
 
