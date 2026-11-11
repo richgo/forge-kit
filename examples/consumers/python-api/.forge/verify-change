@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 patch="${1:?Expected unapplied patch}"
+shift
+if [[ "$#" -ne 1 || "$1" != quote.acceptance ]]; then
+  echo 'Expected the approved quote.acceptance check' >&2
+  exit 2
+fi
 [[ -f "$patch" && -s "$patch" && ! -L "$patch" ]] || exit 2
 patch="$(realpath "$patch")"
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -10,7 +15,7 @@ while IFS= read -r -d '' record; do
   path="${record#*$'\t'}"
   path="${path#*$'\t'}"
   case "$path" in
-    src/*) ;;
+    src/quote.py) ;;
     *) echo "Rejected protected or out-of-scope path: $path" >&2; exit 1 ;;
   esac
 done < <(git apply --numstat -z -- "$patch")
@@ -21,4 +26,5 @@ cp -R "$root/src" "$root/tests" "$candidate/"
 
 cd "$candidate"
 git apply -- "$patch"
+[[ -f src/quote.py && ! -L src/quote.py ]] || exit 1
 PYTHONPATH=. python3 -m unittest discover -s tests

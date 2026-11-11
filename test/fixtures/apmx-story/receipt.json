@@ -1,0 +1,89 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "deployed.mjs",
+      "digest": {
+        "sha256": "4c9dc569f3911ec58b49df7c4538dd63f369567dceea7764fc776126b9c301a8"
+      }
+    }
+  ],
+  "predicateType": "https://github.com/richgo/forge-kit/attestations/bootstrap/v3",
+  "predicate": {
+    "requirement": "STORY-001",
+    "materials": [
+      {
+        "name": "product-requirements.json",
+        "digest": {
+          "sha256": "8617ae524eb70951cd451f3c10339c97d08240009ab3ee8a36e06cf4f3b16ac8"
+        }
+      },
+      {
+        "name": "architecture.json",
+        "digest": {
+          "sha256": "5829e54c019f5976c91d9039e01a49bfb720a5df2c6c7472d271b950825682c6"
+        }
+      },
+      {
+        "name": "architecture.c4",
+        "digest": {
+          "sha256": "d1489fa80c8abc4d058397cf7a5339da57f93c56f4ec3d11a87fc2cd8057af4b"
+        }
+      }
+    ],
+    "stages": [
+      "requirements",
+      "architecture",
+      "plan",
+      "build",
+      "test",
+      "repair",
+      "build",
+      "test",
+      "deploy",
+      "observe",
+      "evidence",
+      "review-ready"
+    ],
+    "repairs": 1,
+    "implementation": {
+      "mode": "delegated",
+      "worker": "readiness_worker"
+    },
+    "rejected": [
+      {
+        "name": "rejected.mjs",
+        "digest": {
+          "sha256": "4cb96d3ea447c329d7222670e43fa1383741dcf683179553b84d157875dd27cf"
+        }
+      }
+    ],
+    "observation": {
+      "stdout": "ready\n",
+      "stderr": "worker:readiness_worker\n",
+      "exitCode": 0
+    },
+    "trace": {
+      "epic": "EPIC-001",
+      "feature": "FEAT-001",
+      "story": "STORY-001",
+      "node": "health_probe",
+      "criteria": [
+        {
+          "id": "AC-001",
+          "when": "run-readiness-probe",
+          "then": {
+            "stdout": "ready"
+          }
+        },
+        {
+          "id": "AC-002",
+          "when": "run-readiness-probe",
+          "then": {
+            "exitCode": 0
+          }
+        }
+      ]
+    }
+  }
+}

@@ -5,6 +5,7 @@ import { mkdir, readFile, writeFile, copyFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
+import { readProductRequirements } from './requirements.mjs';
 
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const json = value => JSON.stringify(value, null, 2) + '\n';
@@ -49,7 +50,7 @@ function trace(spec) {
     for (const feature of list(epic.features, 'features')) {
       register(feature, 'FEAT', ['title', 'outcome']);
       for (const story of list(feature.stories, 'stories')) {
-        register(story, 'STORY', ['title', 'asA', 'iWant', 'soThat']);
+        register(story, 'STORY', story.description === undefined ? ['title', 'asA', 'iWant', 'soThat'] : ['title', 'description']);
         for (const criterion of list(story.acceptanceCriteria, 'acceptance criteria')) {
           register(criterion, 'AC', ['given', 'when']);
           assert.deepEqual(Object.keys(criterion).sort(), ['given', 'id', 'then', 'when'], 'Unexpected acceptance fields');
@@ -209,9 +210,10 @@ export function buildWebsite(spec) {
   return { architecture, view, html: render(spec, architecture), acceptance };
 }
 
-function websiteReport({ requirements, architecture, view, html, acceptance }) {
+function websiteReport({ requirements, architecture, view, html, acceptance, identity }) {
   return {
     requirementsSha256: digest(requirements),
+    ...(identity && { requirements: identity }),
     architectureSha256: digest(architecture),
     viewSha256: digest(view),
     siteSha256: digest(html),
@@ -219,9 +221,11 @@ function websiteReport({ requirements, architecture, view, html, acceptance }) {
   };
 }
 async function verifyWebsite(specFile, output) {
-  const approved = await readFile(specFile);
-  assert.deepEqual(await readFile(join(output, 'product-requirements.json')), approved, 'Requirements bytes differ');
-  const expected = buildWebsite(JSON.parse(approved));
+  const { document, files, identity } = await readProductRequirements(specFile, { website: true });
+  for (const [name, bytes] of Object.entries(files)) {
+    assert.deepEqual(await readFile(join(output, name)), bytes, 'Requirements bytes differ for ' + name);
+  }
+  const expected = buildWebsite(document);
   assert.equal(await readFile(join(output, 'architecture.json'), 'utf8'), json(expected.architecture), 'CALM architecture drift');
   assert.equal(await readFile(join(output, 'architecture.c4'), 'utf8'), expected.view, 'LikeC4 projection drift');
   const html = await readFile(join(output, 'index.html'));
@@ -256,7 +260,7 @@ async function verifyWebsite(specFile, output) {
       observations.push({ id, visible });
     }
     const report = websiteReport({
-      requirements: approved, architecture: json(expected.architecture), view: expected.view,
+      requirements: Object.values(files)[0], identity, architecture: json(expected.architecture), view: expected.view,
       html, acceptance: observations,
     });
     assert.deepEqual(JSON.parse(await readFile(join(output, 'candidate-evidence.json'))), report,
@@ -308,12 +312,13 @@ async function probe(url, manifestPath) {
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
   const [command, first, second, third] = process.argv.slice(2);
   if (command === 'build') {
-    const raw = await readFile(first);
-    const { html, architecture, view, acceptance } = buildWebsite(JSON.parse(raw));
-    const report = websiteReport({ requirements: raw, architecture: json(architecture), view, html, acceptance });
+    const { document, files, identity } = await readProductRequirements(first, { website: true });
+    const { html, architecture, view, acceptance } = buildWebsite(document);
+    const report = websiteReport({ requirements: Object.values(files)[0], identity,
+      architecture: json(architecture), view, html, acceptance });
     await mkdir(second);
     await Promise.all([
-      writeFile(join(second, 'product-requirements.json'), raw),
+      ...Object.entries(files).map(([name, bytes]) => writeFile(join(second, name), bytes)),
       writeFile(join(second, 'index.html'), html),
       writeFile(join(second, 'architecture.json'), json(architecture)),
       writeFile(join(second, 'architecture.c4'), view),

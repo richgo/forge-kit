@@ -1,5 +1,9 @@
-# Approved change
+# Approved change request
 
-Extend the quote API to support a discount amount without allowing negative
-totals. Preserve the existing behavior for zero discount. Keep the protected
-acceptance tests unchanged.
+## Stories
+
+- `STORY-001`
+
+## Allowed source paths
+
+- `src/quote.py`

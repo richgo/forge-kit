@@ -1,7 +1,15 @@
 # Approved change request
 
-Replace this file with a reviewed product or architecture change before
-running the factory. Specify observable acceptance criteria, protected
-interfaces, non-functional constraints, and affected CALM/LikeC4 models.
+## Stories
 
-This is a template, not an approved request.
+- `STORY-001`
+
+## Allowed source paths
+
+- `src/example`
+
+## Constraints
+
+Replace the sample story and source path with the reviewed scope. Record
+compatibility or implementation constraints here. Author behavior and
+acceptance criteria in product-requirements.md.

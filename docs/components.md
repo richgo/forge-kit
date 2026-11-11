@@ -2,7 +2,7 @@
 
 | Component | Responsibility | Interface or entry point |
 | --- | --- | --- |
-| Approved project | Own the requested behavior, reviewed source, architecture and test expectations. | [Request template](../blueprint/request.md) and [requirements guide](product-requirements.md) |
+| Approved project | Own the requested behavior, reviewed source, architecture and test expectations. | [Requirements template](../blueprint/product-requirements.md) and [request template](../blueprint/request.md) |
 | APM and capability catalog | Resolve reviewed skills, agent configuration, contracts and supporting tools at immutable revisions. Use a frozen lock for reproducible installations. | [APM manifest](../apm.yml), [lock](../apm.lock.yaml) and [catalog roles](../factory/packages.json) |
 | APMX | Resolve the contract graph, produce artifacts, bound agent execution and replay declared checks. | [Factory workflow and CLI runbook](apmx-factory.md) |
 | Project verifier | Check the candidate's scope, apply the unapplied patch in an isolated copy of the approved base and run trusted acceptance. Return a nonzero exit status on failure. | [Blueprint checker](../blueprint/.forge/verify-change) and [consumer examples](../examples/consumers/README.md) |

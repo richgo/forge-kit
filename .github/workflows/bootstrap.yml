@@ -78,13 +78,26 @@ jobs:
           ref: ${{ steps.architecture-package.outputs.sha }}
           path: _architecture
           persist-credentials: false
+      - id: requirements
+        run: |
+          set -euo pipefail
+          pin="$(node factory/cli.mjs assemble | jq -er '.packages.skills | split("#")[1]')"
+          [[ "$pin" =~ ^[0-9a-f]{40}$ ]]
+          printf 'pin=%s\n' "$pin" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: richgo/forge-kit-skills
+          ref: ${{ steps.requirements.outputs.pin }}
+          path: _requirements
+          persist-credentials: false
+      - run: echo "FORGE_REQUIREMENTS_PACKAGE=$GITHUB_WORKSPACE/_requirements/packages/requirements" >> "$GITHUB_ENV"
       - name: Generate both revisions from their tracked requirements
         env:
           FORGE_ARCHITECTURE_PACKAGE: _architecture/packages/architecture
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
-          current=examples/trail-desk/current/product-requirements.json
+          current=examples/trail-desk/current/product-requirements.md
           if [[ ! -f "$current" ]]; then
             if git cat-file -e "$BASE_SHA:$current" 2>/dev/null; then
               echo '::error::The active Trail Desk product requirements were removed.'
@@ -95,7 +108,11 @@ jobs:
           git worktree add --detach "$RUNNER_TEMP/website-base" "$BASE_SHA"
           base="$RUNNER_TEMP/website-base"
           prior="$base/$current"
+          if [[ ! -f "$prior" ]]; then prior="$base/$(dirname "$current")/product-requirements.json"; fi
+          if [[ ! -f "$prior" ]]; then prior="$base/examples/trail-desk/step-free/product-requirements.md"; fi
           if [[ ! -f "$prior" ]]; then prior="$base/examples/trail-desk/step-free/product-requirements.json"; fi
+          readiness="$base/examples/product-requirements.md"
+          if [[ ! -f "$readiness" ]]; then readiness="$base/examples/product-requirements.json"; fi
           mkdir website-preview
           node "$base/factory/website.mjs" build "$prior" website-preview/before
           node factory/website.mjs build "$current" website-preview/after
@@ -104,10 +121,13 @@ jobs:
             --after-requirements "$current" --after-calm website-preview/after/architecture.json --after-likec4 website-preview/after/architecture.c4 \
             > website-preview/impact.json
           node factory/impact.mjs \
-            --before-requirements "$base/examples/product-requirements.json" --before-calm "$base/architecture/slice.json" --before-likec4 "$base/architecture/slice.c4" \
-            --after-requirements examples/product-requirements.json --after-calm architecture/slice.json --after-likec4 architecture/slice.c4 \
+            --before-requirements "$readiness" --before-calm "$base/architecture/slice.json" --before-likec4 "$base/architecture/slice.c4" \
+            --after-requirements examples/product-requirements.md --after-calm architecture/slice.json --after-likec4 architecture/slice.c4 \
             > website-preview/readiness-impact.json
-          for file in product-requirements.json architecture.json architecture.c4 index.html; do
+          status=0
+          git diff --no-index -- "$prior" "$current" > website-preview/product-requirements.md.diff || status=$?
+          [[ "$status" -le 1 ]]
+          for file in architecture.json architecture.c4 index.html; do
             status=0
             git diff --no-index -- "website-preview/before/$file" "website-preview/after/$file" > "website-preview/$file.diff" || status=$?
             [[ "$status" -le 1 ]]
@@ -143,7 +163,7 @@ jobs:
           "$RUNNER_TEMP/website-browser/node_modules/.bin/playwright" install chromium
           export FORGE_PLAYWRIGHT="$RUNNER_TEMP/website-browser/node_modules/playwright/index.mjs"
           export FORGE_SECURITY_PACKAGE="_security/packages/security-review"
-          node factory/website.mjs verify examples/trail-desk/current/product-requirements.json website-preview/after > website-preview/browser-evidence.json
+          node factory/website.mjs verify examples/trail-desk/current/product-requirements.md website-preview/after > website-preview/browser-evidence.json
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: trail-desk-pr-preview
@@ -280,9 +300,9 @@ jobs:
           node --test _requirements/test/product-requirements.test.mjs evals/requirements-scenarios.mjs
           mkdir -p out
           inputs="$(mktemp -d)"
-          cp examples/product-requirements.json test/fixtures/delegated/architecture.json test/fixtures/delegated/architecture.c4 "$inputs/"
+          cp examples/{product-requirements.md,acceptance.json} test/fixtures/delegated/architecture.json test/fixtures/delegated/architecture.c4 "$inputs/"
           node factory/cli.mjs run out/story --inputs "$inputs" --story STORY-001 --fault wrong-output-once
-          cp examples/pages-candidate/product-requirements.json "$inputs/"
+          cp examples/pages-candidate/{product-requirements.md,acceptance.json} "$inputs/"
           node factory/cli.mjs run out/pages-candidate --inputs "$inputs" --story STORY-001
       - name: Check signed evidence, rollback, and the pinned catalog's lifecycle
         env:
@@ -305,7 +325,7 @@ jobs:
           node factory/cli.mjs run out/clean
           node factory/cli.mjs run out/repaired --faulty-first-build
           inputs="$(mktemp -d)"
-          cp examples/requirements.json test/fixtures/delegated/architecture.json test/fixtures/delegated/architecture.c4 "$inputs/"
+          cp examples/{product-requirements.md,acceptance.json} test/fixtures/delegated/architecture.json test/fixtures/delegated/architecture.c4 "$inputs/"
           node factory/cli.mjs run out/delegated --inputs "$inputs" --fault wrong-output-once
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
@@ -348,6 +368,7 @@ jobs:
           ref: ${{ steps.requirements.outputs.pin }}
           path: _requirements
           persist-credentials: false
+      - run: echo "FORGE_REQUIREMENTS_PACKAGE=$GITHUB_WORKSPACE/_requirements/packages/requirements" >> "$GITHUB_ENV"
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: bootstrap-delivery
@@ -356,7 +377,7 @@ jobs:
           node factory/cli.mjs verify out/clean
           node factory/cli.mjs verify out/repaired
           inputs="$(mktemp -d)"
-          cp examples/requirements.json test/fixtures/delegated/architecture.json test/fixtures/delegated/architecture.c4 "$inputs/"
+          cp examples/{product-requirements.md,acceptance.json} test/fixtures/delegated/architecture.json test/fixtures/delegated/architecture.c4 "$inputs/"
           node factory/cli.mjs verify out/delegated --inputs "$inputs"
       - name: Replay the story and check the APMX verification report
         env:
@@ -364,11 +385,11 @@ jobs:
         run: |
           set -euo pipefail
           inputs="$(mktemp -d)"
-          cp examples/product-requirements.json test/fixtures/delegated/architecture.json test/fixtures/delegated/architecture.c4 "$inputs/"
+          cp examples/{product-requirements.md,acceptance.json} test/fixtures/delegated/architecture.json test/fixtures/delegated/architecture.c4 "$inputs/"
           node factory/cli.mjs requirements-evidence out/story --inputs "$inputs" --story STORY-001 > out/story/requirements-verification.json
-          cp "$inputs/product-requirements.json" out/story/
+          cp "$inputs"/{product-requirements.md,acceptance.json} out/story/
           (cd out/story && node ../../_requirements/packages/requirements/checks/apmx-requirements-check.mjs)
-          for file in product-requirements.json plan.json receipt.json deployed.mjs; do
+          for file in product-requirements.md acceptance.json plan.json receipt.json deployed.mjs; do
             cmp "out/story/$file" "examples/apmx-story/$file"
           done
       - name: Resolve the external contract in APMX
@@ -386,7 +407,7 @@ jobs:
           tar -xzf "$scratch/$package" -C "$scratch/copilot"
           export PATH="$scratch/copilot/package:$PATH"
           mkdir "$scratch/workspace"
-          cp out/story/{product-requirements.json,plan.json,receipt.json,deployed.mjs} "$scratch/workspace/"
+          cp out/story/{product-requirements.md,acceptance.json,plan.json,receipt.json,deployed.mjs} "$scratch/workspace/"
           cd "$scratch/workspace"
           "$apmx" --from "$REQUIREMENTS_REFERENCE" --plan
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
@@ -400,9 +421,9 @@ jobs:
         run: |
           set -euo pipefail
           inputs="$(mktemp -d)"
-          cp examples/pages-candidate/product-requirements.json test/fixtures/delegated/architecture.json test/fixtures/delegated/architecture.c4 "$inputs/"
+          cp examples/pages-candidate/{product-requirements.md,acceptance.json} test/fixtures/delegated/architecture.json test/fixtures/delegated/architecture.c4 "$inputs/"
           node factory/cli.mjs requirements-evidence out/pages-candidate --inputs "$inputs" --story STORY-001 > out/pages-candidate/requirements-verification.json
-          cp "$inputs/product-requirements.json" out/pages-candidate/
+          cp "$inputs"/{product-requirements.md,acceptance.json} out/pages-candidate/
           (cd out/pages-candidate && node ../../_requirements/packages/requirements/checks/apmx-requirements-check.mjs)
           mkdir pages proof
           node factory/pages.mjs package out/story pages/baseline "$GITHUB_SHA"

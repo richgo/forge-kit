@@ -4,7 +4,7 @@ Use this matrix to distinguish a runnable entry point from the evidence needed t
 
 | Capability | Runnable path | Evidence and scope |
 | --- | --- | --- |
-| CLI-native blueprint | [Copyable inputs](../blueprint/README.md) and [static conformance](../.github/workflows/blueprint-conformance.yml) | The conformance gate checks the template and its CLI boundary. Clean-room execution requires an approved request and working project checks. |
+| CLI-native blueprint | [Copyable inputs](../blueprint/README.md) and [static conformance](../.github/workflows/blueprint-conformance.yml) | The conformance gate checks the template and its CLI boundary. Clean-room execution requires approved Markdown requirements, a request that selects stories, and working project checks. |
 | Language-neutral source acceptance | [Deterministic consumer suite](../factory/test/native-consumers.md) | Python, Go and TypeScript project verifiers exercise valid source patches, protected-path rejection and empty-patch rejection. |
 | Hosted agent delivery across languages | [Manual consumer workflow](../.github/workflows/apmx-consumers.yml) calls the pinned [APMX factory](../.github/workflows/apmx-factory.yml). | The recorded results cover deterministic acceptance. Hosted qualification requires a real agent-authored patch, independent replay and authenticated evidence for each stack. See the [evidence checklist](../factory/test/apmx-language-qualification.md). |
 | Package integrity | [Frozen APM installation and audit](../factory/test/components.md) | The repository pins ten catalog packages. The integrity suite exercises missing locks and modified installed files. Projects own their package and lock policy. |

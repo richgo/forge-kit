@@ -1,20 +1,21 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtemp, readFile, rmdir, unlink, writeFile } from 'node:fs/promises';
+import { copyFile, mkdtemp, readFile, rmdir, rm, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { planImpact } from '../factory/impact.mjs';
 import { buildWebsite } from '../factory/website.mjs';
+import { readProductRequirements } from '../factory/requirements.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const cli = (...args) => spawnSync(process.execPath, ['factory/impact.mjs', ...args], { cwd: root, encoding: 'utf8' });
 
 test('the impact CLI generates both Trail Desk models and scopes the step-free release', () => {
   const result = cli(
-    '--before-requirements', 'examples/trail-desk/baseline/product-requirements.json',
-    '--after-requirements', 'examples/trail-desk/step-free/product-requirements.json',
+    '--before-requirements', 'examples/trail-desk/baseline/product-requirements.md',
+    '--after-requirements', 'examples/trail-desk/step-free/product-requirements.md',
   );
   assert.equal(result.status, 0, result.stderr);
   const plan = JSON.parse(result.stdout);
@@ -28,19 +29,18 @@ test('the impact CLI generates both Trail Desk models and scopes the step-free r
   assert.deepEqual(plan.scope.acceptanceToRun, ['AC-102', 'AC-103']);
 });
 
-const example = name => readFile(join(root, 'examples', name), 'utf8').then(JSON.parse);
 const trailDesk = async version => {
-  const requirements = await example('trail-desk/' + version + '/product-requirements.json');
+  const { document: requirements } = await readProductRequirements(join(root, 'examples', 'trail-desk', version, 'product-requirements.md'), { website: true });
   const { architecture: calm, view } = buildWebsite(requirements);
   return { requirements, calm, view };
 };
 
 test('the impact CLI scopes an authored readiness delegation to its existing story', () => {
   const result = cli(
-    '--before-requirements', 'examples/product-requirements.json',
+    '--before-requirements', 'examples/product-requirements.md',
     '--before-calm', 'architecture/slice.json',
     '--before-likec4', 'architecture/slice.c4',
-    '--after-requirements', 'examples/product-requirements.json',
+    '--after-requirements', 'examples/product-requirements.md',
     '--after-calm', 'test/fixtures/delegated/architecture.json',
     '--after-likec4', 'test/fixtures/delegated/architecture.c4',
   );
@@ -158,10 +158,10 @@ test('the CLI rejects an authored LikeC4 topology that disagrees with CALM witho
     const original = await readFile(join(root, 'test/fixtures/delegated/architecture.c4'), 'utf8');
     await writeFile(view, original.replace('health_probe -> readiness_worker', 'readiness_worker -> health_probe'));
     const result = cli(
-      '--before-requirements', 'examples/product-requirements.json',
+      '--before-requirements', 'examples/product-requirements.md',
       '--before-calm', 'architecture/slice.json',
       '--before-likec4', 'architecture/slice.c4',
-      '--after-requirements', 'examples/product-requirements.json',
+      '--after-requirements', 'examples/product-requirements.md',
       '--after-calm', 'test/fixtures/delegated/architecture.json',
       '--after-likec4', view,
     );
@@ -198,8 +198,8 @@ test('IDs must be strings even when an array would coerce to a valid ID', async 
 
 test('a supplied blank CALM path fails without falling back to generation', () => {
   const result = cli(
-    '--before-requirements', 'examples/trail-desk/baseline/product-requirements.json',
-    '--after-requirements', 'examples/trail-desk/baseline/product-requirements.json',
+    '--before-requirements', 'examples/trail-desk/baseline/product-requirements.md',
+    '--after-requirements', 'examples/trail-desk/baseline/product-requirements.md',
     '--before-calm=', '--before-likec4=',
   );
   assert.equal(result.status, 1);
@@ -226,4 +226,26 @@ test('a stable acceptance ID cannot be reassigned to a different story', async (
   const [catalog, filter] = after.requirements.epics[0].features;
   catalog.stories[0].acceptanceCriteria.push(filter.stories[0].acceptanceCriteria.shift());
   assert.throws(() => planImpact(before, after), /Acceptance ID moved to a different story: AC-102/);
+});
+
+test('the impact CLI scopes changes to authored acceptance prose', async t => {
+  const scratch = await mkdtemp(join(tmpdir(), 'forge-markdown-impact-'));
+  t.after(() => rm(scratch, { recursive: true, force: true, maxRetries: 5, retryDelay: 25 }));
+  const input = 'examples/product-requirements.md';
+  const changed = join(scratch, 'product-requirements.md');
+  const original = await readFile(input, 'utf8');
+  await writeFile(changed, original.replace('Then the probe prints', 'Then standard output contains'));
+  await copyFile('examples/acceptance.json', join(scratch, 'acceptance.json'));
+  const result = cli(
+    '--before-requirements', input,
+    '--after-requirements', changed,
+    '--before-calm', 'architecture/slice.json',
+    '--after-calm', 'architecture/slice.json',
+    '--before-likec4', 'architecture/slice.c4',
+    '--after-likec4', 'architecture/slice.c4',
+  );
+  assert.equal(result.status, 0, result.stderr);
+  const { changes, scope } = JSON.parse(result.stdout);
+  assert.deepEqual(changes.acceptance, [{ id: 'AC-001', change: 'changed' }]);
+  assert.deepEqual(scope.acceptanceToRun, ['AC-001']);
 });

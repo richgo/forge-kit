@@ -14,6 +14,9 @@ test('hosted qualification uses only pinned native APMX factory', async () => {
   assert.match(yaml, /attestations: write/);
   assert.match(yaml, /id-token: write/);
   assert.match(yaml, /permissions: \{\}/);
+  const factory = await readFile(new URL('../.github/workflows/apmx-factory.yml', import.meta.url), 'utf8');
+  assert.doesNotMatch(yaml, /^\s+request:/m);
+  assert.doesNotMatch(factory, /^\s+request:/m);
 });
 
 test('every consumer has protected checker, source, request and acceptance tests', async () => {
@@ -22,7 +25,11 @@ test('every consumer has protected checker, source, request and acceptance tests
     const base = new URL('../examples/consumers/' + name + '/', import.meta.url);
     const request = await readFile(new URL('request.md', base), 'utf8');
     const checker = await readFile(new URL('.forge/verify-change', base), 'utf8');
-    assert.match(request, /Approved change/);
+    const requirements = await readFile(new URL('product-requirements.md', base), 'utf8');
+    assert.match(request, /# Approved change request/);
+    assert.match(request, /## Stories/);
+    assert.match(request, /## Allowed source paths/);
+    assert.match(requirements, /##### Acceptance AC-001/);
     assert.match(checker, /git apply --check/);
     assert.match(checker, /mktemp -d/);
     assert.match(checker, /Rejected protected or out-of-scope path/);

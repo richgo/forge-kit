@@ -12,6 +12,8 @@ if find blueprint -type f -name '*.mjs' | grep -q .; then
   exit 1
 fi
 test -s blueprint/README.md
+test -s blueprint/product-requirements.md
+test -s blueprint/request.md
 test -s blueprint/.forge/verify-change
 grep -q 'apmx --from' blueprint/README.md
 grep -q 'exit 2' blueprint/.forge/verify-change

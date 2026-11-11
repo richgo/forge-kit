@@ -1,0 +1,37 @@
+[
+  {
+    "id": "ac-101",
+    "story": "STORY-101",
+    "when": "open-catalog",
+    "then": {
+      "visibleTrails": [
+        "fern",
+        "ridge",
+        "lake"
+      ]
+    }
+  },
+  {
+    "id": "ac-102",
+    "story": "STORY-102",
+    "when": "filter-step-free",
+    "then": {
+      "visibleTrails": [
+        "fern",
+        "lake"
+      ]
+    }
+  },
+  {
+    "id": "ac-103",
+    "story": "STORY-102",
+    "when": "clear-filter",
+    "then": {
+      "visibleTrails": [
+        "fern",
+        "ridge",
+        "lake"
+      ]
+    }
+  }
+]

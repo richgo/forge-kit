@@ -9,11 +9,12 @@ the hosted job. The production Trail Desk Pages workflow is a separate lane.
 ## Product contract
 
 Each product has `initial` and `next` snapshots under
-`examples/agent-products`. The same four files describe each snapshot.
+`examples/agent-products`. The same five files describe each snapshot.
 
 | File | Review contract |
 | --- | --- |
-| `product.json` | Stable product ID, approved runtime and source paths, entry point, requirements and CALM nodes per story |
+| `product-requirements.md` | Epic and feature outcomes, stories and CALM owners, acceptance criteria and check references |
+| `execution.json` | Stable product ID, approved runtime and source paths, entry point and any reviewed migrations |
 | `architecture.json` | Authoritative FINOS CALM model |
 | `architecture.c4` | Canonical LikeC4 projection of the CALM model |
 | `acceptance.json` | Independent case IDs, story links, JSON input and exact expected JSON output |
@@ -64,7 +65,7 @@ Planning supports CALM nodes and interfaces, connects, interacts, composed-of,
 deployed-in and flows. It checks the canonical LikeC4 view, compares normalized
 models, follows dependency impact and identifies affected stories and cases.
 The independent verifier still runs the complete regression suite. Breaking
-findings require an explicit `migrations` entry with the reported `kind` and
+findings require an explicit `migrations` entry in `execution.json` with the reported `kind` and
 `id` and an affected, acceptance-covered `story`. Use `node` to disambiguate
 node-scoped findings. Unknown relationship semantics fail closed.
 

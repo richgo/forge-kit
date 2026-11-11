@@ -16,11 +16,11 @@ flowchart LR
 
 ## Start with a project
 
-1. Copy the [consumer blueprint](blueprint/README.md) into a project. Write an approved `request.md` and configure the project-owned `.forge/verify-change` checker. The template exits unsuccessfully until you supply real checks.
+1. Copy the [consumer blueprint](blueprint/README.md) into a project. Author behavior and acceptance criteria in [product-requirements.md](blueprint/product-requirements.md). Select the approved stories and source paths in [request.md](blueprint/request.md) and configure the project-owned `.forge/verify-change` checker. The template exits unsuccessfully until you supply real checks.
 2. Install APMX 0.8.0 and the Copilot CLI. Inspect the pinned contract graph from a clean copy of the reviewed project.
 
    ```sh
-   apmx --from "richgo/forge-kit-skills/packages/software-factory#0132bcc69ede85681462d7ffae8ae02cf909de42" --plan
+   apmx --from "richgo/forge-kit-skills/packages/software-factory#40a7a6b54ce5603f450e4935beb9dac4f466b95a" --plan
    ```
 
 3. Follow the [APMX runbook](docs/apmx-factory.md) to run with an agent or configure GitHub Actions for independent replay and attestation. Review the exact patch and the evidence before accepting the change.

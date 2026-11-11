@@ -8,6 +8,7 @@ Exercise it with these inputs before sending a request to an agent.
 | Unapplied patch that implements the approved behavior | Protected build, architecture and acceptance checks pass. |
 | Patch within scope that implements the wrong behavior | Acceptance fails and the verifier returns nonzero. |
 | Patch that changes the checker, tests or another protected path | Scope check rejects the patch before candidate execution. |
+| Unknown story in the request or unknown check ID in a selected criterion | The factory or reviewed project verifier returns nonzero. |
 | Missing, empty or malformed patch | The verifier returns nonzero. |
 
 The [deterministic consumer suite](../../factory/test/native-consumers.md)

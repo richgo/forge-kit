@@ -1,0 +1,10 @@
+{
+  "id": "trail-desk",
+  "runtime": "node",
+  "entry": "src/main.mjs",
+  "files": [
+    "src/main.mjs",
+    "src/catalog.mjs",
+    "src/distance.mjs"
+  ]
+}

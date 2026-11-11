@@ -2,12 +2,14 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { appendFile, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { planArchitecture } from './architecture-plan.mjs';
 import { acceptSource, approveArchitectureChanges, callCopilot, produceRevision, verifyAgentAudit } from './agent-production.mjs';
 import { runtimeMetrics } from './qualification-runtime.mjs';
 import { exerciseRecovery, runInContainer, verifyCandidate } from './agent-verifier.mjs';
 import { createCheckpoint, readCheckpoint } from './delivery-checkpoint.mjs';
 import { requestJevRepair } from './decisions.mjs';
+import { requirementsPackage } from './requirements.mjs';
 
 const [mode, directory, input, output] = process.argv.slice(2);
 const json = async path => JSON.parse(await readFile(path, 'utf8'));
@@ -30,7 +32,7 @@ async function readRehearsal(revisions) {
   assert.equal(bundle.product, revisions.initial.product.id, 'Rehearsal product mismatch');
   assert.equal(bundle.source, replaySource, 'Rehearsal source mismatch');
   for (const [name, revision] of Object.entries(revisions)) {
-    assert.equal(bundle.evidence[name].requirementsSha256, revision.requirementsSha256, 'Rehearsal requirements changed');
+    assert.equal(bundle.evidence[name].requirementsSha256, revision.archivedRequirementsSha256, 'Rehearsal requirements changed');
     assert.equal(bundle.evidence[name].candidateSha256, digest(bundle.candidates[name].candidate), 'Rehearsal source digest mismatch');
   }
   assert.equal(verifyAgentAudit(audit, bundle.candidates).sha256, bundle.authorship.sha256, 'Rehearsal audit changed');
@@ -38,12 +40,32 @@ async function readRehearsal(revisions) {
     candidates: bundle.candidates, audit: audit.trim().split(/\r?\n/).map(line => JSON.parse(line)) };
 }
 
-async function readRevision(name, previous = null) {
+export async function readRevision(directory, name, previous = null) {
   const root = join(directory, name);
-  const [product, calm, likec4, cases] = await Promise.all([
-    json(join(root, 'product.json')), json(join(root, 'architecture.json')),
-    readFile(join(root, 'architecture.c4'), 'utf8'), json(join(root, 'acceptance.json')),
+  const [execution, calm, likec4, acceptance, source] = await Promise.all([
+    json(join(root, 'execution.json')), json(join(root, 'architecture.json')),
+    readFile(join(root, 'architecture.c4'), 'utf8'), readFile(join(root, 'acceptance.json')),
+    readFile(join(root, 'product-requirements.md')),
   ]);
+  assert.ok(Object.keys(execution).every(field => ['id', 'runtime', 'entry', 'files', 'migrations'].includes(field)),
+    'Unexpected execution configuration');
+  const { parseMarkdownRequirements } = await requirementsPackage('checks/markdown-requirements.mjs');
+  const { fixtureIdentity } = await requirementsPackage('checks/fixture-requirements.mjs');
+  const document = parseMarkdownRequirements(source);
+  const stories = document.epics.flatMap(epic => epic.features.flatMap(feature => feature.stories));
+  const criteria = new Map(stories.flatMap(story =>
+    story.acceptanceCriteria.map(criterion => [criterion.id, { story: story.id, check: criterion.check }])));
+  const archivedProduct = { id: execution.id, runtime: execution.runtime, entry: execution.entry, files: execution.files,
+    stories: stories.map(({ id, description, nodes }) => ({ id, description, nodes })),
+    ...(execution.migrations && { migrations: execution.migrations }) };
+  const product = {
+    ...archivedProduct,
+    stories: archivedProduct.stories.map((story, index) => ({
+      ...story,
+      acceptanceCriteria: stories[index].acceptanceCriteria,
+    })),
+  };
+  const cases = JSON.parse(acceptance);
   assert.match(product.id, /^[a-z][a-z0-9-]*$/);
   assert.ok(['node', 'python'].includes(product.runtime), 'Unsupported product runtime');
   assert.ok(Array.isArray(product.files) && product.files.length > 0 && product.files.length <= 12);
@@ -67,8 +89,11 @@ async function readRevision(name, previous = null) {
   }
   assert.ok(Array.isArray(cases) && cases.length > 0 && cases.length <= 24);
   assert.equal(new Set(cases.map(item => item.id)).size, cases.length, 'Duplicate acceptance ID');
+  assert.equal(cases.length, criteria.size, 'Acceptance fixture does not cover the Markdown criteria');
   for (const item of cases) {
     assert.match(item.id, /^AC-[0-9]+$/);
+    assert.deepEqual(criteria.get(item.id), { story: item.story, check: item.id.toLowerCase() },
+      'Unknown or mismatched independent check ' + item.id);
     assert.ok(storyIds.has(item.story) && Object.hasOwn(item, 'input') && Object.hasOwn(item, 'expected'),
       'Invalid acceptance mapping');
   }
@@ -78,8 +103,10 @@ async function readRevision(name, previous = null) {
   approveArchitectureChanges(product, impact);
   const affectedStories = product.stories.filter(story => story.nodes.some(node => impact.affectedNodes.includes(node)));
   const affectedAcceptance = cases.filter(item => affectedStories.some(story => story.id === item.story)).map(item => item.id);
-  return { product, cases, snapshot, architecture: { calm, impact, affectedAcceptance },
-    requirementsSha256: digest({ product, cases, snapshot }) };
+  const requirements = fixtureIdentity(source, acceptance, document);
+  return { product, cases, snapshot, architecture: { calm, impact, affectedAcceptance }, requirements,
+    archivedRequirementsSha256: digest({ product: archivedProduct, cases, snapshot }),
+    requirementsSha256: digest({ requirements, product, cases, snapshot }) };
 }
 
 async function main() {
@@ -90,8 +117,8 @@ async function main() {
   const run = process.env.GITHUB_RUN_ID;
   assert.match(run ?? '', /^[1-9][0-9]*$/, 'Trusted workflow run required');
   const capabilityLockSha256 = createHash('sha256').update(await readFile('apm.lock.yaml')).digest('hex');
-  const initial = await readRevision('initial');
-  const next = await readRevision('next', initial.snapshot);
+  const initial = await readRevision(directory, 'initial');
+  const next = await readRevision(directory, 'next', initial.snapshot);
   assert.equal(next.product.id, initial.product.id, 'Revision changed product identity');
   const revisions = { initial, next };
   const check = (revision, candidate) => verifyCandidate(revision.product, revision.cases, candidate);
@@ -152,11 +179,12 @@ async function main() {
         assert.ok(acceptance.passed, 'Independent acceptance failed for ' + name + ': ' +
           acceptance.checks.filter(item => !item.passed).map(item => item.id).join(', '));
         evidence[name] = { acceptance, candidateSha256: digest(candidate),
-          requirementsSha256: revision.requirementsSha256, architecture: revision.architecture };
+          requirementsSha256: revision.requirementsSha256, requirements: revision.requirements, architecture: revision.architecture };
       } else {
         const verified = bundle.evidence[name];
         assert.equal(verified.candidateSha256, digest(candidate), 'Authenticated source bytes changed');
         assert.equal(verified.requirementsSha256, revision.requirementsSha256, 'Authenticated requirements changed');
+        assert.deepEqual(verified.requirements, revision.requirements, 'Authenticated Markdown evidence changed');
         assert.equal(verified.acceptance.passed, true, 'Missing independent acceptance');
       }
     }
@@ -190,15 +218,17 @@ async function main() {
   }
 }
 
-try {
-  await main();
-} catch (error) {
-  // Assertion objects and parser errors can contain raw agent output. Log
-  // authored diagnostics only. The raw source must pass scanning before upload.
-  const explicit = error.code === 'ERR_ASSERTION' && error.generatedMessage === false;
-  const providerFailure = /^ERR_COPILOT_(?:EVENT_JSON|RESPONSE_JSON|PROVIDER_TIMEOUT|PROVIDER_EXIT|PROCESS)$/.test(error.code);
-  const processFailure = /^Copilot (?:plan|code|test|review|repair) failed \([A-Za-z0-9_-]+\)$/.test(error.message);
-  process.stderr.write('Agent delivery failed: ' +
-    (providerFailure ? error.code : explicit || processFailure ? error.message : 'invalid input, response, or worker execution') + '\n');
-  process.exitCode = 1;
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+  try {
+    await main();
+  } catch (error) {
+    // Assertion objects and parser errors can contain raw agent output. Log
+    // authored diagnostics only. The raw source must pass scanning before upload.
+    const explicit = error.code === 'ERR_ASSERTION' && error.generatedMessage === false;
+    const providerFailure = /^ERR_COPILOT_(?:EVENT_JSON|RESPONSE_JSON|PROVIDER_TIMEOUT|PROVIDER_EXIT|PROCESS)$/.test(error.code);
+    const processFailure = /^Copilot (?:plan|code|test|review|repair) failed \([A-Za-z0-9_-]+\)$/.test(error.message);
+    process.stderr.write('Agent delivery failed: ' +
+      (providerFailure ? error.code : explicit || processFailure ? error.message : 'invalid input, response, or worker execution') + '\n');
+    process.exitCode = 1;
+  }
 }

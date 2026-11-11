@@ -4,12 +4,12 @@ Restore the APM lock first, then run the planner from the repository root. To us
 
 ## Tracked Trail Desk changes
 
-Omit the model flags to generate both models for that requirements snapshot using the same builder as the release website.
+Omit the model flags to generate both models using the release website builder. Each requirements file sits alongside the revision's `acceptance.json` and `catalog.json`.
 
 ```sh
 node factory/impact.mjs \
-  --before-requirements examples/trail-desk/baseline/product-requirements.json \
-  --after-requirements examples/trail-desk/step-free/product-requirements.json
+  --before-requirements examples/trail-desk/baseline/product-requirements.md \
+  --after-requirements examples/trail-desk/step-free/product-requirements.md
 ```
 
 The plan adds the `step_free_filter` CALM node and two relationships. The architecture scope includes `browser`, `step_free_filter` and `visitor`. The acceptance scope contains `STORY-102`, `AC-102` and `AC-103`. To plan the distance sorting release, compare `step-free` with `current`. To plan a removal, swap the two requirements paths and inspect `acceptanceRemoved`.
@@ -20,10 +20,10 @@ Give both model paths for each authored snapshot. The same flags accept model fi
 
 ```sh
 node factory/impact.mjs \
-  --before-requirements examples/product-requirements.json \
+  --before-requirements examples/product-requirements.md \
   --before-calm architecture/slice.json \
   --before-likec4 architecture/slice.c4 \
-  --after-requirements examples/product-requirements.json \
+  --after-requirements examples/product-requirements.md \
   --after-calm test/fixtures/delegated/architecture.json \
   --after-likec4 test/fixtures/delegated/architecture.c4
 ```
@@ -40,7 +40,7 @@ The readiness story stays unchanged while the architecture adds a worker and del
 
 ## Input boundaries and verification
 
-The planner accepts version 1 product requirements with unique tracked `EPIC-*`, `FEAT-*`, `STORY-*` and `AC-*` IDs and a CALM owner for each story. Model generation supports the tracked Trail Desk builder. Other products can supply authored model pairs.
+The planner reads Markdown product requirements with unique tracked `EPIC-*`, `FEAT-*`, `STORY-*` and `AC-*` IDs, a CALM owner for each story and check references that resolve against the adjacent `acceptance.json`. Model generation supports the tracked Trail Desk builder. Other products can supply authored model pairs.
 
 The supported architecture format is the factory's flat CALM 1.2 projection. CALM nodes have IDs, types, names and descriptions. Relationships are directed node-level `connects` records with optional descriptions. The matching LikeC4 source has element declarations, a flat model and one named `include *` view. Topologies with interfaces, nesting, other relationship types or filtered views require a broader planner. An unsupported shape, dangling reference or projection mismatch exits nonzero and emits no plan.
 

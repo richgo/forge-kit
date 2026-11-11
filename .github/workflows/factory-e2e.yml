@@ -32,7 +32,7 @@ jobs:
   factory:
     name: Run the agentic factory
     if: ${{ (github.ref == 'refs/heads/main' || (!inputs.publish_pages && github.actor == github.repository_owner)) && inputs.website_release == 'current' && !inputs.qualify_worker_only }}
-    uses: richgo/forge-kit-skills/.github/workflows/forge-factory.lock.yml@66a34368048c9105da54e888673de0c21e59d258
+    uses: richgo/forge-kit-skills/.github/workflows/forge-factory.lock.yml@40a7a6b54ce5603f450e4935beb9dac4f466b95a
     permissions:
       actions: read
       attestations: write
@@ -46,7 +46,7 @@ jobs:
   worker:
     name: Qualify the pinned worker without publication
     if: ${{ inputs.qualify_worker_only && !inputs.publish_pages && github.actor == github.repository_owner && inputs.website_release == 'current' }}
-    uses: richgo/forge-kit-skills/.github/workflows/forge-factory-worker.yml@66a34368048c9105da54e888673de0c21e59d258
+    uses: richgo/forge-kit-skills/.github/workflows/forge-factory-worker.yml@40a7a6b54ce5603f450e4935beb9dac4f466b95a
     permissions:
       actions: read
       attestations: write

@@ -6,11 +6,11 @@ architecture constraint.
 
 ## Product owner
 
-Write the desired outcome and the behavior that must stay intact. Give each
-acceptance criterion a stable ID and describe an observable result. In the
-quote example, specify the discounted total, the zero floor and the expected
-invalid-input behavior. Approve the request and its criteria before running the
-factory. [Requirements guide](product-requirements.md)
+Write the desired outcome and behavior in `product-requirements.md`. Give
+each criterion a stable ID, an observable result and an independent check
+reference. In the quote example, specify the discounted total, the zero floor
+and the expected invalid-input behavior. Select the approved stories and
+source paths in `request.md`. [Requirements guide](product-requirements.md)
 
 ## Architect
 
@@ -21,7 +21,8 @@ and the externally visible behavior. [Architecture guidance](../blueprint/archit
 
 ## Engineer
 
-Stage the approved project with `request.md` and `.forge/verify-change`.
+Stage the approved project with `product-requirements.md`, `request.md` and
+`.forge/verify-change`.
 Inspect the pinned APMX plan, run the approved agent harness and read the
 resulting `changes.diff` and implementation report. When a check rejects
 the patch, use its findings to produce another candidate against the same

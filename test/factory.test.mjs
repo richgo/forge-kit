@@ -42,7 +42,7 @@ test('repairs a rejected build once and escalates when policy gives it no budget
 
 test('rejects a CALM requirement target absent from the model and a drifting view', async () => {
   const calm = await json('architecture/slice.json');
-  const requirements = await json('examples/requirements.json');
+  const requirements = await json('test/fixtures/delegated/requirements.json');
   const view = await readFile('architecture/slice.c4', 'utf8');
   assert.doesNotThrow(() => validateArchitecture(calm, requirements, view));
   assert.throws(() => validateArchitecture(calm, { ...requirements, node: 'missing' }, view), /target/);

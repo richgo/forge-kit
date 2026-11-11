@@ -13,9 +13,9 @@ Prerequisites:
 2. Confirm the pinned Ubuntu runner has Python 3, Go or `tsc` and Node.js
    for the selected consumer. Supply missing tools through a reviewed
    checker or workflow adaptation.
-3. Confirm the fixture's approved base, checker, acceptance tests and
-   package pin have been reviewed. Do not permit a candidate to edit
-   protected checks or the workflow.
+3. Confirm that the default branch contains the reviewed base, Markdown
+   requirements, request, checker, acceptance tests and package pin. The
+   checker enforces the approved source paths.
 
 For each consumer, download `apmx-receipt` and `apmx-delivery`. Verify
 the signed delivery and its receipt against the approved workflow identity

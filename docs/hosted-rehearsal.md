@@ -24,12 +24,13 @@ records the HTTPS checks of the public site and architecture files.
 ## Review a Trail Desk change
 
 Trail Desk is a fictional trail directory. Its reviewed product
-requirements are under `examples/trail-desk`. The requirements do not include an
-architecture or a website. The factory generates CALM, projects the LikeC4
-view from the CALM graph, and builds the static site.
+requirements are under `examples/trail-desk` in `product-requirements.md`.
+Each revision has a reviewed `catalog.json` for trail data and `acceptance.json`
+for independent browser assertions. The factory generates CALM, projects the
+LikeC4 view from the CALM graph and builds the static site.
 
-For a product change, edit `examples/trail-desk/current/product-requirements.json`
-in a pull request. **Factory bootstrap** builds the base and proposed
+For a product change, edit [the current Markdown requirements](../examples/trail-desk/current/product-requirements.md)
+in a pull request. Review any corresponding catalog or acceptance check changes. **Factory bootstrap** builds the base and proposed
 requirements and uploads their generated CALM, LikeC4, and HTML diffs in
 `trail-desk-pr-preview`. After review, dispatch **Forge Factory E2E** from `main`
 to qualify the build. Enable publication only for an approved release.
@@ -41,8 +42,8 @@ step-free filter.
 In **Factory rehearsals**, leave `website_release` blank to run the built-in
 `STORY-001` readiness fixture. Choose a direct or delegated topology and
 optionally inject a fault or consult Jev. A custom readiness story needs a
-tracked directory with `product-requirements.json`, `architecture.json` and
-`architecture.c4`. Confirm `public_inputs` only for files safe to send to
+tracked directory with `product-requirements.md`, `acceptance.json`,
+`architecture.json` and `architecture.c4`. Confirm `public_inputs` only for files safe to send to
 Copilot and retain in Actions artifacts. Custom inputs cannot publish to Pages.
 Select `catalog_fixture` to exercise the catalog lifecycle workflow.
 
