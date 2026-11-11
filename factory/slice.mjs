@@ -102,7 +102,7 @@ async function loadInputs(inputDirectory, story, { archived = false } = {}) {
       if (error.code !== 'ENOENT') throw error;
       return false;
     });
-    if (exists) approved = await readProductRequirements(markdown);
+    if (exists) approved = await readProductRequirements(markdown, { website: false });
     else if (!inputDirectory) throw new Error('Missing approved ' + markdownSource);
   }
   if (!approved && story) approved = await readProductRequirements(join(root, 'product-requirements.json'));
@@ -348,7 +348,7 @@ async function verifyRepairDecisions(output, rejected, expectedAdvisor) {
   }
 }
 
-export async function readVerifiedReceipt(output, { inputDirectory, story, expectedRepairAdvisor } = {}) {
+async function readVerifiedRun(output, { inputDirectory, story, expectedRepairAdvisor } = {}) {
   const receipt = JSON.parse(await readFile(join(output, 'receipt.json'), 'utf8'));
   const archived = [legacyPredicateType, predicateType, productPredicateType].includes(receipt.predicateType);
   const input = await loadInputs(inputDirectory, story, { archived });
@@ -369,7 +369,7 @@ export async function readVerifiedReceipt(output, { inputDirectory, story, expec
       predicateType: legacyPredicateType,
       predicate: { requirement: requirements.id, materials: input.materials, stages, repairs },
     });
-    return receipt;
+    return { receipt };
   }
   const rejected = [];
   if (repairs) {
@@ -382,20 +382,21 @@ export async function readVerifiedReceipt(output, { inputDirectory, story, expec
   }
   await verifyRepairDecisions(output, rejected, expectedRepairAdvisor);
   assert.deepEqual(receipt, statement(input, deployed, stages, rejected, observed));
-  if (input.product) {
-    const plan = JSON.parse(await readFile(join(output, 'plan.json')));
-    input.product.verifyTrace(input.product.source, plan, receipt, deployed, input.product.acceptance);
-  }
+  if (!input.product) return { receipt };
+  const plan = JSON.parse(await readFile(join(output, 'plan.json')));
+  const report = input.product.verifyTrace(input.product.source, plan, receipt, deployed, input.product.acceptance);
+  return { receipt, report };
+}
+
+export async function readVerifiedReceipt(output, options) {
+  const { receipt } = await readVerifiedRun(output, options);
   return receipt;
 }
 
 export async function readRequirementsEvidence(output, { inputDirectory, story, expectedRepairAdvisor }) {
   assert.ok(inputDirectory && story, 'Supply --inputs and --story for requirements evidence');
-  const receipt = await readVerifiedReceipt(output, { inputDirectory, story, expectedRepairAdvisor });
-  const { product } = await loadInputs(inputDirectory, story);
-  const plan = JSON.parse(await readFile(join(output, 'plan.json')));
-  const artifact = await readFile(join(output, 'deployed.mjs'));
-  return product.verifyTrace(product.source, plan, receipt, artifact, product.acceptance);
+  const { report } = await readVerifiedRun(output, { inputDirectory, story, expectedRepairAdvisor });
+  return report;
 }
 
 export async function verifyRun(output, options) {

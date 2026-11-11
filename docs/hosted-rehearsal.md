@@ -18,8 +18,9 @@ verification-only run. Publication requires an explicit dispatch from
 for fallback authentication and observation.
 
 Download `factory-verified` for the independent Chromium observations,
-requirements trace, and in-toto receipts. `factory-pages-observation`
-records the HTTPS checks of the public site and architecture files.
+requirements trace, and in-toto receipts, and `factory-release-proof` for
+signature verification. Publishing runs also provide `factory-pages-observation`
+with HTTPS checks of the public site and architecture files.
 
 ## Review a Trail Desk change
 

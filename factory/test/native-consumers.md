@@ -15,3 +15,8 @@ The [CI workflow](../../.github/workflows/native-consumers.yml) pins Python,
 Go, Node.js and TypeScript. Its results demonstrate deterministic patch and
 checker interoperability across the three toolchains. Use the [hosted language checklist](apmx-language-qualification.md)
 to qualify agent execution, independent replay and the signed receipt.
+
+The Python fixture imports candidate code into the test runner. A candidate
+can exit that process before the assertions run. Qualification against
+hostile code requires an independent runner that controls the assertions
+outside the candidate process.

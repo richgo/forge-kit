@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { readRevision } from '../factory/agent-delivery.mjs';
 import { createRelease } from '../factory/pages.mjs';
+import { readRequirementsEvidence, run } from '../factory/slice.mjs';
 import { requirementsPackage } from '../factory/requirements.mjs';
 
 test('the agent catalog binds Markdown, preserves acceptance and rejects an unknown check', async t => {
@@ -42,4 +43,35 @@ test('the examples have a single authored requirements format', async () => {
   const entries = await readdir('examples', { recursive: true });
   assert.ok(entries.filter(name => name.endsWith('product-requirements.md')).length >= 13);
   assert.deepEqual(entries.filter(name => /(?:^|[\\/])(?:product-requirements|requirements|product)\.json$/.test(name)), []);
+});
+
+test('evidence generation uses the source format selected by the receipt', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'forge-archived-evidence-'));
+  t.after(() => rm(root, { recursive: true, force: true, maxRetries: 5 }));
+  const inputDirectory = join(root, 'inputs');
+  await cp(join('test', 'fixtures', 'delegated'), inputDirectory, { recursive: true });
+  await cp(join('test', 'fixtures', 'apmx-story', 'product-requirements.json'),
+    join(inputDirectory, 'product-requirements.json'));
+  const output = join(root, 'run');
+  const selection = { inputDirectory, story: 'STORY-001' };
+  const receipt = await run(output, selection);
+  for (const file of ['product-requirements.md', 'acceptance.json']) {
+    await cp(join('examples', file), join(inputDirectory, file));
+  }
+  const report = await readRequirementsEvidence(output, selection);
+  assert.deepEqual(report.trace, receipt.predicate.trace);
+  assert.equal(report.requirementsSha256, receipt.predicate.materials[0].digest.sha256);
+});
+
+test('readiness ignores a catalog file beside its approved inputs', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'forge-readiness-inputs-'));
+  t.after(() => rm(root, { recursive: true, force: true, maxRetries: 5 }));
+  const inputDirectory = join(root, 'inputs');
+  await cp(join('test', 'fixtures', 'delegated'), inputDirectory, { recursive: true });
+  for (const file of ['product-requirements.md', 'acceptance.json']) {
+    await cp(join('examples', file), join(inputDirectory, file));
+  }
+  await writeFile(join(inputDirectory, 'catalog.json'), '{"product":"Unrelated catalog"}');
+  const receipt = await run(join(root, 'run'), { inputDirectory, story: 'STORY-001' });
+  assert.equal(receipt.predicate.observation.stdout, 'ready\n');
 });

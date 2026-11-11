@@ -20,12 +20,12 @@ on:
         default: false
 
       agent_products:
-        description: Run the historical Phase 2/3 agent delivery qualification
+        description: Qualify agent-authored product delivery
         type: boolean
         default: false
 
       agent_replay_drill:
-        description: Authenticate and replay the archived Phase 2 source in the resume drill
+        description: Authenticate and replay the archived agent source in the resume drill
         type: boolean
         default: false
       agent_resume_drill:
