@@ -7,7 +7,7 @@ ForgeKit assembles the packages listed in [the reviewed role manifest](../packag
 | Agent delivery | `packages/agent-delivery` | Versioned architecture planner, agent roles and isolated verifier. ForgeKit provides product inputs, checkpoints and job permissions. |
 | Requirements | `packages/requirements` | Product specification prompts, review agent and independent requirement checker. |
 | Architecture | `packages/architecture` | CALM skill and reference-slice impact checker. |
-| Acceptance | `packages/acceptance`, `packages/website-acceptance` | Acceptance skill, workflow and reference-slice or website contracts. |
+| Acceptance | `packages/acceptance`, `packages/website-acceptance` | Acceptance skills, a reusable website review prompt, and reference rehearsal contracts. |
 | Build and repair | `packages/build-repair`, `packages/repair-acceptance` | Repair prompts, diagnosis skills, typed Jev decisions and independent evidence checks. |
 | Delivery and security | `packages/delivery`, `packages/security-review` | Signed handoff and rollback primitives, website security skill and review agent. |
 | Orchestration and tools | `packages/factory-workflows` | Compiled GH-AW reusable workflows, reference lifecycle and restricted tool declarations. |

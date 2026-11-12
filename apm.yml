@@ -12,5 +12,5 @@ dependencies:
     - 'richgo/forge-kit-skills/packages/repair-acceptance#67b24c51b83987828e79296eaaf13f85ac97fd5d'
     - 'richgo/forge-kit-skills/packages/requirements#40a7a6b54ce5603f450e4935beb9dac4f466b95a'
     - 'richgo/forge-kit-skills/packages/security-review#8861afd5606136f3bbb55043d21ac732ed11df53'
-    - 'richgo/forge-kit-skills/packages/website-acceptance#40a7a6b54ce5603f450e4935beb9dac4f466b95a'
+    - 'richgo/forge-kit-skills/packages/website-acceptance#2c24d8ca6f042440258c3eeb070bbda4fcda914f'
   mcp: []
