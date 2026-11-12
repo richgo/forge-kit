@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { appendFile, readFile, writeFile } from 'node:fs/promises';
-import { pathToFileURL } from 'node:url';
+import { loadDecisionAdvisor } from './decision-provider.mjs';
 import { observeRuntime, planRuntimeRecovery } from './runtime-recovery.mjs';
 
 const [mode, directory, url] = process.argv.slice(2);
@@ -13,11 +13,11 @@ if (mode === 'freshness') {
   assert.equal(result, 'content-mismatch', 'The active candidate no longer qualifies for restoration');
 } else {
   assert.ok(mode === 'detect' || mode === 'authorize');
-  const advisor = mode === 'authorize' ? await import(pathToFileURL(process.env.FORGE_RUNTIME_ADVISOR)) : null;
+  const advisor = mode === 'authorize' ? loadDecisionAdvisor() : undefined;
   const result = await planRuntimeRecovery({
     url, candidate: await read('candidate'), baseline: await read('baseline'),
     attempted: mode === 'authorize' ? Number(process.env.FORGE_ATTEMPTED) : 0,
-    advise: async state => advisor?.requestJevRuntime(process.env.FORGE_JEV_TOKEN, fetch, state) ?? null,
+    advise: advisor?.recommendRuntime ?? (() => null),
   });
   await writeFile(directory + '/' + mode + '.json', JSON.stringify(result, null, 2) + '\n');
   await appendFile(process.env.GITHUB_OUTPUT, 'action=' + result.action + '\n');

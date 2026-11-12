@@ -4,15 +4,35 @@ ForgeKit is a CLI-native, language-agnostic software factory. It turns an approv
 
 The project owns its language, toolchain, architecture, acceptance criteria and release policy. ForgeKit defines the handoffs between the agent that proposes a change, the verifier that checks it and the operator who can authorize publication.
 
+## From change request to release
+
+The target workflow runs each stage in isolation. Request admission anchors
+the chain to the approved project revision. Every later stage verifies its
+incoming attestation and artifact digest. An independent check gates each
+new signed in-toto handoff.
+
 ```mermaid
 flowchart LR
-    A[Approved request and project base] --> B[APMX plan and specification]
-    B --> C[Candidate source patch]
-    C --> D[Independent project checks]
-    D -->|Pass| E[Checked delivery and evidence]
-    D -->|Fail| F[Reject or retry within policy]
-    E --> G[Project review and release gates]
+    P["Product change<br/>Requirements and acceptance criteria"] --> A
+    T["Architecture change<br/>Models, interfaces and constraints"] --> A
+    A["1. Admit request<br/>Check approved base, scope and inputs<br/>Sign in-toto"] --> B
+    B["2. Plan<br/>Check impact and affected tests<br/>Sign in-toto"] --> C
+    C["3. Specify<br/>Check traceability and interface contracts<br/>Sign in-toto"] --> D
+    D["4. Build<br/>Check exact patch, build and acceptance<br/>Sign in-toto"] --> E
+    E["5. Review<br/>Replay checks and challenge evidence<br/>Sign in-toto"] --> F
+    F["6. Qualify release<br/>Verify full chain, release bytes and approvals<br/>Sign in-toto"] --> G["Release<br/>Verify release signature and digest"]
 ```
+
+Each attestation binds the checked output digest to its inputs, validation
+evidence and predecessor. Where a stage uses an LLM, production and adversarial
+validation can use independently selected models. A [typed decision advisor](docs/decision-providers.md)
+can inform the validation gate. Deterministic policy controls advancement and
+blocks the handoff when a required check, decision or signature fails.
+
+The hosted APMX workflow replays the project checks and attests the checked
+delivery. The Trail Desk Pages workflow authenticates the signed release
+archive. Per-stage isolation, decision gates and signing are part of the target
+workflow above. See [implementation and qualification status](docs/implementation-status.md).
 
 ## Start with a project
 
@@ -30,7 +50,8 @@ flowchart LR
 | Example | What to exercise |
 | --- | --- |
 | [Python quote API, Go quote service and TypeScript price calculator](examples/consumers/README.md) | One approved discount behavior across three toolchains. Each project supplies its own protected checks for an unapplied source patch. |
-| [Trail Desk](docs/hosted-rehearsal.md) | Trace a product story through CALM, LikeC4 and browser acceptance, then inspect the evidence for a protected Pages release. |
+| [Trail Desk change rehearsals](examples/trail-desk/rehearsals/README.md) | Exercise a product change that adds miles and an architecture change that serves the trail catalog through an API. |
+| [Trail Desk release rehearsal](docs/hosted-rehearsal.md) | Trace a story through CALM, LikeC4 and browser acceptance, then inspect the evidence for a protected Pages release. |
 | [Readiness fixture](docs/testing.md#readiness-and-catalog-fixtures) | Inject a faulty implementation and replay independent acceptance against the repaired result. |
 
 ## Documentation

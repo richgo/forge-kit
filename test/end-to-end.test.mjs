@@ -17,7 +17,7 @@ const paths = {
   delegated: ['test/fixtures/delegated/architecture.json', 'test/fixtures/delegated/architecture.c4'],
 };
 
-async function scenario(t, mode, source = paths.requirements) {
+async function scenario(t, mode, source = paths.requirements, env = {}) {
   const directory = await mkdtemp(join(tmpdir(), 'forge-e2e-'));
   t.after(() => rm(directory, { force: true, recursive: true }));
   const inputs = join(directory, 'inputs');
@@ -31,11 +31,23 @@ async function scenario(t, mode, source = paths.requirements) {
   const command = (...args) => exec(process.execPath, [
     fileURLToPath(cli),
     ...args, output, '--inputs', inputs,
-  ], { env: { FORGE_DECISION_PACKAGE: process.env.FORGE_DECISION_PACKAGE }, timeout: 10000 });
+  ], { env: { FORGE_DECISION_PACKAGE: process.env.FORGE_DECISION_PACKAGE, ...env }, timeout: 10000 });
   const artifact = name => readFile(join(output, name), 'utf8');
   const receipt = async () => JSON.parse(await artifact('receipt.json'));
   return { inputs, output, command, artifact, receipt };
 }
+
+test('the CLI independently verifies repair evidence from a configured provider', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'forge-provider-'));
+  t.after(() => rm(directory, { force: true, recursive: true }));
+  const path = join(directory, 'advisor.mjs');
+  await writeFile(path, "export const recommendRepair = () => ({ choice: 'retry-build', probability: 0.96 });\n");
+  const run = await scenario(t, 'direct', paths.requirements, { FORGE_DECISION_PROVIDER_MODULE: path });
+  await run.command('run', '--faulty-first-build');
+  await run.command('verify', '--repair-advisor', 'typed-advisor');
+  const [decision] = JSON.parse(await run.artifact('repair-decisions.json'));
+  assert.deepEqual(decision.recommendation, { choice: 'retry-build', probability: 0.96 });
+});
 
 test('the same product requirement runs through two different deployed architectures', async t => {
   const direct = await scenario(t, 'direct');

@@ -9,7 +9,7 @@
 | Architecture tools | Validate CALM and LikeC4 and enforce the project's topology, interfaces and dependency constraints. | [Architecture inputs](../blueprint/architecture/README.md) and [architecture impact fixture](../factory/test/architecture-impact.md) |
 | Independent runner and attestor | Replay the checks on the approved base and bind the checked outputs to a trusted build identity. | [Hosted APMX workflow](../.github/workflows/apmx-factory.yml) |
 | Release and observation adapters | Authenticate exact release bytes, enforce environment approval and record live health. | [Trail Desk Pages runbook](hosted-rehearsal.md) |
-| Decision and recovery policy | Evaluate typed advisory signals against action allowlists and budgets. Authorize restoration only with a trusted, healthy fallback. | [Jev fixture](../factory/test/jev.md) and [recovery policy](../factory/test/recovery-policy.md) |
+| Decision advisor and recovery policy | Request typed recommendations through a provider adapter. Apply action allowlists, budgets and authenticated fallback checks locally. | [Decision providers](decision-providers.md) and [recovery policy](../factory/test/recovery-policy.md) |
 
 ## Package trust
 
