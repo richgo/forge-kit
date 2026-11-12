@@ -1,0 +1,9 @@
+{
+  "name": "@richgo/forgekit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Initialize the ForgeKit blueprint in an application repository",
+  "bin": { "forgekit": "bin/forgekit.mjs" },
+  "files": ["bin", "blueprint/.forge/verify-change", "blueprint/product-requirements.md", "blueprint/request.md"],
+  "engines": { "node": ">=20" }
+}

@@ -1,20 +1,33 @@
 # ForgeKit consumer blueprint
 
 The blueprint connects a project's approved change and independent acceptance
-suite to the ForgeKit APMX contracts. Copy the requirements, request and verifier templates
-into the project root. Use the same factory package with any application
-toolchain.
+suite to the ForgeKit APMX contracts. Use the same factory package with any
+application toolchain.
+
+## Install in an application repository
+
+Run this from the application Git repository root with Node.js 20 or later.
+Replace `<reviewed-commit>` with the ForgeKit revision you want to install.
+
+```sh
+npx --yes --package="https://codeload.github.com/richgo/forge-kit/tar.gz/<reviewed-commit>" forgekit init --github-actions
+```
+
+This creates the three project inputs below and adds a manual GitHub Actions
+workflow that calls ForgeKit at an immutable revision. For local execution,
+omit `--github-actions`. Existing files with different content stop the install
+before it writes any files. When repository ignore rules hide generated files,
+the command prints the exact Git staging command for those files.
 
 ## Configure the project
 
-1. Copy [product-requirements.md](product-requirements.md). Describe the
+1. Edit the installed [product-requirements.md](product-requirements.md). Describe the
    product outcomes, features, stories, architecture owners and observable
    acceptance criteria. Assign a stable check ID to each criterion.
-2. Copy [request.md](request.md). Select the approved story IDs, list the exact
+2. Edit the installed [request.md](request.md). Select the approved story IDs, list the exact
    project-relative source paths permitted to change, and record any
    implementation constraints. Commit both reviewed files with the project.
-3. Copy [.forge/verify-change](.forge/verify-change) to the same relative
-   path in the project. Replace the fail-closed template with executable,
+3. Configure the installed [.forge/verify-change](.forge/verify-change) with executable,
    application-specific checks. The verifier receives an unapplied Git patch
    followed by the distinct check IDs from the selected stories.
 4. Keep the check definitions and expected results in the approved base.
