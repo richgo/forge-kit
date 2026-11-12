@@ -36,7 +36,7 @@
     "websiteChecking": {
       "repository": "richgo/forge-kit-skills",
       "path": "packages/website-acceptance",
-      "ref": "40a7a6b54ce5603f450e4935beb9dac4f466b95a"
+      "ref": "2c24d8ca6f042440258c3eeb070bbda4fcda914f"
     },
     "architecture": {
       "repository": "richgo/forge-kit-skills",

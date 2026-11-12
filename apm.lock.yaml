@@ -157,17 +157,20 @@ dependencies:
 - repo_url: richgo/forge-kit-skills
   name: forge-kit-website-acceptance
   host: github.com
-  resolved_commit: 40a7a6b54ce5603f450e4935beb9dac4f466b95a
-  resolved_ref: 40a7a6b54ce5603f450e4935beb9dac4f466b95a
-  version: 0.2.0
+  resolved_commit: 2c24d8ca6f042440258c3eeb070bbda4fcda914f
+  resolved_ref: 2c24d8ca6f042440258c3eeb070bbda4fcda914f
+  version: 0.3.0
   virtual_path: packages/website-acceptance
   is_virtual: true
   package_type: apm_package
   deployed_files:
+  - .agents/skills/forge-website-acceptance
+  - .agents/skills/forge-website-acceptance/SKILL.md
   - .github/prompts/review-website.prompt.md
   deployed_file_hashes:
-    .github/prompts/review-website.prompt.md: sha256:e0b0f14fbc69283975295f87301d97e9065637ea5366b5a7bc9cf363c730de29
-  content_hash: sha256:5bd6ba9194e108401d75119e2226650039989058c9fc7549945ae76228c36a4f
+    .agents/skills/forge-website-acceptance/SKILL.md: sha256:4d5d94a9b8cc54d5ada2c1c5d996acda7b87482cc32760463bade9fd22f19b50
+    .github/prompts/review-website.prompt.md: sha256:32e8251feea7e6b728c06a109e977be1b8e69019b16faf5c7eb790b02b76002c
+  content_hash: sha256:18a26b10d79891dd01cb747682dd76e569ec8b5ff194b0c05889961995e4de71
 deployments:
 - kind: project-relative
   target: copilot
@@ -324,6 +327,24 @@ deployments:
   content_hash: sha256:6761dcc04889ffd601789be9d220151f51b068a73b62f5d234157c9af17577d0
 - kind: project-relative
   target: copilot
+  value: .agents/skills/forge-website-acceptance
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/website-acceptance
+  active_owner: richgo/forge-kit-skills/packages/website-acceptance
+  content_hash: null
+- kind: project-relative
+  target: copilot
+  value: .agents/skills/forge-website-acceptance/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - richgo/forge-kit-skills/packages/website-acceptance
+  active_owner: richgo/forge-kit-skills/packages/website-acceptance
+  content_hash: sha256:4d5d94a9b8cc54d5ada2c1c5d996acda7b87482cc32760463bade9fd22f19b50
+- kind: project-relative
+  target: copilot
   value: .agents/skills/tdd
   runtime: null
   scope: project
@@ -420,4 +441,4 @@ deployments:
   owners:
   - richgo/forge-kit-skills/packages/website-acceptance
   active_owner: richgo/forge-kit-skills/packages/website-acceptance
-  content_hash: sha256:e0b0f14fbc69283975295f87301d97e9065637ea5366b5a7bc9cf363c730de29
+  content_hash: sha256:32e8251feea7e6b728c06a109e977be1b8e69019b16faf5c7eb790b02b76002c
