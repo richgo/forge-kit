@@ -50,12 +50,39 @@ test('an existing project file blocks initialization before any writes', t => {
   }
 });
 
-test('init reports the exact generated files hidden by Git ignore rules', t => {
+test('init exposes the generated files while preserving ignored siblings', t => {
   const { cwd, run } = checkout(t);
   const ignores = '.*\n!.gitignore\n';
   writeFileSync(join(cwd, '.gitignore'), ignores);
+  mkdirSync(join(cwd, '.github/workflows'), { recursive: true });
+  writeFileSync(join(cwd, '.github/workflows', 'site.yml'), 'ignored workflow');
   const install = run('--github-actions');
   assert.equal(install.status, 0, install.stderr);
-  assert.match(install.stdout, /git add -f -- \.forge\/verify-change \.github\/workflows\/forgekit\.yml/);
+  assert.match(install.stdout, /Updated \.gitignore/);
+  const after = readFileSync(join(cwd, '.gitignore'), 'utf8');
+  assert.ok(after.startsWith(ignores));
+  const ignored = path => spawnSync('git', ['check-ignore', '-q', '--', path], { cwd }).status === 0;
+  assert.equal(ignored('.forge/verify-change'), false);
+  assert.equal(ignored('.github/workflows/forgekit.yml'), false);
+  assert.equal(ignored('.github/workflows/site.yml'), true);
+  assert.equal(ignored('.forge/private.txt'), true);
+  const repeat = run('--github-actions');
+  assert.equal(repeat.status, 0, repeat.stderr);
+  assert.match(repeat.stdout, /already installed/);
+  assert.equal(readFileSync(join(cwd, '.gitignore'), 'utf8'), after);
+});
+
+test('init rolls back if a nested ignore rule still blocks a project file', t => {
+  const { cwd, run } = checkout(t);
+  const ignores = '.*\n!.gitignore\n';
+  writeFileSync(join(cwd, '.gitignore'), ignores);
+  mkdirSync(join(cwd, '.forge'));
+  writeFileSync(join(cwd, '.forge/.gitignore'), 'verify-change\n');
+  const install = run('--github-actions');
+  assert.equal(install.status, 1, install.stderr);
+  assert.match(install.stderr, /still hide .forge\/verify-change/);
   assert.equal(readFileSync(join(cwd, '.gitignore'), 'utf8'), ignores);
+  for (const path of ['product-requirements.md', 'request.md', '.forge/verify-change', '.github']) {
+    assert.equal(existsSync(join(cwd, path)), false);
+  }
 });
