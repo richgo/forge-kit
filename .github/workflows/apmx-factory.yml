@@ -17,6 +17,10 @@ on:
         description: Project directory containing the reviewed request.md, product-requirements.md and .forge/verify-change
         default: "."
         type: string
+      qualification-tag:
+        description: Exact reviewed forgekit-brownfield-proof-* tag, for tag-push qualification
+        type: string
+        default: ""
     secrets:
       COPILOT_GITHUB_TOKEN:
         required: true
@@ -26,7 +30,10 @@ permissions: {}
 jobs:
   run:
     name: Produce, independently check and sign the change
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    if: >-
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) ||
+      (github.event_name == 'push' && startsWith(inputs.qualification-tag, 'forgekit-brownfield-proof-') &&
+       github.ref == format('refs/tags/{0}', inputs.qualification-tag))
     uses: danielmeppiel/apmx/.github/workflows/run.yml@fae2067a0dc6ff07beda714015ff9e648f41ce63 # v0.8.0
     permissions:
       contents: read
