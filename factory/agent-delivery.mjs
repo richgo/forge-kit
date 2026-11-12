@@ -8,7 +8,7 @@ import { acceptSource, approveArchitectureChanges, callCopilot, produceRevision,
 import { runtimeMetrics } from './qualification-runtime.mjs';
 import { exerciseRecovery, runInContainer, verifyCandidate } from './agent-verifier.mjs';
 import { createCheckpoint, readCheckpoint } from './delivery-checkpoint.mjs';
-import { requestJevRepair } from './decisions.mjs';
+import { loadDecisionAdvisor } from './decision-provider.mjs';
 import { requirementsPackage } from './requirements.mjs';
 
 const [mode, directory, input, output] = process.argv.slice(2);
@@ -129,7 +129,7 @@ async function main() {
     requirementsSha256: initial.requirementsSha256, capabilityLockSha256, ...(origin && { origin }) };
   const produce = (name, previous, record) => produceRevision(revisions[name], previous, {
     agent: callCopilot, check, record: event => record({ revision: name, ...event }),
-    adviseRepair: state => requestJevRepair(process.env.FORGE_JEV_TOKEN, fetch, { state }),
+    adviseRepair: loadDecisionAdvisor()?.recommendRepair ?? (() => null),
   });
 
   if (mode === 'produce-initial') {

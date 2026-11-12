@@ -19,6 +19,15 @@ CALM models describe components, interfaces and relationships. A LikeC4 view mak
 
 The approved base supplies requirements, check definitions and expected results. Candidate code executes with only the resources it needs, outside the agent workspace and without signing or deployment credentials. A trusted check result binds the candidate to its approved inputs. The release job authenticates that evidence before it can use privileged credentials.
 
-Typed decision APIs such as Jev can recommend a retry or escalation. Deterministic policy owns the allowed actions, confidence threshold, attempt and time budgets, and escalation conditions. A repair that changes the approved requirements, architecture or capability set goes back through review.
+The [target stage workflow](../README.md#from-change-request-to-release)
+extends this boundary to every handoff. An isolated signing job binds the
+checked output, input digests, validation evidence and predecessor to the
+stage and run. The receiving stage verifies the expected signer, policy
+revision, run and exact artifact digest before accepting the handoff. Release
+qualification verifies the chain from the approved project revision.
+
+ForgeKit calls a typed decision advisor for repair and runtime recommendations. Deterministic policy owns the allowed actions, confidence threshold, attempt and time budgets, and escalation conditions. A repair that changes the approved requirements, architecture or capability set goes back through review.
+
+The CLI, agent delivery and runtime recovery use the same [decision provider interface](decision-providers.md). Provider adapters own credentials, model selection and transport.
 
 See [component interfaces](components.md), [verification](testing.md) and [implementation status](implementation-status.md).

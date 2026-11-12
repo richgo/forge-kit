@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { gradeReview } from '../evals/review.mjs';
 import { apmManifest, assemble } from './assembly.mjs';
+import { loadDecisionAdvisor } from './decision-provider.mjs';
 import { readRequirementsEvidence, readVerifiedReceipt, run } from './slice.mjs';
 
 const [command, ...args] = process.argv.slice(2);
@@ -28,15 +29,11 @@ try {
     }
     const selection = { inputDirectory: values.inputs, story: values.story, expectedRepairAdvisor };
     if (command === 'run') {
-      const jevToken = process.env.FORGE_JEV_TOKEN;
       const receipt = await run(output, {
         faultyFirstBuild: Boolean(values['faulty-first-build']),
         fault: values.fault,
         ...selection,
-        recommendRepair: jevToken ? async (state, { timeoutMs }) => {
-          const { requestJevRepair } = await import('./decisions.mjs');
-          return requestJevRepair(jevToken, fetch, { state, timeoutMs });
-        } : undefined,
+        recommendRepair: loadDecisionAdvisor()?.recommendRepair,
       });
       console.log(JSON.stringify(receipt.predicate, null, 2));
     } else if (command === 'requirements-evidence') {

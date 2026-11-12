@@ -22,7 +22,8 @@ budget and applied route in `repair-decisions.json`.
 
 ## Offline checks
 
-Run `node --test test/jev.test.mjs test/factory.test.mjs`. The adapter cases
+Run `node --test test/decision-provider.test.mjs test/jev.test.mjs test/factory.test.mjs test/end-to-end.test.mjs`.
+The [provider interface](../../docs/decision-providers.md) tests exercise a substitute provider without credentials and verify the CLI repair evidence. The Jev adapter cases
 exercise the fixed endpoint, approved state, response validation, HTTP
 failure, transport failure, and stalled response. The policy cases cover
 confidence, attempted retries, elapsed time, and local spend. Runtime tests
