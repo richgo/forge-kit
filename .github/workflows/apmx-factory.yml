@@ -17,6 +17,10 @@ on:
         description: Project directory containing the reviewed request.md, product-requirements.md and .forge/verify-change
         default: "."
         type: string
+      model:
+        description: Optional Copilot model override for the reviewed run
+        type: string
+        default: ""
       qualification-tag:
         description: Exact reviewed forgekit-brownfield-proof-* tag, for tag-push qualification
         type: string
@@ -42,6 +46,7 @@ jobs:
     with:
       factory: richgo/forge-kit-skills/packages/software-factory#40a7a6b54ce5603f450e4935beb9dac4f466b95a
       workspace: ${{ inputs.workspace }}
+      model: ${{ inputs.model }}
       apmx-version: "0.8.0"
       apmx-ref: fae2067a0dc6ff07beda714015ff9e648f41ce63
       attest: true
