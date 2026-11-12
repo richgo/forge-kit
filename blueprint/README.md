@@ -10,7 +10,7 @@ Run this from the application Git repository root with Node.js 20 or later.
 Replace `<reviewed-commit>` with the ForgeKit revision you want to install.
 
 ```sh
-npx --yes --package="git+https://github.com/richgo/forge-kit.git#<reviewed-commit>" forgekit init --github-actions
+npx --yes --package="https://codeload.github.com/richgo/forge-kit/tar.gz/<reviewed-commit>" forgekit init --github-actions
 ```
 
 This creates the three project inputs below and adds a manual GitHub Actions
