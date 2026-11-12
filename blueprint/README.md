@@ -58,8 +58,8 @@ for the selected harness when planning. From a clean copy of the approved projec
 then run the pinned package with Copilot.
 
 ```sh
-apmx --from "richgo/forge-kit-skills/packages/software-factory#bb2de7db83db6418a260aebd0a5748d5e9e71c4c" --plan
-apmx --from "richgo/forge-kit-skills/packages/software-factory#bb2de7db83db6418a260aebd0a5748d5e9e71c4c" --on copilot
+apmx --from "richgo/forge-kit-skills/packages/software-factory#3fe479de850c5cb891275153b708682371879927" --plan
+apmx --from "richgo/forge-kit-skills/packages/software-factory#3fe479de850c5cb891275153b708682371879927" --on copilot
 ```
 
 The [APMX runbook](../docs/apmx-factory.md) covers workspace setup,

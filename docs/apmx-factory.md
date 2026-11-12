@@ -1,6 +1,6 @@
 # Run the APMX software factory
 
-The [pinned factory package](https://github.com/richgo/forge-kit-skills/tree/bb2de7db83db6418a260aebd0a5748d5e9e71c4c/packages/software-factory)
+The [pinned factory package](https://github.com/richgo/forge-kit-skills/tree/3fe479de850c5cb891275153b708682371879927/packages/software-factory)
 declares the file handoffs from `specs/product-requirements.md` and `request.md`
 through `plan.md` and `specification.md` to `changes.diff`, `implementation.md`
 and `review.md`.
@@ -40,8 +40,8 @@ request and verifier. Run from that directory.
 The plan lists the contracts, handoffs and checks without invoking a model.
 
 ```sh
-apmx --from "richgo/forge-kit-skills/packages/software-factory#bb2de7db83db6418a260aebd0a5748d5e9e71c4c" --plan
-apmx --from "richgo/forge-kit-skills/packages/software-factory#bb2de7db83db6418a260aebd0a5748d5e9e71c4c" --on copilot
+apmx --from "richgo/forge-kit-skills/packages/software-factory#3fe479de850c5cb891275153b708682371879927" --plan
+apmx --from "richgo/forge-kit-skills/packages/software-factory#3fe479de850c5cb891275153b708682371879927" --on copilot
 ```
 
 Inspect the patch and reports under `.apm/chains/<run-id>/artifacts/`. Use the approved project's

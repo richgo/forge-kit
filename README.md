@@ -40,7 +40,7 @@ workflow above. See [implementation and qualification status](docs/implementatio
 2. Install APMX 0.8.0 and the Copilot CLI. Inspect the pinned contract graph from a clean copy of the reviewed project.
 
    ```sh
-   apmx --from "richgo/forge-kit-skills/packages/software-factory#bb2de7db83db6418a260aebd0a5748d5e9e71c4c" --plan
+   apmx --from "richgo/forge-kit-skills/packages/software-factory#3fe479de850c5cb891275153b708682371879927" --plan
    ```
 
 3. Follow the [APMX runbook](docs/apmx-factory.md) to run with an agent or configure GitHub Actions for independent replay and attestation. Review the exact patch and the evidence before accepting the change.
