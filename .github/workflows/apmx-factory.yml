@@ -8,6 +8,10 @@ on:
         default: "."
         type: string
   workflow_call:
+    outputs:
+      receipt-sha256:
+        description: SHA-256 of the independently replayed receipt of record
+        value: ${{ jobs.run.outputs.receipt-sha256 }}
     inputs:
       workspace:
         description: Project directory containing the reviewed request.md, product-requirements.md and .forge/verify-change

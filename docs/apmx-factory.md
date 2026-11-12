@@ -96,3 +96,5 @@ and recovery.
 
 Use the [hosted language checklist](../factory/test/apmx-language-qualification.md)
 to qualify an agent run on a consumer toolchain.
+
+For optional knowledge checks and post-success promotion, see the [SageKit integration](sagekit.md).
