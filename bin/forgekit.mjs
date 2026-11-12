@@ -37,12 +37,15 @@ function init(hosted) {
   const root = git('--show-toplevel');
   if (git('--show-prefix')) throw new Error('Run forgekit init from the application repository root');
 
-  const directories = ['.forge', ...(hosted ? ['.github', '.github/workflows'] : [])];
-  const files = ['product-requirements.md', 'request.md', '.forge/verify-change']
+  const directories = ['specs', '.forge', ...(hosted ? ['.github', '.github/workflows'] : [])];
+  const files = ['specs/product-requirements.md', 'request.md', '.forge/verify-change']
     .map(path => ({ path, bytes: readFileSync(new URL(path, blueprint)) }));
   if (hosted) files.push({ path: '.github/workflows/forgekit.yml', bytes: Buffer.from(caller) });
 
   const stat = path => lstatSync(join(root, path), { throwIfNoEntry: false });
+  if (stat('product-requirements.md')) {
+    throw new Error('Move product-requirements.md to specs/product-requirements.md before upgrading ForgeKit. See the blueprint migration guide.');
+  }
   for (const path of directories) {
     const entry = stat(path);
     if (entry && !entry.isDirectory()) throw new Error('Expected a directory at ' + path);

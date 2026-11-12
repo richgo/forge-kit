@@ -25,7 +25,7 @@ test('every consumer has protected checker, source, request and acceptance tests
     const base = new URL('../examples/consumers/' + name + '/', import.meta.url);
     const request = await readFile(new URL('request.md', base), 'utf8');
     const checker = await readFile(new URL('.forge/verify-change', base), 'utf8');
-    const requirements = await readFile(new URL('product-requirements.md', base), 'utf8');
+    const requirements = await readFile(new URL('specs/product-requirements.md', base), 'utf8');
     assert.match(request, /# Approved change request/);
     assert.match(request, /## Stories/);
     assert.match(request, /## Allowed source paths/);

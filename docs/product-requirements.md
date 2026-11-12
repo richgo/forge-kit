@@ -1,7 +1,7 @@
 # Product requirements
 
-Copy the [Markdown requirements template](../blueprint/product-requirements.md)
-into the project. Start with an epic and its outcome. Nest the features that
+Copy the [Markdown requirements template](../blueprint/specs/product-requirements.md)
+to `specs/product-requirements.md` in the project. Start with an epic and its outcome. Nest the features that
 advance that outcome and the stories that make each feature observable.
 Give every epic, feature, story and acceptance criterion a stable ID. Each
 story names its architecture owner and describes the actor, need and benefit.
@@ -11,7 +11,7 @@ Write each acceptance criterion with Given, When and Then, and add a
 Use the [request template](../blueprint/request.md) to select the approved
 story IDs and list the exact source paths the candidate may change. Record
 implementation constraints there. Keep the product behavior and acceptance
-criteria in `product-requirements.md`. Review and commit both files to the
+criteria in `specs/product-requirements.md`. Review and commit both files to the
 project. The hosted factory reads them from the selected workspace on the
 default branch. [Hosted workflow](apmx-factory.md#run-in-github-actions)
 
@@ -19,7 +19,7 @@ The approved project owns the checker, its test fixtures and the expected
 results. The factory passes the selected stories' distinct check IDs to
 `.forge/verify-change` with the unapplied patch. In the quote API, the
 `quote.acceptance` check exercises a normal discount, a discount that
-would bring the total below zero, and invalid input. [Quote API requirements](../examples/consumers/python-api/product-requirements.md)
+would bring the total below zero, and invalid input. [Quote API requirements](../examples/consumers/python-api/specs/product-requirements.md)
 
 ## Trace a story through the readiness fixture
 

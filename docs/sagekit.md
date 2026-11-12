@@ -29,7 +29,7 @@ the change passes independently.
 }
 ```
 
-`request.md` and `product-requirements.md` are always pinned when SageKit is
+`request.md` and `specs/product-requirements.md` are always pinned when SageKit is
 used. Use `inputs` for additional approved paths, such as a CALM architecture
 file. A gate can use SageKit's `exact_ids` and typed `decision` fields.
 Set the repository variable `SAGEKIT_REMOTE_URL` to the HTTPS service origin

@@ -14,7 +14,7 @@ from sagekit.service import Remote
 
 
 STAGES = ("requirements", "release")
-APPROVED_INPUTS = ("request.md", "product-requirements.md")
+APPROVED_INPUTS = ("request.md", "specs/product-requirements.md")
 
 
 def read_json(path):

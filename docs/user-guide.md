@@ -6,7 +6,7 @@ architecture constraint.
 
 ## Product owner
 
-Write the desired outcome and behavior in `product-requirements.md`. Give
+Write the desired outcome and behavior in `specs/product-requirements.md`. Give
 each criterion a stable ID, an observable result and an independent check
 reference. In the quote example, specify the discounted total, the zero floor
 and the expected invalid-input behavior. Select the approved stories and
@@ -21,7 +21,7 @@ and the externally visible behavior. [Architecture guidance](../blueprint/archit
 
 ## Engineer
 
-Stage the approved project with `product-requirements.md`, `request.md` and
+Stage the approved project with `specs/product-requirements.md`, `request.md` and
 `.forge/verify-change`.
 Inspect the pinned APMX plan, run the approved agent harness and read the
 resulting `changes.diff` and implementation report. When a check rejects

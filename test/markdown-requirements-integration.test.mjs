@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { cp, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -22,7 +22,10 @@ test('the agent catalog binds Markdown, preserves acceptance and rejects an unkn
   const root = await mkdtemp(join(tmpdir(), 'forge-markdown-agent-'));
   t.after(() => rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 25 }));
   await cp(join('examples', 'agent-products', 'stock-ledger', 'initial'), join(root, 'initial'), { recursive: true });
-  const path = join(root, 'initial', 'product-requirements.md');
+  await mkdir(join(root, 'initial', 'specs'));
+  const path = join(root, 'initial', 'specs', 'product-requirements.md');
+  await rename(join(root, 'initial', 'product-requirements.md'), path);
+  assert.equal((await readRevision(root, 'initial')).cases.length, 5);
   await writeFile(path, (await readFile(path, 'utf8')).replace('ac-201', 'missing-check'));
   await assert.rejects(readRevision(root, 'initial'), /Unknown or mismatched independent check/);
 });
@@ -63,7 +66,7 @@ test('evidence generation uses the source format selected by the receipt', async
   assert.equal(report.requirementsSha256, receipt.predicate.materials[0].digest.sha256);
 });
 
-test('readiness ignores a catalog file beside its approved inputs', async t => {
+test('readiness loads requirements from specs and ignores an unrelated catalog', async t => {
   const root = await mkdtemp(join(tmpdir(), 'forge-readiness-inputs-'));
   t.after(() => rm(root, { recursive: true, force: true, maxRetries: 5 }));
   const inputDirectory = join(root, 'inputs');
@@ -71,6 +74,8 @@ test('readiness ignores a catalog file beside its approved inputs', async t => {
   for (const file of ['product-requirements.md', 'acceptance.json']) {
     await cp(join('examples', file), join(inputDirectory, file));
   }
+  await mkdir(join(inputDirectory, 'specs'));
+  await rename(join(inputDirectory, 'product-requirements.md'), join(inputDirectory, 'specs', 'product-requirements.md'));
   await writeFile(join(inputDirectory, 'catalog.json'), '{"product":"Unrelated catalog"}');
   const receipt = await run(join(root, 'run'), { inputDirectory, story: 'STORY-001' });
   assert.equal(receipt.predicate.observation.stdout, 'ready\n');
