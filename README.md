@@ -16,7 +16,7 @@ flowchart LR
 
 ## Start with a project
 
-1. Copy the [consumer blueprint](blueprint/README.md) into a project. Author behavior and acceptance criteria in [product-requirements.md](blueprint/product-requirements.md). Select the approved stories and source paths in [request.md](blueprint/request.md) and configure the project-owned `.forge/verify-change` checker. The template exits unsuccessfully until you supply real checks.
+1. Install the [consumer blueprint](blueprint/README.md#install-in-an-application-repository) in your project. Author behavior and acceptance criteria in [product-requirements.md](blueprint/product-requirements.md). Select the approved stories and source paths in [request.md](blueprint/request.md) and configure the project-owned `.forge/verify-change` checker. The template exits unsuccessfully until you supply real checks.
 2. Install APMX 0.8.0 and the Copilot CLI. Inspect the pinned contract graph from a clean copy of the reviewed project.
 
    ```sh

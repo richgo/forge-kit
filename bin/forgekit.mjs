@@ -1,0 +1,102 @@
+#!/usr/bin/env node
+import { execFileSync, spawnSync } from 'node:child_process';
+import { closeSync, lstatSync, mkdirSync, openSync, readFileSync, rmdirSync, unlinkSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+const usage = 'Usage: forgekit init [--github-actions]';
+const blueprint = new URL('../blueprint/', import.meta.url);
+const caller = [
+  'name: ForgeKit',
+  'on: workflow_dispatch',
+  'permissions: {}',
+  'jobs:',
+  '  change:',
+  '    uses: richgo/forge-kit/.github/workflows/apmx-factory.yml@3ac67083c7862323d8d6bdc913b1eb392c91e25f',
+  '    permissions:',
+  '      contents: read',
+  '      attestations: write',
+  '      id-token: write',
+  '    secrets:',
+  '      COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}',
+  '',
+].join('\n');
+
+function init(hosted) {
+  const git = option => execFileSync('git', ['rev-parse', option], { encoding: 'utf8' }).trim();
+  const root = git('--show-toplevel');
+  if (git('--show-prefix')) throw new Error('Run forgekit init from the application repository root');
+
+  const directories = ['.forge', ...(hosted ? ['.github', '.github/workflows'] : [])];
+  const files = ['product-requirements.md', 'request.md', '.forge/verify-change']
+    .map(path => ({ path, bytes: readFileSync(new URL(path, blueprint)) }));
+  if (hosted) files.push({ path: '.github/workflows/forgekit.yml', bytes: Buffer.from(caller) });
+
+  const stat = path => lstatSync(join(root, path), { throwIfNoEntry: false });
+  for (const path of directories) {
+    const entry = stat(path);
+    if (entry && !entry.isDirectory()) throw new Error('Expected a directory at ' + path);
+  }
+  const missing = files.filter(({ path, bytes }) => {
+    const entry = stat(path);
+    if (!entry) return true;
+    if (!entry.isFile() || !readFileSync(join(root, path)).equals(bytes)) {
+      throw new Error('Review the existing ' + path + ' before initializing ForgeKit');
+    }
+    return false;
+  });
+
+  const ignored = spawnSync('git', ['check-ignore', '-z', '--stdin'], {
+    cwd: root,
+    encoding: 'utf8',
+    input: files.map(({ path }) => path + '\0').join(''),
+  });
+  if (ignored.error) throw ignored.error;
+  if (![0, 1].includes(ignored.status)) throw new Error(ignored.stderr.trim() || 'Could not check Git ignore rules');
+
+  const createdDirectories = [];
+  const createdFiles = [];
+  try {
+    for (const path of directories) {
+      if (!stat(path)) {
+        mkdirSync(join(root, path));
+        createdDirectories.push(path);
+      }
+    }
+    for (const { path, bytes } of missing) {
+      const file = openSync(join(root, path), 'wx', path === '.forge/verify-change' ? 0o755 : 0o644);
+      createdFiles.push(path);
+      try {
+        writeFileSync(file, bytes);
+      } finally {
+        closeSync(file);
+      }
+    }
+  } catch (error) {
+    for (const path of createdFiles.reverse()) unlinkSync(join(root, path));
+    for (const path of createdDirectories.reverse()) rmdirSync(join(root, path));
+    throw error;
+  }
+
+  for (const path of createdFiles) console.log('Created ' + path);
+  const ignoredPaths = ignored.stdout.split('\0').filter(Boolean);
+  if (ignoredPaths.length) {
+    console.log('Git ignores these ForgeKit files. Stage them explicitly after review:');
+    console.log('git add -f -- ' + ignoredPaths.join(' '));
+  }
+  if (!createdFiles.length) console.log('ForgeKit blueprint already installed.');
+  console.log('Review the requirements and request, then configure .forge/verify-change with the application checks.');
+}
+
+const [command, option, ...rest] = process.argv.slice(2);
+try {
+  if (command === '--help' || (command === 'init' && option === '--help')) {
+    console.log(usage);
+  } else if (command === 'init' && (option === undefined || option === '--github-actions') && !rest.length) {
+    init(option === '--github-actions');
+  } else {
+    throw new Error(usage);
+  }
+} catch (error) {
+  console.error(error.message);
+  process.exitCode = 1;
+}
