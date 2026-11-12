@@ -16,8 +16,7 @@ npx --yes --package="https://codeload.github.com/richgo/forge-kit/tar.gz/<review
 This creates the three project inputs below and adds a manual GitHub Actions
 workflow that calls ForgeKit at an immutable revision. For local execution,
 omit `--github-actions`. Existing files with different content stop the install
-before it writes any files. When repository ignore rules hide generated files,
-the command prints the exact Git staging command for those files.
+before it writes any files. If ignore rules hide generated inputs, the command adds narrowly scoped .gitignore exceptions so Git and APMX can see them.
 
 ## Configure the project
 
