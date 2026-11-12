@@ -12,4 +12,4 @@
 
 Replace the sample story and source path with the reviewed scope. Record
 compatibility or implementation constraints here. Author behavior and
-acceptance criteria in product-requirements.md.
+acceptance criteria in specs/product-requirements.md.

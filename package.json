@@ -4,6 +4,6 @@
   "private": true,
   "description": "Initialize the ForgeKit blueprint in an application repository",
   "bin": { "forgekit": "bin/forgekit.mjs" },
-  "files": ["bin", "blueprint/.forge/verify-change", "blueprint/product-requirements.md", "blueprint/request.md"],
+  "files": ["bin", "blueprint/.forge/verify-change", "blueprint/specs/product-requirements.md", "blueprint/request.md"],
   "engines": { "node": ">=20" }
 }

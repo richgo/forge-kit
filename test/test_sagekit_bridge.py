@@ -23,6 +23,7 @@ class ForgeSageKitTest(unittest.TestCase):
         self.project = self.root / "project"
         self.project.mkdir()
         (self.project / ".forge").mkdir()
+        (self.project / "specs").mkdir()
         self.config = self.project / ".forge/sagekit.json"
         self.state = self.root / "state"
         self.result = self.root / "result"
@@ -33,7 +34,7 @@ class ForgeSageKitTest(unittest.TestCase):
         self.key = "fixture-signing-key-at-least-thirty-two"
         self.env = {**os.environ, "SAGEKIT_REMOTE_URL": "", "SAGEKIT_RECEIPT_KEY": self.key,
                     "GITHUB_REPOSITORY": "richgo/forge-kit", "GITHUB_RUN_ID": "123"}
-        for name in ("request.md", "product-requirements.md", "architecture.json"):
+        for name in ("request.md", "specs/product-requirements.md", "architecture.json"):
             (self.project / name).write_text(f"approved {name}", encoding="utf-8")
 
     def bridge(self, phase, *flags, success=True):

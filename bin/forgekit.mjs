@@ -11,7 +11,7 @@ const caller = [
   'permissions: {}',
   'jobs:',
   '  change:',
-  '    uses: richgo/forge-kit/.github/workflows/apmx-factory.yml@3ac67083c7862323d8d6bdc913b1eb392c91e25f',
+  '    uses: richgo/forge-kit/.github/workflows/apmx-factory.yml@2c4054c67e09573da767bc1d76009fe8e3f4559d',
   '    permissions:',
   '      contents: read',
   '      attestations: write',
@@ -37,12 +37,15 @@ function init(hosted) {
   const root = git('--show-toplevel');
   if (git('--show-prefix')) throw new Error('Run forgekit init from the application repository root');
 
-  const directories = ['.forge', ...(hosted ? ['.github', '.github/workflows'] : [])];
-  const files = ['product-requirements.md', 'request.md', '.forge/verify-change']
+  const directories = ['specs', '.forge', ...(hosted ? ['.github', '.github/workflows'] : [])];
+  const files = ['specs/product-requirements.md', 'request.md', '.forge/verify-change']
     .map(path => ({ path, bytes: readFileSync(new URL(path, blueprint)) }));
   if (hosted) files.push({ path: '.github/workflows/forgekit.yml', bytes: Buffer.from(caller) });
 
   const stat = path => lstatSync(join(root, path), { throwIfNoEntry: false });
+  if (stat('product-requirements.md')) {
+    throw new Error('Move product-requirements.md to specs/product-requirements.md before upgrading ForgeKit. See the blueprint migration guide.');
+  }
   for (const path of directories) {
     const entry = stat(path);
     if (entry && !entry.isDirectory()) throw new Error('Expected a directory at ' + path);

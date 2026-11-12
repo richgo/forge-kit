@@ -19,9 +19,10 @@ test('init installs only the project files and is safe to repeat', t => {
   const { cwd, run } = checkout(t);
   const install = run();
   assert.equal(install.status, 0, install.stderr);
-  for (const path of ['product-requirements.md', 'request.md', '.forge/verify-change']) {
+  for (const path of ['specs/product-requirements.md', 'request.md', '.forge/verify-change']) {
     assert.deepEqual(readFileSync(join(cwd, path)), readFileSync(new URL('../blueprint/' + path, import.meta.url)));
   }
+  assert.equal(existsSync(join(cwd, 'product-requirements.md')), false);
   assert.equal(existsSync(join(cwd, '.github')), false);
   assert.match(run().stdout, /already installed/);
 });
@@ -45,14 +46,14 @@ test('an existing project file blocks initialization before any writes', t => {
   assert.equal(install.status, 1);
   assert.match(install.stderr, /Review the existing request\.md/);
   assert.equal(readFileSync(join(cwd, 'request.md'), 'utf8'), 'existing request');
-  for (const path of ['product-requirements.md', '.forge', '.github']) {
+  for (const path of ['specs/product-requirements.md', '.forge', '.github']) {
     assert.equal(existsSync(join(cwd, path)), false);
   }
 });
 
 test('init exposes the generated files while preserving ignored siblings', t => {
   const { cwd, run } = checkout(t);
-  const ignores = '.*\n!.gitignore\n';
+  const ignores = '.*\n!.gitignore\n/specs/\n';
   writeFileSync(join(cwd, '.gitignore'), ignores);
   mkdirSync(join(cwd, '.github/workflows'), { recursive: true });
   writeFileSync(join(cwd, '.github/workflows', 'site.yml'), 'ignored workflow');
@@ -66,6 +67,8 @@ test('init exposes the generated files while preserving ignored siblings', t => 
   assert.equal(ignored('.github/workflows/forgekit.yml'), false);
   assert.equal(ignored('.github/workflows/site.yml'), true);
   assert.equal(ignored('.forge/private.txt'), true);
+  assert.equal(ignored('specs/product-requirements.md'), false);
+  assert.equal(ignored('specs/private.txt'), true);
   const repeat = run('--github-actions');
   assert.equal(repeat.status, 0, repeat.stderr);
   assert.match(repeat.stdout, /already installed/);
@@ -82,7 +85,18 @@ test('init rolls back if a nested ignore rule still blocks a project file', t =>
   assert.equal(install.status, 1, install.stderr);
   assert.match(install.stderr, /still hide .forge\/verify-change/);
   assert.equal(readFileSync(join(cwd, '.gitignore'), 'utf8'), ignores);
-  for (const path of ['product-requirements.md', 'request.md', '.forge/verify-change', '.github']) {
+  for (const path of ['specs/product-requirements.md', 'request.md', '.forge/verify-change', '.github']) {
     assert.equal(existsSync(join(cwd, path)), false);
   }
+});
+
+test('legacy requirements prompt for migration before creating a duplicate', t => {
+  const { cwd, run } = checkout(t);
+  writeFileSync(join(cwd, 'product-requirements.md'), 'existing requirements');
+  const result = run('--github-actions');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Move product-requirements\.md to specs\/product-requirements\.md/);
+  assert.equal(readFileSync(join(cwd, 'product-requirements.md'), 'utf8'), 'existing requirements');
+  assert.equal(existsSync(join(cwd, 'specs')), false);
+  assert.equal(existsSync(join(cwd, '.github')), false);
 });

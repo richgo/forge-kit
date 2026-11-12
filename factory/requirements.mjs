@@ -1,11 +1,23 @@
-import { readFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { access, readFile } from 'node:fs/promises';
+import { basename, dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 export function requirementsPackage(entry = 'checks/product-requirements.mjs') {
   const location = process.env.FORGE_REQUIREMENTS_PACKAGE;
   return import(location ? pathToFileURL(join(location, entry)) :
     new URL('../apm_modules/richgo/forge-kit-skills/packages/requirements/' + entry, import.meta.url));
+}
+
+export async function findProductRequirements(root) {
+  for (const name of ['specs/product-requirements.md', 'product-requirements.md']) {
+    const path = join(root, name);
+    try {
+      await access(path);
+      return path;
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+  }
 }
 
 export async function readProductRequirements(path, { website } = {}) {
@@ -16,7 +28,8 @@ export async function readProductRequirements(path, { website } = {}) {
   const {
     acceptanceSource, compileFixtureRequirements, fixtureIdentity, markdownSource,
   } = await requirementsPackage('checks/fixture-requirements.mjs');
-  const root = dirname(path);
+  const parent = dirname(path);
+  const root = basename(parent) === 'specs' ? dirname(parent) : parent;
   const [acceptance, catalog] = await Promise.all([
     readFile(join(root, acceptanceSource)),
     website === false ? undefined : readFile(join(root, 'catalog.json')).catch(error => {

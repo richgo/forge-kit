@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       workspace:
-        description: Project directory containing the reviewed request.md, product-requirements.md and .forge/verify-change
+        description: Project directory containing the reviewed request.md, specs/product-requirements.md and .forge/verify-change
         default: "."
         type: string
   workflow_call:
@@ -14,7 +14,7 @@ on:
         value: ${{ jobs.run.outputs.receipt-sha256 }}
     inputs:
       workspace:
-        description: Project directory containing the reviewed request.md, product-requirements.md and .forge/verify-change
+        description: Project directory containing the reviewed request.md, specs/product-requirements.md and .forge/verify-change
         default: "."
         type: string
     secrets:
@@ -33,7 +33,7 @@ jobs:
       id-token: write
       attestations: write
     with:
-      factory: richgo/forge-kit-skills/packages/software-factory#40a7a6b54ce5603f450e4935beb9dac4f466b95a
+      factory: richgo/forge-kit-skills/packages/software-factory#3fe479de850c5cb891275153b708682371879927
       workspace: ${{ inputs.workspace }}
       apmx-version: "0.8.0"
       apmx-ref: fae2067a0dc6ff07beda714015ff9e648f41ce63

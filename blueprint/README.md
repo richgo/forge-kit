@@ -18,9 +18,22 @@ workflow that calls ForgeKit at an immutable revision. For local execution,
 omit `--github-actions`. Existing files with different content stop the install
 before it writes any files. If ignore rules hide generated inputs, the command adds narrowly scoped .gitignore exceptions so Git and APMX can see them.
 
+## Upgrade a project that uses the previous layout
+
+Move the existing reviewed file to the new path and update references in
+project docs, custom verifiers and SageKit input lists. Preserve its contents.
+
+```sh
+mkdir -p specs
+git mv product-requirements.md specs/product-requirements.md
+```
+
+Update the pinned ForgeKit workflow or local software-factory package in the
+same commit as the move. Reuse the reviewed request and verifier in the migrated project.
+
 ## Configure the project
 
-1. Edit the installed [product-requirements.md](product-requirements.md). Describe the
+1. Edit the installed [specs/product-requirements.md](specs/product-requirements.md). Describe the
    product outcomes, features, stories, architecture owners and observable
    acceptance criteria. Assign a stable check ID to each criterion.
 2. Edit the installed [request.md](request.md). Select the approved story IDs, list the exact
@@ -45,8 +58,8 @@ for the selected harness when planning. From a clean copy of the approved projec
 then run the pinned package with Copilot.
 
 ```sh
-apmx --from "richgo/forge-kit-skills/packages/software-factory#40a7a6b54ce5603f450e4935beb9dac4f466b95a" --plan
-apmx --from "richgo/forge-kit-skills/packages/software-factory#40a7a6b54ce5603f450e4935beb9dac4f466b95a" --on copilot
+apmx --from "richgo/forge-kit-skills/packages/software-factory#3fe479de850c5cb891275153b708682371879927" --plan
+apmx --from "richgo/forge-kit-skills/packages/software-factory#3fe479de850c5cb891275153b708682371879927" --on copilot
 ```
 
 The [APMX runbook](../docs/apmx-factory.md) covers workspace setup,
@@ -56,7 +69,7 @@ independent hosted replay and receipt attestation.
 
 | File | Owner | Purpose |
 | --- | --- | --- |
-| `product-requirements.md` | Project | Versioned requirements, ownership and acceptance criteria |
+| `specs/product-requirements.md` | Project | Versioned requirements, ownership and acceptance criteria |
 | `request.md` | Project | Approved story IDs and exact source scope |
 | `.forge/verify-change` | Project | Protected verifier for the unapplied patch |
 | `plan.md`, `specification.md` | APMX contracts | Reviewed inputs turned into scoped implementation guidance |
