@@ -23,6 +23,7 @@ const snapshot = { requirements: { schemaVersion: 1, epics: [] }, calm: architec
 const architectureCheck = planImpact(snapshot, snapshot);
 const specification = await validateOpenSpec(fixture, { tool: process.env.FORGE_OPENSPEC_TOOL });
 const python = process.env.FORGE_REFERENCE_PYTHON || 'python3';
+const hostedPlan = process.env.FORGE_REFERENCE_HOSTED_PLAN;
 
 function git(root, ...args) {
   return execFileSync('git', ['-C', root, '-c', 'core.autocrlf=false', ...args], { encoding: 'utf8' }).trim();
@@ -66,11 +67,23 @@ function verifiedBytes(id, receipt, artifacts, native) {
   return bytes;
 }
 
-async function qualify(topology, names, fault = '') {
+async function qualify(topology, names, fault = '', hosted) {
   const root = mkdtempSync(join(tmpdir(), 'forgekit-checkout-'));
   try {
     const apmx = topology === 'multi-repo' && !fault ? process.env.FORGE_REFERENCE_APMX : undefined;
     const source = Object.fromEntries([...new Set(names)].map(name => [name, repository(root, name)]));
+    if (hosted) {
+      assert.ok(apmx, 'Hosted target replay requires native APMX');
+      assert.equal(hosted.specification.sha256, hash(specification.sha256), 'Pinned shared specification changed');
+      assert.equal(hosted.models.calm, sha(calm));
+      assert.equal(hosted.models.likec4, sha(likec4));
+      for (const unit of Object.values(hosted.units)) {
+        const checkout = source[unit.source.repository.split('/')[1]];
+        git(checkout, 'fetch', '--quiet', '--depth=1', 'https://github.com/' + unit.source.repository + '.git',
+          unit.source.revision);
+        git(checkout, 'checkout', '--quiet', '--detach', 'FETCH_HEAD');
+      }
+    }
     const specs = repository(root, 'specs');
     for (const path of [...Object.keys(specification.sha256), 'specs/product-requirements.md',
       'architecture/system.calm.json', 'architecture/system.c4']) {
@@ -81,7 +94,7 @@ async function qualify(topology, names, fault = '') {
     const specCommit = commit(specs, 'Approve checkout specification and models');
     const shared = { store: 'reference/specs', change: specification.change, revision: specCommit,
       sha256: hash(specification.sha256) };
-    for (const [index, [unit, file]] of Object.entries(files).entries()) {
+    for (const [index, [unit, file]] of (hosted ? [] : Object.entries(files).entries())) {
       const path = join(source[names[index]], 'services', unit);
       mkdirSync(path, { recursive: true });
       const original = unit === 'api'
@@ -93,7 +106,7 @@ async function qualify(topology, names, fault = '') {
       if (apmx) stageNativeUnit(path, unit, file, read, specification, shared);
     }
     const revisions = Object.fromEntries(Object.entries(source).map(([name, path]) =>
-      [name, commit(path, 'Record existing service implementation')]));
+      [name, hosted ? git(path, 'rev-parse', 'HEAD') : commit(path, 'Record existing service implementation')]));
     const catalog = Object.fromEntries(Object.entries(files).map(([unit, file]) => [
       stacks[unit], { package: 'reference/skills/packages/' + stacks[unit], ref: specCommit,
         sha256: sha(read('services/' + unit + '/' + file)), stacks: [stacks[unit]] },
@@ -112,7 +125,7 @@ async function qualify(topology, names, fault = '') {
         ...(unit === 'contract' ? {} : { deploy: { unit } }),
       })),
     };
-    const plan = planProductChange(manifest, { architecture: JSON.parse(calm), architectureSha256: sha(calm),
+    const plan = hosted ?? planProductChange(manifest, { architecture: JSON.parse(calm), architectureSha256: sha(calm),
       likec4Sha256: sha(likec4), capabilities: catalog,
       changedPaths: [{ repository: 'reference/' + names[0], path: 'services/contract/schema.json' }] });
     assert.deepEqual(plan.waves, [['contract'], ['api'], ['web']]);
@@ -186,7 +199,8 @@ async function qualify(topology, names, fault = '') {
     if (!fault) assert.equal(runSystem({ ...installed, contract: artifacts.contract.path })['system-acceptance'], true);
     return { topology, fault: fault || null, sourceRepositories: Object.keys(source).length,
       specification: specification.change, verifiedUnits: Object.keys(verified.candidate.units),
-      ...(apmx ? { verification: 'unsigned-native-apmx-replay', receiptSha256: Object.fromEntries(
+      ...(apmx ? { verification: 'unsigned-native-apmx-replay', planSha256: plan.sha256,
+        sourceRevisions: revisions, receiptSha256: Object.fromEntries(
         Object.entries(verified.candidate.units).map(([id, unit]) => [id, unit.receiptSha256])) } : {}),
       candidateSha256: verified.candidate.sha256, checks: verified.system.checks, status: release.status };
   } finally {
@@ -194,13 +208,18 @@ async function qualify(topology, names, fault = '') {
   }
 }
 
-for (const [topology, names] of Object.entries({
+if (hostedPlan) {
+  const plan = JSON.parse(readFileSync(hostedPlan, 'utf8'));
+  const repositories = Object.values(plan.units).map(unit => unit.source.repository.split('/')[1]);
+  assert.equal(new Set(repositories).size, 3, 'Expected three hosted repositories');
+  console.log(JSON.stringify(await qualify('multi-repo', repositories, '', plan)));
+} else for (const [topology, names] of Object.entries({
   monorepo: ['mono', 'mono', 'mono'],
   'multi-repo': ['contracts', 'backend', 'frontend'],
   hybrid: ['common', 'backend', 'common'],
 })) {
   console.log(JSON.stringify(await qualify(topology, names)));
 }
-for (const fault of ['incompatible', 'stale', 'failed-rollout']) {
+for (const fault of hostedPlan ? [] : ['incompatible', 'stale', 'failed-rollout']) {
   console.log(JSON.stringify(await qualify('multi-repo', ['contracts', 'backend', 'frontend'], fault)));
 }

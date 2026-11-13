@@ -51,3 +51,40 @@ jobs:
           name: checkout-reference-evidence
           path: ${{ runner.temp }}/reference-evidence
           if-no-files-found: error
+      - name: Replay the pinned GitHub targets
+        env:
+          FORGE_OPENSPEC_TOOL: ${{ github.workspace }}/toolchain/openspec/node_modules/@fission-ai/openspec/bin/openspec.js
+          FORGE_ARCHITECTURE_PACKAGE: ${{ github.workspace }}/catalog/packages/architecture
+          FORGE_REFERENCE_HOSTED_PLAN: examples/openspec-checkout/hosted/plan.json
+        run: |
+          export FORGE_REFERENCE_APMX="$(command -v apmx)"
+          export FORGE_REFERENCE_EVIDENCE="$RUNNER_TEMP/hosted-replay/receipts"
+          mkdir -p "$RUNNER_TEMP/hosted-replay"
+          set -o pipefail
+          node examples/openspec-checkout/qualify.mjs | tee "$RUNNER_TEMP/hosted-replay/qualification.jsonl"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hosted-checkout-replay
+          path: ${{ runner.temp }}/hosted-replay
+          if-no-files-found: error
+
+  sign-hosted-replay:
+    needs: qualify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      attestations: write
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: hosted-checkout-replay
+          path: ${{ runner.temp }}/hosted-replay
+      - name: Sign the system qualification and independent unit receipts
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a
+        with:
+          subject-path: |
+            ${{ runner.temp }}/hosted-replay/qualification.jsonl
+            ${{ runner.temp }}/hosted-replay/receipts/*/receipt.intoto.jsonl

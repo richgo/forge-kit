@@ -76,3 +76,10 @@ hosted unit workflow, signing the assembled system candidate, coordinated
 deployment against live services, automatic OpenSpec sync/archive and
 protected post-deployment knowledge promotion still require integration and
 qualification.
+
+The [hosted plan](../examples/openspec-checkout/hosted/plan.json) pins the
+three synthetic GitHub repositories. The reference workflow fetches their
+exact commits and replays recorded producer patches through native APMX.
+On main, a separate job attests the system qualification and each independently
+checked receipt. This attestation covers the deterministic rehearsal. The
+product-unit workflow uses a live agent and publishes its own APMX attestation.
