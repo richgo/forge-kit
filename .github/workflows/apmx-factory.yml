@@ -39,7 +39,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           repository: richgo/forge-kit
-          ref: 1f132c11bacc5fdf77455617f6786849f2f7b327
+          ref: b31f3f1768703fcc4817081184570f4a8e9dadd9
           path: forgekit-toolchain
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020

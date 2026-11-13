@@ -30,5 +30,5 @@ jobs:
           FORGE_OPENSPEC_TOOL: ${{ github.workspace }}/toolchain/openspec/node_modules/@fission-ai/openspec/bin/openspec.js
           FORGE_ARCHITECTURE_PACKAGE: ${{ github.workspace }}/catalog/packages/architecture
         run: |
-          node --test test/openspec.test.mjs test/blueprint-init.test.mjs test/product-change.test.mjs
+          node --test test/openspec.test.mjs test/blueprint-init.test.mjs test/product-change.test.mjs test/apmx-evidence.test.mjs
           node examples/openspec-checkout/qualify.mjs

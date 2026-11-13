@@ -1,0 +1,76 @@
+name: APMX product unit
+
+run-name: APMX product unit ${{ inputs.unit }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      plan:
+        description: Reviewed ProductChange plan JSON path in this repository
+        type: string
+        required: true
+      unit:
+        description: Implementation unit ID from the reviewed plan
+        type: string
+        required: true
+
+permissions: {}
+
+jobs:
+  resolve:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      repository: ${{ steps.target.outputs.repository }}
+      revision: ${{ steps.target.outputs.revision }}
+      workspace: ${{ steps.target.outputs.workspace }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - id: target
+        env:
+          PRODUCT_PLAN: ${{ inputs.plan }}
+          PRODUCT_UNIT: ${{ inputs.unit }}
+        run: node factory/resolve-product-unit.mjs
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: ${{ steps.target.outputs.repository }}
+          ref: ${{ steps.target.outputs.revision }}
+          path: target
+          token: ${{ secrets.FORGEKIT_TARGET_READ_TOKEN || github.token }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.22.2'
+      - name: Check the child change against the reviewed specification
+        env:
+          PRODUCT_PLAN: ${{ inputs.plan }}
+          PRODUCT_UNIT: ${{ inputs.unit }}
+          TARGET_WORKSPACE: ${{ steps.target.outputs.workspace }}
+        run: |
+          npm --prefix toolchain/openspec ci --ignore-scripts --engine-strict
+          node factory/check-product-unit.mjs
+
+  build:
+    needs: resolve
+    uses: danielmeppiel/apmx/.github/workflows/run.yml@fae2067a0dc6ff07beda714015ff9e648f41ce63
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    with:
+      factory: richgo/forge-kit-skills/packages/software-factory#89eed7bdb145e8ec64ba08091968558cfee97daa
+      target-repository: ${{ needs.resolve.outputs.repository }}
+      target-ref: ${{ needs.resolve.outputs.revision }}
+      workspace: ${{ needs.resolve.outputs.workspace }}
+      deliver: bundle
+      apmx-version: '0.8.0'
+      apmx-ref: fae2067a0dc6ff07beda714015ff9e648f41ce63
+      attest: true
+    secrets:
+      agent-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+      target-token: ${{ secrets.FORGEKIT_TARGET_READ_TOKEN }}

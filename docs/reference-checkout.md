@@ -26,6 +26,33 @@ Source paths and CALM connections select impacted consumers. Explicit `requires`
 
 ## Reproduce the reference
 
+To plan a reviewed product change from files, run:
+
+```sh
+node factory/plan-product-change.mjs --manifest product-change.json \
+  --calm architecture/system.calm.json --likec4 architecture/system.c4 \
+  --capabilities catalog.json > plan.json
+```
+
+On the protected default branch, the **APMX product unit** workflow can build
+one affected unit from the reviewed plan. Its target repository and revision
+come from that plan. In each child workspace, commit the local OpenSpec
+binding, the shared specification object as `.forge/shared-change.json`,
+and the shared validation command's `sha256` inventory as
+`.forge/shared-specification.json`. Hash the inventory's compact JSON to
+set `specification.sha256` in the manifest. Shared deltas must have the same
+bytes in the child. For private repositories, configure a read-only
+`FORGEKIT_TARGET_READ_TOKEN` for the target. The producer receives the
+existing agent credential. The workflow delivers a signed bundle for review.
+
+Download the delivery and receipt from each unit's run. Use
+`factory/authenticate-product-unit.mjs` with the reviewed plan, unit ID,
+receipt file, delivery directory and exact orchestration source commit and
+ref. It verifies the pinned workflow signer, then checks the target revision,
+package, independent acceptance and delivered bytes against the signed
+receipt. The workflow takes one unit per run because upstream APMX 0.8.0
+assigns fixed artifact names inside a run.
+
 ```sh
 export FORGE_ARCHITECTURE_PACKAGE=/path/to/forge-kit-skills/packages/architecture
 node examples/openspec-checkout/qualify.mjs
@@ -33,4 +60,8 @@ node examples/openspec-checkout/qualify.mjs
 
 The rehearsal requires Git, Node and Python 3. It creates temporary real Git repositories, validates the shared OpenSpec change and the flat CALM/LikeC4 model, and executes the old and repaired Python API and Node consumer. It checks the same story in monorepo, multi-repo and hybrid layouts. It also checks rejection of an incompatible API and stale plan evidence, then verifies rollback after an injected rollout failure.
 
-The reference uses local build and deployment adapters and digest receipts. Hosted cross-repository APMX dispatch, signed aggregation, coordinated deployment against live services, automatic OpenSpec sync/archive and protected post-deployment knowledge promotion still require integration and qualification. Native APMX receipt replay and historic signed brownfield evidence are tested separately.
+The reference uses local rollout adapters. Automatic orchestration of the
+hosted unit workflow, signing the assembled system candidate, coordinated
+deployment against live services, automatic OpenSpec sync/archive and
+protected post-deployment knowledge promotion still require integration and
+qualification.
