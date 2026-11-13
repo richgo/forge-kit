@@ -2,8 +2,10 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { closeSync, lstatSync, mkdirSync, openSync, readFileSync, rmdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parseArgs } from 'node:util';
+import { validateOpenSpec } from './openspec.mjs';
 
-const usage = 'Usage: forgekit init [--github-actions]';
+const usage = 'Usage: forgekit init [--github-actions]\n       forgekit openspec validate [--workspace PATH] [--tool PATH] [--optional]';
 const blueprint = new URL('../blueprint/', import.meta.url);
 const caller = [
   'name: ForgeKit',
@@ -125,6 +127,13 @@ try {
     console.log(usage);
   } else if (command === 'init' && (option === undefined || option === '--github-actions') && !rest.length) {
     init(option === '--github-actions');
+  } else if (command === 'openspec' && option === 'validate') {
+    const { values } = parseArgs({ args: rest, options: {
+      workspace: { type: 'string', default: '.' },
+      tool: { type: 'string' },
+      optional: { type: 'boolean' },
+    } });
+    console.log(JSON.stringify(await validateOpenSpec(values.workspace, values)));
   } else {
     throw new Error(usage);
   }
