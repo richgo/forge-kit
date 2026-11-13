@@ -48,7 +48,7 @@
       "source": {
         "repository": "richgo/forgekit-reference-checkout-api",
         "path": ".",
-        "revision": "614868766c1249719f0da194fdac9525287210d6"
+        "revision": "dbb46cc6f2afca286fc8a818c6a1706359b7fbad"
       },
       "build": {
         "stack": "python",

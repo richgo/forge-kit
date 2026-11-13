@@ -27,7 +27,7 @@
       "source": {
         "repository": "richgo/forgekit-reference-checkout-api",
         "path": ".",
-        "revision": "614868766c1249719f0da194fdac9525287210d6"
+        "revision": "dbb46cc6f2afca286fc8a818c6a1706359b7fbad"
       },
       "deploy": {
         "unit": "api"
@@ -133,5 +133,5 @@
       "web"
     ]
   ],
-  "sha256": "5f59cac6ccaf52e2d52497b1fb959323c75435eb16cd9ea76ecabde54c10e49e"
+  "sha256": "3b263612f7284f1a0fc88592beef7bdc77dd8122c39575aebc04839fe6c1c67d"
 }
