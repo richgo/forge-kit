@@ -1,0 +1,89 @@
+{
+  "apiVersion": "forgekit.dev/v1alpha1",
+  "kind": "ProductChange",
+  "metadata": {
+    "id": "CHECKOUT-HOSTED-1"
+  },
+  "specification": {
+    "store": "richgo/forge-kit",
+    "change": "update-checkout",
+    "revision": "e2d3679a598f94516d7306343b46761cf257e24b",
+    "sha256": "e0cd155980ebcb8c116600341e207e1ffcd4594f16b022cf443774451d2cc29c"
+  },
+  "verification": {
+    "require": [
+      "architecture-conformance",
+      "contract-compatibility",
+      "system-acceptance"
+    ]
+  },
+  "implementations": [
+    {
+      "id": "contract",
+      "component": "checkout_contract",
+      "stories": [
+        "STORY-001"
+      ],
+      "change": "checkout-contract",
+      "owner": "richgo/checkout",
+      "source": {
+        "repository": "richgo/forgekit-reference-checkout-contract",
+        "path": ".",
+        "revision": "63bb56a8df49986d3807c4b6e05d3d5e258b335c"
+      },
+      "build": {
+        "stack": "json",
+        "target": "contract"
+      },
+      "requires": []
+    },
+    {
+      "id": "api",
+      "component": "checkout_api",
+      "stories": [
+        "STORY-001"
+      ],
+      "change": "checkout-api",
+      "owner": "richgo/checkout",
+      "source": {
+        "repository": "richgo/forgekit-reference-checkout-api",
+        "path": ".",
+        "revision": "614868766c1249719f0da194fdac9525287210d6"
+      },
+      "build": {
+        "stack": "python",
+        "target": "api"
+      },
+      "requires": [
+        "contract"
+      ],
+      "deploy": {
+        "unit": "api"
+      }
+    },
+    {
+      "id": "web",
+      "component": "checkout_web",
+      "stories": [
+        "STORY-001"
+      ],
+      "change": "checkout-web",
+      "owner": "richgo/checkout",
+      "source": {
+        "repository": "richgo/forgekit-reference-checkout-web",
+        "path": ".",
+        "revision": "8c37a8f8baf8fd0bbd0759626313e80a5506d312"
+      },
+      "build": {
+        "stack": "node",
+        "target": "web"
+      },
+      "requires": [
+        "api"
+      ],
+      "deploy": {
+        "unit": "web"
+      }
+    }
+  ]
+}
