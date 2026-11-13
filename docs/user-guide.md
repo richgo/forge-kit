@@ -12,6 +12,9 @@ reference. In the quote example, specify the discounted total, the zero floor
 and the expected invalid-input behavior. Select the approved stories and
 source paths in `request.md`. [Requirements guide](product-requirements.md)
 
+For an OpenSpec change, review the behavioral delta and bind each selected
+acceptance ID to its scenario. [OpenSpec setup](reference-checkout.md#author-and-verify-an-openspec-change)
+
 ## Architect
 
 Review the affected components, interfaces and downstream consumers.

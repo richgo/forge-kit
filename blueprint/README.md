@@ -51,6 +51,12 @@ same commit as the move. Reuse the reviewed request and verifier in the migrated
 Use the [architecture checklist](architecture/README.md) and
 [conformance checklist](tests/README.md) to review the checker.
 
+For an OpenSpec-backed change, add the reviewed change artifacts and
+`.forge/openspec.json`. The initializer creates the base project inputs.
+Follow the [OpenSpec setup](../docs/reference-checkout.md#author-and-verify-an-openspec-change)
+to install OpenSpec skills and validate the binding. Add a reviewed
+`.forge/verify-baseline` when the change needs explicit test-first evidence.
+
 ## Run the contracts
 
 Install APMX 0.8.0, Bash, Git, Node.js, the project toolchain and the Copilot CLI. APMX checks

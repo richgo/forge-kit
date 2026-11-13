@@ -4,6 +4,9 @@
 | --- | --- | --- |
 | Approved project | Own the requested behavior, reviewed source, architecture and test expectations. | [Requirements template](../blueprint/specs/product-requirements.md) and [request template](../blueprint/request.md) |
 | APM and capability catalog | Resolve reviewed skills, agent configuration, contracts and supporting tools at immutable revisions. Use a frozen lock for reproducible installations. | [APM manifest](../apm.yml), [lock](../apm.lock.yaml) and [catalog roles](../factory/packages.json) |
+| OpenSpec 2.0.0 | Validate the reviewed behavior delta and link scenarios to approved acceptance IDs. | [Change binding and preflight](reference-checkout.md#author-and-verify-an-openspec-change) |
+| ProductChange | Pin the shared specification and service workspaces, order affected builds and qualify the combined candidate. | [Multi-service checkout](reference-checkout.md#plan-across-repositories) |
+| SageKit | Evaluate scoped knowledge and typed questions at configured requirements and release gates. | [SageKit bridge](sagekit.md) |
 | APMX | Resolve the contract graph, produce artifacts, bound agent execution and replay declared checks. | [Factory workflow and CLI runbook](apmx-factory.md) |
 | Project verifier | Check the candidate's scope, apply the unapplied patch in an isolated copy of the approved base and run trusted acceptance. Return a nonzero exit status on failure. | [Blueprint checker](../blueprint/.forge/verify-change) and [consumer examples](../examples/consumers/README.md) |
 | Architecture tools | Validate CALM and LikeC4 and enforce the project's topology, interfaces and dependency constraints. | [Architecture inputs](../blueprint/architecture/README.md) and [architecture impact fixture](../factory/test/architecture-impact.md) |

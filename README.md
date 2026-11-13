@@ -6,38 +6,34 @@ The project owns its language, toolchain, architecture, acceptance criteria and 
 
 ## From change request to release
 
-The target workflow runs each stage in isolation. Request admission anchors
-the chain to the approved project revision. Every later stage verifies its
-incoming attestation and artifact digest. An independent check gates each
-new signed in-toto handoff.
+The hosted workflow starts from the approved project revision. The product
+requirements define the stories and checks. When present, the reviewed
+OpenSpec change defines the behavior delta and maps selected acceptance IDs
+to scenarios. APMX runs the pinned plan, specification, build and review
+contracts. A separate job independently replays the checks before signing
+the delivery.
 
 ```mermaid
 flowchart LR
-    P["Product change<br/>Requirements and acceptance criteria"] --> A
-    T["Architecture change<br/>Models, interfaces and constraints"] --> A
-    A["1. Admit request<br/>Check approved base, scope and inputs<br/>Sign in-toto"] --> B
-    B["2. Plan<br/>Check impact and affected tests<br/>Sign in-toto"] --> C
-    C["3. Specify<br/>Check traceability and interface contracts<br/>Sign in-toto"] --> D
-    D["4. Build<br/>Check exact patch, build and acceptance<br/>Sign in-toto"] --> E
-    E["5. Review<br/>Replay checks and challenge evidence<br/>Sign in-toto"] --> F
-    F["6. Qualify release<br/>Verify full chain, release bytes and approvals<br/>Sign in-toto"] --> G["Release<br/>Verify release signature and digest"]
+    P["Approved request and product stories"] --> A
+    T["CALM, LikeC4 and OpenSpec change"] --> A
+    A["Validate reviewed inputs"] --> B["APMX plan and specification"]
+    B --> C["Build and advisory review"]
+    C --> D["Independent replay"]
+    D --> E["Sign checked delivery"]
+    E --> F["Product release policy and observation"]
 ```
 
-Each attestation binds the checked output digest to its inputs, validation
-evidence and predecessor. Where a stage uses an LLM, production and adversarial
-validation can use independently selected models. A [typed decision advisor](docs/decision-providers.md)
-can inform the validation gate. Deterministic policy controls advancement and
-blocks the handoff when a required check, decision or signature fails.
-
-The hosted APMX workflow replays the project checks and attests the checked
-delivery. The Trail Desk Pages workflow authenticates the signed release
-archive. Per-stage isolation, decision gates and signing are part of the target
-workflow above. See [implementation and qualification status](docs/implementation-status.md).
+For a change spanning services, a reviewed `ProductChange` plan pins the
+shared specification and each implementation unit. Qualify the combined
+artifacts against architecture, API compatibility and system acceptance.
+See the [checkout runbook](docs/reference-checkout.md) and
+[implementation status](docs/implementation-status.md).
 
 ## Start with a project
 
 1. Install the [consumer blueprint](blueprint/README.md#install-in-an-application-repository) in your project. Author behavior and acceptance criteria in [specs/product-requirements.md](blueprint/specs/product-requirements.md). Select the approved stories and source paths in [request.md](blueprint/request.md) and configure the project-owned `.forge/verify-change` checker. The template exits unsuccessfully until you supply real checks.
-2. Install APMX 0.8.0 and the Copilot CLI. Inspect the pinned contract graph from a clean copy of the reviewed project.
+2. For OpenSpec changes, follow the [OpenSpec setup and binding guide](docs/reference-checkout.md#author-and-verify-an-openspec-change). Install APMX 0.8.0 and the Copilot CLI, then inspect the pinned contract graph from a clean copy of the reviewed project.
 
    ```sh
    apmx --from "richgo/forge-kit-skills/packages/software-factory#89eed7bdb145e8ec64ba08091968558cfee97daa" --plan
