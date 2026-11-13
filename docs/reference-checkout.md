@@ -34,7 +34,9 @@ node factory/plan-product-change.mjs --manifest product-change.json \
   --capabilities catalog.json > plan.json
 ```
 
-On the protected default branch, the **APMX product unit** workflow can build
+## Run a hosted product change
+
+On the default branch, the **APMX product unit** workflow can build
 one affected unit from the reviewed plan. Its target repository and revision
 come from that plan. In each child workspace, commit the local OpenSpec
 binding, the shared specification object as `.forge/shared-change.json`,
@@ -53,10 +55,21 @@ package, independent acceptance and delivered bytes against the signed
 receipt. The workflow takes one unit per run because upstream APMX 0.8.0
 assigns fixed artifact names inside a run.
 
+For the pinned checkout reference, run the command below for `contract`,
+then `api`, then `web`. Wait for each run and verify its evidence before
+dispatching the next unit.
+
+```sh
+gh workflow run apmx-product-unit.yml --repo richgo/forge-kit --ref main \
+  -f plan=examples/openspec-checkout/hosted/plan.json -f unit=contract
+```
+
 Run `node factory/qualify-product-change.mjs --plan plan.json --adapter adapter.mjs` with the reviewed plan
 and a trusted local `adapter.mjs` module to assemble the candidate and
 run the system checks. The module exports `createAdapters(plan)` and
 supplies the build and verification adapters described above.
+
+## Run the checkout rehearsal locally
 
 ```sh
 export FORGE_ARCHITECTURE_PACKAGE=/path/to/forge-kit-skills/packages/architecture
@@ -71,15 +84,19 @@ PATH. This mode uses a recorded producer patch and an independent
 APMX replay for each repository. Set `FORGE_REFERENCE_EVIDENCE` to a fresh
 directory to keep the locally replayed receipts.
 
-The reference uses local rollout adapters. Automatic orchestration of the
-hosted unit workflow, signing the assembled system candidate, coordinated
-deployment against live services, automatic OpenSpec sync/archive and
-protected post-deployment knowledge promotion still require integration and
-qualification.
+The reference uses local rollout adapters. Automatic hosted dispatch,
+coordinated deployment against live services, automatic OpenSpec sync and
+archive, and post-deployment knowledge promotion remain open.
 
 The [hosted plan](../examples/openspec-checkout/hosted/plan.json) pins the
 three synthetic GitHub repositories. The reference workflow fetches their
 exact commits and replays recorded producer patches through native APMX.
 On main, a separate job attests the system qualification and each independently
 checked receipt. This attestation covers the deterministic rehearsal. The
-product-unit workflow uses a live agent and publishes its own APMX attestation.
+product-unit workflow uses a live agent and publishes its own APMX attestation
+after successful independent replay. The
+[signed checkout rehearsal](https://github.com/richgo/forge-kit/actions/runs/43443704963)
+passed all three units and the system checks. The
+[live contract run](https://github.com/richgo/forge-kit/actions/runs/43442740426)
+passed preflight and target checkout, then stopped at Copilot's monthly quota
+before patch production.

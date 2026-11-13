@@ -30,6 +30,15 @@ the output. The review report supplies advisory findings.
 See the [consumer blueprint](../blueprint/README.md) and
 [example verifiers](../examples/consumers/README.md).
 
+For an OpenSpec-backed change, stage the reviewed proposal, tasks, deltas
+and any design under `openspec/changes/`. Commit `.forge/openspec.json`
+with one scenario link per selected acceptance ID. Validate the change
+with the locked OpenSpec 2.0.0 toolchain before local execution. The
+hosted workflow runs this preflight when the binding is present. If the
+project supplies `.forge/verify-baseline`, the plan contract independently
+checks the expected missing behavior before the build. See the
+[OpenSpec and checkout runbook](reference-checkout.md#author-and-verify-an-openspec-change).
+
 ## Preview and run locally
 
 Install [APMX 0.8.0](https://github.com/danielmeppiel/apmx/releases/tag/v0.8.0),
@@ -75,6 +84,12 @@ jobs:
 
 For a project already staged in this repository, dispatch **APMX software
 factory** on the default branch and select the project workspace.
+
+For a reviewed multi-service plan, dispatch **APMX product unit** once per
+affected unit, in dependency order. It uses the source repository, commit
+and workspace from the plan and returns a delivery bundle. Use the
+[checkout runbook](reference-checkout.md#run-a-hosted-product-change) to
+authenticate and qualify the combined output.
 
 ## Review the evidence
 

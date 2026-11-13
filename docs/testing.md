@@ -24,6 +24,14 @@ to alter protected files fail. For an agent-generated candidate, follow
 the [hosted checklist](../factory/test/apmx-language-qualification.md)
 and authenticate the replayed receipt.
 
+## Verify an OpenSpec and multi-service change
+
+Use the [checkout runbook](reference-checkout.md) to validate the reviewed
+OpenSpec change, replay baseline and candidate checks, and test the combined
+units. The signed hosted replay and the live agent workflow produce separate
+evidence. Check the pinned source revisions, artifact digests, signer and
+workflow identity before relying on a hosted result.
+
 ## Readiness and catalog fixtures
 
 The readiness fixture exercises reviewed requirements, CALM topology,

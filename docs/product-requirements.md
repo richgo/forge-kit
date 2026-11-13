@@ -21,6 +21,10 @@ results. The factory passes the selected stories' distinct check IDs to
 `quote.acceptance` check exercises a normal discount, a discount that
 would bring the total below zero, and invalid input. [Quote API requirements](../examples/consumers/python-api/specs/product-requirements.md)
 
+For an OpenSpec-backed change, keep the epic, feature, story and check IDs
+in product requirements. Describe the changed behavior in OpenSpec and link
+its scenarios by acceptance ID. [OpenSpec binding](reference-checkout.md#author-and-verify-an-openspec-change)
+
 ## Trace a story through the readiness fixture
 
 The [readiness example](../examples/product-requirements.md) links

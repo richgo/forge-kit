@@ -15,16 +15,20 @@ ForgeKit composes a software factory from versioned APM packages, APMX contracts
 
 CALM models describe components, interfaces and relationships. A LikeC4 view makes the relevant structure reviewable. Use native validation and project rules to keep the models aligned. The impact assessment connects changed nodes and downstream consumers to the acceptance criteria that need replay. A project can use other architecture tools through the same checker interface. [Blueprint architecture guidance](../blueprint/architecture/README.md)
 
+A `ProductChange` maps CALM components to implementation units. Each unit
+pins its repository, workspace, commit and build target. CALM and source
+paths inform impact, and explicit dependencies order builds and rollout.
+The system checker evaluates the assembled candidate against its pinned
+models and specification. [Checkout reference](reference-checkout.md)
+
 ## Authority and evidence
 
 The approved base supplies requirements, check definitions and expected results. Candidate code executes with only the resources it needs, outside the agent workspace and without signing or deployment credentials. A trusted check result binds the candidate to its approved inputs. The release job authenticates that evidence before it can use privileged credentials.
 
-The [target stage workflow](../README.md#from-change-request-to-release)
-extends this boundary to every handoff. An isolated signing job binds the
-checked output, input digests, validation evidence and predecessor to the
-stage and run. The receiving stage verifies the expected signer, policy
-revision, run and exact artifact digest before accepting the handoff. Release
-qualification verifies the chain from the approved project revision.
+The hosted native workflow independently replays the contract checks and
+signs the checked delivery. The checkout rehearsal also signs its system
+result and three replay receipts on main. Per-stage signing and full
+release-chain verification remain target capabilities.
 
 ForgeKit calls a typed decision advisor for repair and runtime recommendations. Deterministic policy owns the allowed actions, confidence threshold, attempt and time budgets, and escalation conditions. A repair that changes the approved requirements, architecture or capability set goes back through review.
 
