@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { planImpact } from '../../factory/impact.mjs';
 import { validateOpenSpec } from '../../bin/openspec.mjs';
 import { planProductChange, releaseProductChange, verifyProductChange } from '../../factory/product-change.mjs';
+import { nativeReplay, stageNativeUnit } from './native-replay.mjs';
 
 const fixture = fileURLToPath(new URL('./', import.meta.url));
 const read = path => readFileSync(join(fixture, path));
@@ -54,9 +55,21 @@ function runSystem(artifacts) {
   return { 'contract-compatibility': compatibility, 'system-acceptance': accepted };
 }
 
+function artifactFiles(artifacts) {
+  return Object.fromEntries(Object.entries(artifacts).map(([id, artifact]) => [id, artifact.path]));
+}
+
+function verifiedBytes(id, receipt, artifacts, native) {
+  const bytes = readFileSync(artifacts[id].path);
+  const content = sha(bytes);
+  assert.equal(native ? hash([[files[id], content]]) : content, receipt.artifactSha256);
+  return bytes;
+}
+
 async function qualify(topology, names, fault = '') {
   const root = mkdtempSync(join(tmpdir(), 'forgekit-checkout-'));
   try {
+    const apmx = topology === 'multi-repo' && !fault ? process.env.FORGE_REFERENCE_APMX : undefined;
     const source = Object.fromEntries([...new Set(names)].map(name => [name, repository(root, name)]));
     const specs = repository(root, 'specs');
     for (const path of [...Object.keys(specification.sha256), 'specs/product-requirements.md',
@@ -66,13 +79,18 @@ async function qualify(topology, names, fault = '') {
       writeFileSync(destination, read(path));
     }
     const specCommit = commit(specs, 'Approve checkout specification and models');
+    const shared = { store: 'reference/specs', change: specification.change, revision: specCommit,
+      sha256: hash(specification.sha256) };
     for (const [index, [unit, file]] of Object.entries(files).entries()) {
       const path = join(source[names[index]], 'services', unit);
       mkdirSync(path, { recursive: true });
       const original = unit === 'api'
         ? 'import json\nprint(json.dumps({"total": 2500}))\n'
-        : read('services/' + unit + '/' + file);
+        : apmx && unit === 'contract' ? '{"required":["total"],"currency":"USD"}\n'
+          : apmx && unit === 'web' ? 'console.log("25.00");\n'
+            : read('services/' + unit + '/' + file);
       writeFileSync(join(path, file), original);
+      if (apmx) stageNativeUnit(path, unit, file, read, specification, shared);
     }
     const revisions = Object.fromEntries(Object.entries(source).map(([name, path]) =>
       [name, commit(path, 'Record existing service implementation')]));
@@ -82,8 +100,7 @@ async function qualify(topology, names, fault = '') {
     ]));
     const manifest = {
       apiVersion: 'forgekit.dev/v1alpha1', kind: 'ProductChange', metadata: { id: 'CHECKOUT-1' },
-      specification: { store: 'reference/specs', change: specification.change, revision: specCommit,
-        sha256: hash(specification.sha256) },
+      specification: shared,
       verification: { require: ['architecture-conformance', 'contract-compatibility', 'system-acceptance'] },
       implementations: Object.keys(files).map((unit, index) => ({
         id: unit, component: 'checkout_' + unit, stories: ['STORY-001'], change: 'checkout-' + unit,
@@ -120,19 +137,21 @@ async function qualify(topology, names, fault = '') {
         } else {
           assert.ok(JSON.parse(readFileSync(artifact)).required.includes('currency'));
         }
-        artifacts[unit.id] = artifact;
+        artifacts[unit.id] = { path: artifact };
         const receipt = { unit: unit.id, sourceRevision: unit.source.revision, planSha256: context.planSha256,
           artifactSha256: sha(readFileSync(artifact)), passed: true };
         return { ...receipt, receiptSha256: hash(receipt) };
       },
       verifySystem: async candidate => {
         for (const [unit, receipt] of Object.entries(candidate.units)) {
-          assert.equal(sha(readFileSync(artifacts[unit])), receipt.artifactSha256);
+          verifiedBytes(unit, receipt, artifacts, apmx);
         }
-        const checks = { ...runSystem(artifacts), 'architecture-conformance': architectureCheck.scope.nodes.length === 0 };
+        const checks = { ...runSystem(artifactFiles(artifacts)), 'architecture-conformance': architectureCheck.scope.nodes.length === 0 };
         return { candidateSha256: candidate.sha256, checks, receiptSha256: hash(checks) };
       },
     };
+    if (apmx) Object.assign(adapters, nativeReplay({ apmx, root, source, readFixture: read, files, artifacts,
+      plan, evidenceDirectory: process.env.FORGE_REFERENCE_EVIDENCE }));
     if (fault === 'incompatible' || fault === 'stale') {
       if (fault === 'stale') {
         const check = adapters.verifyUnit;
@@ -148,24 +167,27 @@ async function qualify(topology, names, fault = '') {
       return [id, path];
     }));
     const release = await releaseProductChange(verified, {
-      authenticate: async result => result.candidate.sha256 === verified.candidate.sha256 && runSystem(artifacts)['system-acceptance'],
+      authenticate: async result => result.candidate.sha256 === verified.candidate.sha256 &&
+        runSystem(artifactFiles(artifacts))['system-acceptance'],
       current: async ({ id }) => ({ baseline: true, path: baselines[id], artifactSha256: sha(readFileSync(baselines[id])) }),
       deploy: async ({ id }, receipt, candidate, baseline) => {
-        assert.equal(sha(readFileSync(artifacts[id])), receipt.artifactSha256);
         assert.equal(sha(readFileSync(installed[id])), baseline.artifactSha256);
-        copyFileSync(artifacts[id], installed[id]);
+        writeFileSync(installed[id], verifiedBytes(id, receipt, artifacts, apmx));
       },
       observe: async ({ id }, receipt) => (receipt.baseline || fault !== 'failed-rollout' || id !== 'web') &&
-        sha(readFileSync(installed[id])) === receipt.artifactSha256,
+        sha(readFileSync(installed[id])) === (receipt.baseline ? receipt.artifactSha256 :
+          sha(verifiedBytes(id, receipt, artifacts, apmx))),
       rollback: async ({ id }, baseline, candidate, attempted) => {
-        assert.equal(sha(readFileSync(installed[id])), attempted.artifactSha256);
+        assert.equal(sha(readFileSync(installed[id])), sha(verifiedBytes(id, attempted, artifacts, apmx)));
         copyFileSync(baseline.path, installed[id]);
       },
     });
     assert.equal(release.status, fault ? 'rolled-back' : 'released');
-    if (!fault) assert.equal(runSystem({ ...installed, contract: artifacts.contract })['system-acceptance'], true);
+    if (!fault) assert.equal(runSystem({ ...installed, contract: artifacts.contract.path })['system-acceptance'], true);
     return { topology, fault: fault || null, sourceRepositories: Object.keys(source).length,
       specification: specification.change, verifiedUnits: Object.keys(verified.candidate.units),
+      ...(apmx ? { verification: 'unsigned-native-apmx-replay', receiptSha256: Object.fromEntries(
+        Object.entries(verified.candidate.units).map(([id, unit]) => [id, unit.receiptSha256])) } : {}),
       candidateSha256: verified.candidate.sha256, checks: verified.system.checks, status: release.status };
   } finally {
     rmSync(root, { recursive: true, force: true, maxRetries: 3 });
