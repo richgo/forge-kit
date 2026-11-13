@@ -3,9 +3,9 @@ import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { lstat, readFile, readdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { parseArgs } from 'node:util';
-import { promisify } from 'node:util';
+import { parseArgs, promisify } from 'node:util';
 import { bindApmxEvidence } from './apmx-evidence.mjs';
+import { validateProductPlan } from './product-change.mjs';
 
 const execute = promisify(execFile);
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -32,10 +32,13 @@ async function inventory(directory, prefix = '', files = Object.create(null)) {
 
 try {
   const plan = JSON.parse(await readFile(values.plan));
-  const { sha256, ...body } = plan;
-  assert.equal(sha256, hash(JSON.stringify(body)), 'Product plan digest mismatch');
+  validateProductPlan(plan);
   const receipt = await readFile(values.receipt);
   const delivered = await inventory(values.delivery);
+  if (Object.hasOwn(delivered, '.apmx-deleted')) {
+    assert.equal(delivered['.apmx-deleted'], hash(''), 'This delivery adapter does not accept deleted files');
+    delete delivered['.apmx-deleted'];
+  }
   assert.match(values.source, /^[0-9a-f]{40}$/, 'Expected exact orchestration workflow source commit');
   assert.match(values.ref, /^refs\/(?:heads|tags)\/[a-zA-Z0-9_./-]+$/, 'Expected reviewed workflow ref');
   const sample = Object.keys(delivered).sort()[0];

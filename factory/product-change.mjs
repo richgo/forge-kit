@@ -21,6 +21,13 @@ function match(value, pattern, label) {
   return value;
 }
 
+export function validateProductPlan(plan) {
+  const { sha256, ...inputs } = plan;
+  assert.equal(inputs.schema, 1, 'Unsupported product plan');
+  assert.equal(hash(inputs), sha256, 'Product change plan digest mismatch');
+  return sha256;
+}
+
 function list(value, label, pattern = id) {
   assert.ok(Array.isArray(value), 'Expected ' + label);
   assert.equal(new Set(value).size, value.length, 'Duplicate ' + label);
@@ -178,8 +185,7 @@ export function planProductChange(manifest, {
 // Adapters run APMX and authenticate the independent receipts in the deployment environment.
 export async function verifyProductChange(input, { build, verifyUnit, verifySystem, reuse }) {
   const plan = immutable(structuredClone(input));
-  const { sha256: planSha256, ...inputs } = plan;
-  assert.equal(hash(inputs), planSha256, 'Product change plan digest mismatch');
+  const planSha256 = validateProductPlan(plan);
   const receipts = new Map();
   const check = (unit, result) => {
     assert.ok(result?.unit === unit.id && result.sourceRevision === unit.source.revision &&
