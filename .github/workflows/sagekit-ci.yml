@@ -27,5 +27,15 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '22'
-      - run: python -m pip install 'sagekit @ git+https://github.com/richgo/sage-kit.git@43640fbdf498ab1043237296ad1bf39de5f750c7'
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: richgo/forge-kit-skills
+          ref: 89eed7bdb145e8ec64ba08091968558cfee97daa
+          path: catalog
+          persist-credentials: false
+      - run: python -m pip install 'sagekit @ git+https://github.com/richgo/sage-kit.git@7d46bb65058431e9bd26591159bfec895c65445f'
       - run: python -m unittest discover -s test -p test_sagekit_bridge.py -v
+        env:
+          FORGE_REQUIREMENTS_PACKAGE: ${{ github.workspace }}/catalog/packages/requirements
+          FORGE_ARCHITECTURE_PACKAGE: ${{ github.workspace }}/catalog/packages/architecture
+          FORGE_DECISION_PACKAGE: ${{ github.workspace }}/catalog/packages/repair-acceptance

@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "change": "update-checkout",
+  "acceptance": {
+    "AC-001": {
+      "spec": "openspec/changes/update-checkout/specs/checkout/spec.md",
+      "scenario": "Return the currency"
+    }
+  }
+}

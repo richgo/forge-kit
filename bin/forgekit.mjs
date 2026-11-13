@@ -2,8 +2,10 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { closeSync, lstatSync, mkdirSync, openSync, readFileSync, rmdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parseArgs } from 'node:util';
+import { validateOpenSpec } from './openspec.mjs';
 
-const usage = 'Usage: forgekit init [--github-actions]';
+const usage = 'Usage: forgekit init [--github-actions]\n       forgekit openspec validate [--workspace PATH] [--tool PATH] [--optional]';
 const blueprint = new URL('../blueprint/', import.meta.url);
 const caller = [
   'name: ForgeKit',
@@ -11,7 +13,7 @@ const caller = [
   'permissions: {}',
   'jobs:',
   '  change:',
-  '    uses: richgo/forge-kit/.github/workflows/apmx-factory.yml@2c4054c67e09573da767bc1d76009fe8e3f4559d',
+  '    uses: richgo/forge-kit/.github/workflows/apmx-factory.yml@01af4b42d4d42a4472245f5d3791e0c5a52a957a',
   '    permissions:',
   '      contents: read',
   '      attestations: write',
@@ -125,6 +127,13 @@ try {
     console.log(usage);
   } else if (command === 'init' && (option === undefined || option === '--github-actions') && !rest.length) {
     init(option === '--github-actions');
+  } else if (command === 'openspec' && option === 'validate') {
+    const { values } = parseArgs({ args: rest, options: {
+      workspace: { type: 'string', default: '.' },
+      tool: { type: 'string' },
+      optional: { type: 'boolean' },
+    } });
+    console.log(JSON.stringify(await validateOpenSpec(values.workspace, values)));
   } else {
     throw new Error(usage);
   }

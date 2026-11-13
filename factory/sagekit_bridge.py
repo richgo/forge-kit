@@ -4,7 +4,9 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
+from urllib.error import HTTPError
 
 from sagekit.application import Principal
 from sagekit.config import create_application
@@ -52,7 +54,7 @@ def read_config(workspace):
     for policy in gates.values():
         if not isinstance(policy, dict) or policy.get("mode") not in {"off", "advisory", "required"}:
             raise ValueError("gate mode must be off, advisory, or required")
-        if set(policy) - {"mode", "query", "minimum_evidence", "exact_ids", "decision"}:
+        if set(policy) - {"mode", "query", "minimum_evidence", "exact_ids", "decision", "context", "questions"}:
             raise ValueError("unexpected SageKit gate policy field")
     return config
 
@@ -61,7 +63,24 @@ def input_hashes(workspace, config):
     extra = config.get("inputs", [])
     if not isinstance(extra, list) or not all(isinstance(name, str) for name in extra):
         raise ValueError("inputs must contain approved workspace-relative file paths")
-    return {name: sha256(inside(workspace, name)) for name in sorted(set((*APPROVED_INPUTS, *extra)))}
+    inputs = set((*APPROVED_INPUTS, *extra))
+    binding = workspace / ".forge/openspec.json"
+    if binding.exists() or binding.is_symlink():
+        value = read_json(inside(workspace, ".forge/openspec.json"))
+        change = value["change"]
+        if not isinstance(change, str) or not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", change):
+            raise ValueError("invalid approved OpenSpec change name")
+        change_path = "openspec/changes/" + change
+        base = (workspace / change_path).resolve()
+        if not base.is_relative_to(workspace) or not base.is_dir():
+            raise ValueError("invalid approved OpenSpec change directory")
+        inputs.add(".forge/openspec.json")
+        for artifact in base.rglob("*"):
+            if artifact.is_symlink():
+                raise ValueError("OpenSpec artifacts must be regular files and directories")
+            if artifact.is_file():
+                inputs.add(artifact.relative_to(workspace).as_posix())
+    return {name: sha256(inside(workspace, name)) for name in sorted(inputs)}
 
 
 def client(corpus, require_remote):
@@ -86,9 +105,27 @@ def run_gate(dispatch, stage, policy, pinned, output):
                   "allowed": mode == "advisory"}
     else:
         try:
-            result = dispatch("gate-check", {"policy": {**policy, "stage": stage, "inputs": pinned["inputs"]},
-                                              "pin": pinned})
-        except OSError:
+            request = {**policy, "stage": stage, "inputs": pinned["inputs"]}
+            result = dispatch("gate-check", {"policy": request, "pin": pinned})
+            if result.get("allowed") is True and ("context" in policy or "questions" in policy):
+                bound = (result.get("policy_id") == digest(request)
+                         and result.get("context") == policy.get("context")
+                         and result.get("snapshot") == pinned["revision"])
+                if "questions" in policy:
+                    judgments = result.get("judgments")
+                    bound = (bound and isinstance(judgments, dict)
+                             and judgments.keys() == policy["questions"].keys())
+                    if mode == "required":
+                        bound = (bound and result.get("disposition") == "pass"
+                                 and all(isinstance(item, dict) and item.get("status") == "accepted"
+                                         for item in judgments.values()))
+                if not bound:
+                    result = {"schema": 1, "stage": stage, "mode": mode, "status": "unavailable",
+                              "reason": "contextual gate response did not bind the requested policy",
+                              "allowed": mode == "advisory"}
+        except OSError as error:
+            if isinstance(error, HTTPError) and 400 <= error.code < 500:
+                raise
             result = {"schema": 1, "stage": stage, "mode": mode, "status": "unavailable",
                       "allowed": mode == "advisory"}
     write_json(output / f"{stage}.json", result)
@@ -111,7 +148,9 @@ def prepare(args, workspace, config):
             snapshot = dispatch("snapshot", {})
             pinned = pin(snapshot["revision"], input_hashes(workspace, config),
                          snapshot["embedding_profile"])
-        except OSError:
+        except OSError as error:
+            if isinstance(error, HTTPError) and 400 <= error.code < 500:
+                raise
             if args.promote or any(policy["mode"] == "required" for policy in policies.values()):
                 raise ValueError("SageKit snapshot unavailable") from None
     write_json(args.output / "pin.json", {"pin": pinned, "config": digest(config)})

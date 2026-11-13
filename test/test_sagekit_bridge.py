@@ -1,4 +1,5 @@
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -11,8 +12,12 @@ import unittest
 from sagekit.config import create_application
 from sagekit.application import Principal
 from sagekit.gates import signed
+from sagekit.model import digest
 
 ROOT = Path(__file__).resolve().parents[1]
+BRIDGE_SPEC = importlib.util.spec_from_file_location("sagekit_bridge", ROOT / "factory/sagekit_bridge.py")
+BRIDGE = importlib.util.module_from_spec(BRIDGE_SPEC)
+BRIDGE_SPEC.loader.exec_module(BRIDGE)
 
 
 class ForgeSageKitTest(unittest.TestCase):
@@ -113,3 +118,34 @@ class ForgeSageKitTest(unittest.TestCase):
         self.bridge("prepare", "--output", self.state, "--require-remote")
         self.assertEqual("skipped", json.loads((self.state / "requirements.json").read_text())["status"])
         self.assertFalse(self.corpus.exists())
+
+    def test_required_contextual_gate_rejects_a_legacy_success(self):
+        policy = {"mode": "required", "query": "checkout",
+                  "context": {"scope": {"product": "checkout"}, "as_of": "2026-11-13"},
+                  "questions": {"safe": {}}}
+        pinned = {"revision": "a" * 64, "inputs": {"request.md": "b" * 64}}
+        self.state.mkdir()
+        with self.assertRaisesRegex(ValueError, "blocked"):
+            BRIDGE.run_gate(lambda *_: {"allowed": True}, "requirements", policy, pinned, self.state)
+        result = json.loads((self.state / "requirements.json").read_text())
+        self.assertEqual("unavailable", result["status"])
+
+        def accepted(operation, params):
+            return {"allowed": True, "status": "available", "disposition": "pass",
+                    "context": policy["context"], "snapshot": pinned["revision"],
+                    "policy_id": digest(params["policy"]), "judgments": {"safe": {"status": "accepted"}}}
+
+        BRIDGE.run_gate(accepted, "requirements", policy, pinned, self.state)
+        self.assertTrue(json.loads((self.state / "requirements.json").read_text())["allowed"])
+
+    def test_open_spec_changes_invalidate_the_approved_input_hash(self):
+        change = self.project / "openspec/changes/checkout"
+        change.mkdir(parents=True)
+        proposal = change / "proposal.md"
+        proposal.write_text("reviewed proposal", encoding="utf-8")
+        (self.project / ".forge/openspec.json").write_text('{"change": "checkout"}', encoding="utf-8")
+        old = BRIDGE.input_hashes(self.project, {})
+        proposal.write_text("different proposal", encoding="utf-8")
+        current = BRIDGE.input_hashes(self.project, {})
+        self.assertNotEqual(old["openspec/changes/checkout/proposal.md"],
+                            current["openspec/changes/checkout/proposal.md"])
