@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { lstat, readFile } from 'node:fs/promises';
+import { lstat, readFile, readdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -11,6 +11,7 @@ const version = '2.0.0';
 const installedTool = fileURLToPath(new URL(
   '../toolchain/openspec/node_modules/@fission-ai/openspec/bin/openspec.js', import.meta.url,
 ));
+const slug = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 async function approvedFile(root, path, optional = false) {
   const segments = path.split('/');
@@ -43,9 +44,11 @@ export async function validateOpenSpec(workspace, { optional = false, tool = ins
   const bindingPath = '.forge/openspec.json';
   const binding = await approvedFile(root, bindingPath, optional);
   if (!binding) return { status: 'skipped' };
-  const { schema, change, acceptance } = JSON.parse(binding);
+  const config = JSON.parse(binding);
+  assert.ok(config && Object.keys(config).length === 3, 'Invalid OpenSpec binding fields');
+  const { schema, change, acceptance } = config;
   assert.equal(schema, 1, 'Unsupported OpenSpec binding schema');
-  assert.match(change ?? '', /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/, 'Invalid OpenSpec change slug');
+  assert.match(change ?? '', slug, 'Invalid OpenSpec change slug');
   assert.ok(acceptance && typeof acceptance === 'object' && !Array.isArray(acceptance) &&
     Object.keys(acceptance).length, 'OpenSpec acceptance bindings are required');
   const base = 'openspec/changes/' + change;
@@ -54,7 +57,7 @@ export async function validateOpenSpec(workspace, { optional = false, tool = ins
     assert.match(id, /^AC-[A-Z0-9][A-Z0-9-]*$/, 'Invalid acceptance ID');
     const { spec, scenario } = entry ?? {};
     assert.ok(typeof spec === 'string' && spec.startsWith(base + '/') &&
-      /^specs\/[a-z][a-z0-9]*(?:-[a-z0-9]+)*\/spec\.md$/.test(spec.slice(base.length + 1)), 'Invalid spec path');
+      /^specs\/(?:[a-z0-9]+(?:-[a-z0-9]+)*\/)+spec\.md$/.test(spec.slice(base.length + 1)), 'Invalid spec path');
     assert.ok(typeof scenario === 'string' && scenario.trim() === scenario && scenario.length &&
       !/[\r\n]/.test(scenario), 'Invalid scenario title');
     if (!files.has(spec)) files.set(spec, await approvedFile(root, spec));
@@ -66,8 +69,14 @@ export async function validateOpenSpec(workspace, { optional = false, tool = ins
     const path = base + '/' + artifact;
     files.set(path, await approvedFile(root, path));
   }
-  const design = await approvedFile(root, base + '/design.md', true);
-  if (design) files.set(base + '/design.md', design);
+  async function inventory(directory) {
+    for (const item of await readdir(join(root, directory), { withFileTypes: true })) {
+      const path = directory + '/' + item.name;
+      if (item.isDirectory()) await inventory(path);
+      else if (!files.has(path)) files.set(path, await approvedFile(root, path));
+    }
+  }
+  await inventory(base);
   const options = { cwd: root, timeout: 30_000, maxBuffer: 1024 * 1024,
     env: { ...process.env, OPENSPEC_TELEMETRY: '0' } };
   const run = args => exec(process.execPath, [resolve(tool), ...args], options);
@@ -76,7 +85,10 @@ export async function validateOpenSpec(workspace, { optional = false, tool = ins
   });
   assert.equal(installed.stdout.trim(), version, 'Unsupported OpenSpec CLI version');
   try {
-    await run(['validate', change, '--type', 'change', '--strict', '--no-interactive', '--json']);
+    const { stdout } = await run(['validate', change, '--type', 'change', '--strict', '--no-interactive', '--json']);
+    const { items } = JSON.parse(stdout);
+    assert.ok(items.length === 1 && items[0].id === change && items[0].valid === true,
+      'No valid result for the reviewed change');
   } catch (error) {
     throw new Error('OpenSpec validation failed for ' + change + '\n' + (error.stdout || error.stderr || error.message),
       { cause: error });
