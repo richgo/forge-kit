@@ -62,10 +62,12 @@ export async function validateOpenSpec(workspace, { optional = false, tool = ins
       .filter(line => line.trimEnd() === '#### Scenario: ' + scenario);
     assert.equal(headings.length, 1, 'Expected one OpenSpec scenario for ' + id);
   }
-  for (const artifact of ['proposal.md', 'design.md', 'tasks.md']) {
+  for (const artifact of ['proposal.md', 'tasks.md']) {
     const path = base + '/' + artifact;
     files.set(path, await approvedFile(root, path));
   }
+  const design = await approvedFile(root, base + '/design.md', true);
+  if (design) files.set(base + '/design.md', design);
   const options = { cwd: root, timeout: 30_000, maxBuffer: 1024 * 1024,
     env: { ...process.env, OPENSPEC_TELEMETRY: '0' } };
   const run = args => exec(process.execPath, [resolve(tool), ...args], options);
