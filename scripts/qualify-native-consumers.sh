@@ -54,7 +54,7 @@ PY
       exit 1
     fi
 
-    for protected in request.md product-requirements.md "$(git ls-files tests)"; do
+    for protected in request.md specs/product-requirements.md "$(git ls-files tests)"; do
       printf '\n# malicious acceptance weakening\n' >> "$protected"
       git diff -- "$protected" > "$tmp/$language.protected.diff"
       git checkout -q -- "$protected"

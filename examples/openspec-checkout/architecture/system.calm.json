@@ -1,0 +1,53 @@
+{
+  "$schema": "https://calm.finos.org/release/1.2/meta/calm.json",
+  "nodes": [
+    {
+      "unique-id": "checkout_contract",
+      "node-type": "service",
+      "name": "Checkout contract",
+      "description": "Checkout contract for the checkout system."
+    },
+    {
+      "unique-id": "checkout_api",
+      "node-type": "service",
+      "name": "Checkout API",
+      "description": "Checkout API for the checkout system."
+    },
+    {
+      "unique-id": "checkout_web",
+      "node-type": "service",
+      "name": "Checkout web",
+      "description": "Checkout web for the checkout system."
+    }
+  ],
+  "relationships": [
+    {
+      "unique-id": "checkout_api_uses_checkout_contract",
+      "description": "Consumes checkout response",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "checkout_api"
+          },
+          "destination": {
+            "node": "checkout_contract"
+          }
+        }
+      }
+    },
+    {
+      "unique-id": "checkout_web_uses_checkout_api",
+      "description": "Consumes checkout response",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "checkout_web"
+          },
+          "destination": {
+            "node": "checkout_api"
+          }
+        }
+      }
+    }
+  ]
+}

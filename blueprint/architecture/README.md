@@ -1,7 +1,7 @@
 # Architecture inputs
 
 Keep the project's architecture models with its approved source and link the
-relevant components and interfaces from [the product requirements](../product-requirements.md).
+relevant components and interfaces from [the product requirements](../specs/product-requirements.md).
 With CALM and LikeC4, use CALM for machine-readable nodes, interfaces and
 relationships and LikeC4 as the reviewable view of the relevant structure.
 Projects can provide other architecture inputs through the same checker.

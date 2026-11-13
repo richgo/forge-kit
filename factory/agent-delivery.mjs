@@ -9,7 +9,7 @@ import { runtimeMetrics } from './qualification-runtime.mjs';
 import { exerciseRecovery, runInContainer, verifyCandidate } from './agent-verifier.mjs';
 import { createCheckpoint, readCheckpoint } from './delivery-checkpoint.mjs';
 import { loadDecisionAdvisor } from './decision-provider.mjs';
-import { requirementsPackage } from './requirements.mjs';
+import { findProductRequirements, requirementsPackage } from './requirements.mjs';
 
 const [mode, directory, input, output] = process.argv.slice(2);
 const json = async path => JSON.parse(await readFile(path, 'utf8'));
@@ -42,10 +42,12 @@ async function readRehearsal(revisions) {
 
 export async function readRevision(directory, name, previous = null) {
   const root = join(directory, name);
+  const requirementsPath = await findProductRequirements(root);
+  assert.ok(requirementsPath, 'Missing specs/product-requirements.md');
   const [execution, calm, likec4, acceptance, source] = await Promise.all([
     json(join(root, 'execution.json')), json(join(root, 'architecture.json')),
     readFile(join(root, 'architecture.c4'), 'utf8'), readFile(join(root, 'acceptance.json')),
-    readFile(join(root, 'product-requirements.md')),
+    readFile(requirementsPath),
   ]);
   assert.ok(Object.keys(execution).every(field => ['id', 'runtime', 'entry', 'files', 'migrations'].includes(field)),
     'Unexpected execution configuration');

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       workspace:
-        description: Project directory containing the reviewed request.md, product-requirements.md and .forge/verify-change
+        description: Project directory containing the reviewed request.md, specs/product-requirements.md and .forge/verify-change
         default: "."
         type: string
   workflow_call:
@@ -14,7 +14,7 @@ on:
         value: ${{ jobs.run.outputs.receipt-sha256 }}
     inputs:
       workspace:
-        description: Project directory containing the reviewed request.md, product-requirements.md and .forge/verify-change
+        description: Project directory containing the reviewed request.md, specs/product-requirements.md and .forge/verify-change
         default: "."
         type: string
       model:
@@ -32,19 +32,54 @@ on:
 permissions: {}
 
 jobs:
-  run:
-    name: Produce, independently check and sign the change
+  openspec:
+    name: Validate the reviewed OpenSpec change
     if: >-
       github.ref == format('refs/heads/{0}', github.event.repository.default_branch) ||
       (github.event_name == 'push' && startsWith(inputs.qualification-tag, 'forgekit-brownfield-proof-') &&
        github.ref == format('refs/tags/{0}', inputs.qualification-tag))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          path: project
+          persist-credentials: false
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: richgo/forge-kit
+          ref: b31f3f1768703fcc4817081184570f4a8e9dadd9
+          path: forgekit-toolchain
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.22.2'
+      - name: Validate approved change artifacts
+        env:
+          PROJECT_PATH: ${{ inputs.workspace }}
+        run: |
+          set -euo pipefail
+          root=$(realpath project)
+          workspace=$(realpath -e -- "$root/$PROJECT_PATH")
+          if [[ "$workspace" != "$root" && "$workspace" != "$root/"* ]]; then
+            echo 'Workspace must be inside the reviewed repository' >&2
+            exit 1
+          fi
+          npm --prefix forgekit-toolchain/toolchain/openspec ci --ignore-scripts --engine-strict
+          node forgekit-toolchain/bin/forgekit.mjs openspec validate --workspace "$workspace" --optional
+
+  run:
+    name: Produce, independently check and sign the change
+    needs: openspec
     uses: danielmeppiel/apmx/.github/workflows/run.yml@fae2067a0dc6ff07beda714015ff9e648f41ce63 # v0.8.0
     permissions:
       contents: read
       id-token: write
       attestations: write
     with:
-      factory: richgo/forge-kit-skills/packages/software-factory#40a7a6b54ce5603f450e4935beb9dac4f466b95a
+      factory: richgo/forge-kit-skills/packages/software-factory#89eed7bdb145e8ec64ba08091968558cfee97daa
       workspace: ${{ inputs.workspace }}
       model: ${{ inputs.model }}
       apmx-version: "0.8.0"

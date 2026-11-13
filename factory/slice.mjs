@@ -5,7 +5,7 @@ import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { readProductRequirements, requirementsPackage } from './requirements.mjs';
+import { findProductRequirements, readProductRequirements, requirementsPackage } from './requirements.mjs';
 
 const execute = promisify(execFile);
 const approvedRepairBudget = Object.freeze({ timeLimitMs: 15000, spendLimitUnits: 1, retryCostUnits: 1 });
@@ -86,7 +86,6 @@ export function validateArchitecture(calm, requirements, view) {
 }
 
 const repositoryPath = name => fileURLToPath(new URL('../' + name, import.meta.url));
-const markdownSource = 'product-requirements.md';
 
 async function loadInputs(inputDirectory, story, { archived = false } = {}) {
   const architecture = inputDirectory ?
@@ -95,15 +94,11 @@ async function loadInputs(inputDirectory, story, { archived = false } = {}) {
   const names = inputDirectory ? fixtureInputs.slice(1) : defaultArchitecture;
   const [model, view] = await Promise.all(architecture.map(path => readFile(path)));
   const root = inputDirectory ?? repositoryPath('examples');
-  const markdown = join(root, markdownSource);
   let approved;
   if (!archived) {
-    const exists = await readFile(markdown).then(() => true, error => {
-      if (error.code !== 'ENOENT') throw error;
-      return false;
-    });
-    if (exists) approved = await readProductRequirements(markdown, { website: false });
-    else if (!inputDirectory) throw new Error('Missing approved ' + markdownSource);
+    const markdown = await findProductRequirements(root);
+    if (markdown) approved = await readProductRequirements(markdown, { website: false });
+    else if (!inputDirectory) throw new Error('Missing approved specs/product-requirements.md');
   }
   if (!approved && story) approved = await readProductRequirements(join(root, 'product-requirements.json'));
   let requirements;

@@ -1,3 +1,4 @@
 /out/
 /.apm/
 /apm_modules/
+/toolchain/openspec/node_modules/

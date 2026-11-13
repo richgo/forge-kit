@@ -3,7 +3,7 @@
 The quote examples apply a nonnegative discount and clamp the total at zero
 while preserving each project's invalid-input behavior. Each example uses the
 same pinned APMX factory and a project-owned `.forge/verify-change`. Each
-checked-in request selects a story from the project's `product-requirements.md`
+checked-in request selects a story from the project's `specs/product-requirements.md`
 and permits changes to one source file. The checker applies the candidate in a
 disposable tree and runs the selected acceptance suite from the approved base.
 

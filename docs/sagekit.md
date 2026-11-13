@@ -36,7 +36,7 @@ the change passes independently.
 }
 ```
 
-`request.md` and `product-requirements.md` are always pinned when SageKit is
+`request.md` and `specs/product-requirements.md` are always pinned when SageKit is
 used. Use `inputs` for additional approved paths, such as a CALM architecture
 file. A gate can use SageKit's `exact_ids` and typed `decision` fields.
 Set the repository variable `SAGEKIT_REMOTE_URL` to the HTTPS service origin
@@ -51,6 +51,18 @@ existing Copilot token is used by the native APMX run. Download
 `sagekit-state`, `sagekit-release-gate`, and `apmx-receipt` to inspect the
 pins, gate results, and independent verification evidence.
 
+## Scope a gate to approved knowledge
+
+Set a gate's optional context with a product, repository or component scope
+and the reviewed evaluation date. Named questions can combine Noul thresholds,
+Choice outcomes and Score rules. ForgeKit checks that the response identifies
+the requested policy, pinned corpus and each question before accepting a
+required gate. When a reviewed OpenSpec binding is present, its change
+artifacts are included in the pinned inputs.
+
+See the [SageKit context and questions contract](https://github.com/richgo/sage-kit/tree/7d46bb65058431e9bd26591159bfec895c65445f/docs)
+for policy examples.
+
 ## Enable post-success promotion
 
 Select `promote` in the dispatch form for a reviewed product or architecture
@@ -64,7 +76,7 @@ main-branch restrictions. Set `SAGEKIT_VERIFIER_WORKFLOW` to
 `richgo/forge-kit/.github/workflows/apmx-sagekit.yml` and
 `SAGEKIT_VERIFIER_DIGEST` to the reviewed ForgeKit workflow commit.
 Configure the authorized origin, SageKit revision, and environment secrets
-as described in the [SageKit publisher guide](https://github.com/richgo/sage-kit/blob/43640fbdf498ab1043237296ad1bf39de5f750c7/docs/forgekit.md).
+as described in the [SageKit publisher guide](https://github.com/richgo/sage-kit/blob/7d46bb65058431e9bd26591159bfec895c65445f/docs/forgekit.md).
 
 The [ForgeKit integration CI](../.github/workflows/sagekit-ci.yml) runs
 without production credentials. It exercises actual SageKit persistence and

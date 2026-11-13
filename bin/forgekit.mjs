@@ -2,8 +2,10 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { closeSync, lstatSync, mkdirSync, openSync, readFileSync, rmdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parseArgs } from 'node:util';
+import { validateOpenSpec } from './openspec.mjs';
 
-const usage = 'Usage: forgekit init [--github-actions]';
+const usage = 'Usage: forgekit init [--github-actions]\n       forgekit openspec validate [--workspace PATH] [--tool PATH] [--optional]';
 const blueprint = new URL('../blueprint/', import.meta.url);
 const caller = [
   'name: ForgeKit',
@@ -11,7 +13,7 @@ const caller = [
   'permissions: {}',
   'jobs:',
   '  change:',
-  '    uses: richgo/forge-kit/.github/workflows/apmx-factory.yml@3ac67083c7862323d8d6bdc913b1eb392c91e25f',
+  '    uses: richgo/forge-kit/.github/workflows/apmx-factory.yml@01af4b42d4d42a4472245f5d3791e0c5a52a957a',
   '    permissions:',
   '      contents: read',
   '      attestations: write',
@@ -37,12 +39,15 @@ function init(hosted) {
   const root = git('--show-toplevel');
   if (git('--show-prefix')) throw new Error('Run forgekit init from the application repository root');
 
-  const directories = ['.forge', ...(hosted ? ['.github', '.github/workflows'] : [])];
-  const files = ['product-requirements.md', 'request.md', '.forge/verify-change']
+  const directories = ['specs', '.forge', ...(hosted ? ['.github', '.github/workflows'] : [])];
+  const files = ['specs/product-requirements.md', 'request.md', '.forge/verify-change']
     .map(path => ({ path, bytes: readFileSync(new URL(path, blueprint)) }));
   if (hosted) files.push({ path: '.github/workflows/forgekit.yml', bytes: Buffer.from(caller) });
 
   const stat = path => lstatSync(join(root, path), { throwIfNoEntry: false });
+  if (stat('product-requirements.md')) {
+    throw new Error('Move product-requirements.md to specs/product-requirements.md before upgrading ForgeKit. See the blueprint migration guide.');
+  }
   for (const path of directories) {
     const entry = stat(path);
     if (entry && !entry.isDirectory()) throw new Error('Expected a directory at ' + path);
@@ -122,6 +127,13 @@ try {
     console.log(usage);
   } else if (command === 'init' && (option === undefined || option === '--github-actions') && !rest.length) {
     init(option === '--github-actions');
+  } else if (command === 'openspec' && option === 'validate') {
+    const { values } = parseArgs({ args: rest, options: {
+      workspace: { type: 'string', default: '.' },
+      tool: { type: 'string' },
+      optional: { type: 'boolean' },
+    } });
+    console.log(JSON.stringify(await validateOpenSpec(values.workspace, values)));
   } else {
     throw new Error(usage);
   }
