@@ -229,9 +229,9 @@ export async function releaseProductChange(input, { authenticate, current, deplo
   const verified = immutable(structuredClone(input));
   assert.equal(await authenticate(verified), true, 'Release requires authenticated qualification');
   const { plan, candidate, system } = verified;
-  const { sha256: planSha256, ...inputs } = plan;
+  const planSha256 = validateProductPlan(plan);
   const { sha256: candidateSha256, ...payload } = candidate;
-  assert.ok(hash(inputs) === planSha256 && hash(payload) === candidateSha256 &&
+  assert.ok(hash(payload) === candidateSha256 &&
     candidate.planSha256 === planSha256 && system.candidateSha256 === candidateSha256 &&
     plan.required.every(check => system.checks?.[check] === true), 'Release qualification digest mismatch');
   const units = plan.waves.flat().map(key => plan.units[key]).filter(unit => unit.deploy);

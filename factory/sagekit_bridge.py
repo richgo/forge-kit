@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 from urllib.error import HTTPError
 
@@ -67,16 +68,18 @@ def input_hashes(workspace, config):
     if binding.exists() or binding.is_symlink():
         value = read_json(inside(workspace, ".forge/openspec.json"))
         change = value["change"]
-        if (not isinstance(change, str) or not change
-                or any(not part.isascii() or not part.isalnum() or part.lower() != part
-                       for part in change.split("-"))):
+        if not isinstance(change, str) or not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", change):
             raise ValueError("invalid approved OpenSpec change name")
         change_path = "openspec/changes/" + change
         base = (workspace / change_path).resolve()
         if not base.is_relative_to(workspace) or not base.is_dir():
             raise ValueError("invalid approved OpenSpec change directory")
         inputs.add(".forge/openspec.json")
-        inputs.update(path.relative_to(workspace).as_posix() for path in base.rglob("*.md"))
+        for artifact in base.rglob("*"):
+            if artifact.is_symlink():
+                raise ValueError("OpenSpec artifacts must be regular files and directories")
+            if artifact.is_file():
+                inputs.add(artifact.relative_to(workspace).as_posix())
     return {name: sha256(inside(workspace, name)) for name in sorted(inputs)}
 
 

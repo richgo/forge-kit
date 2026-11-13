@@ -53,12 +53,23 @@ package, independent acceptance and delivered bytes against the signed
 receipt. The workflow takes one unit per run because upstream APMX 0.8.0
 assigns fixed artifact names inside a run.
 
+Run `node factory/qualify-product-change.mjs --plan plan.json --adapter adapter.mjs` with the reviewed plan
+and a trusted local `adapter.mjs` module to assemble the candidate and
+run the system checks. The module exports `createAdapters(plan)` and
+supplies the build and verification adapters described above.
+
 ```sh
 export FORGE_ARCHITECTURE_PACKAGE=/path/to/forge-kit-skills/packages/architecture
 node examples/openspec-checkout/qualify.mjs
 ```
 
 The rehearsal requires Git, Node and Python 3. It creates temporary real Git repositories, validates the shared OpenSpec change and the flat CALM/LikeC4 model, and executes the old and repaired Python API and Node consumer. It checks the same story in monorepo, multi-repo and hybrid layouts. It also checks rejection of an incompatible API and stale plan evidence, then verifies rollback after an injected rollout failure.
+
+To run the three-repository case through native APMX, set `FORGE_REFERENCE_APMX`
+to the path to APMX 0.8.0 on Linux, with the Copilot CLI available on
+PATH. This mode uses a recorded producer patch and an independent
+APMX replay for each repository. Set `FORGE_REFERENCE_EVIDENCE` to a fresh
+directory to keep the locally replayed receipts.
 
 The reference uses local rollout adapters. Automatic orchestration of the
 hosted unit workflow, signing the assembled system candidate, coordinated
