@@ -13,7 +13,7 @@ const caller = [
   'permissions: {}',
   'jobs:',
   '  change:',
-  '    uses: richgo/forge-kit/.github/workflows/apmx-factory.yml@2c4054c67e09573da767bc1d76009fe8e3f4559d',
+  '    uses: richgo/forge-kit/.github/workflows/apmx-factory.yml@01af4b42d4d42a4472245f5d3791e0c5a52a957a',
   '    permissions:',
   '      contents: read',
   '      attestations: write',

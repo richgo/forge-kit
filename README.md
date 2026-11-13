@@ -40,12 +40,16 @@ workflow above. See [implementation and qualification status](docs/implementatio
 2. Install APMX 0.8.0 and the Copilot CLI. Inspect the pinned contract graph from a clean copy of the reviewed project.
 
    ```sh
-   apmx --from "richgo/forge-kit-skills/packages/software-factory#3fe479de850c5cb891275153b708682371879927" --plan
+   apmx --from "richgo/forge-kit-skills/packages/software-factory#89eed7bdb145e8ec64ba08091968558cfee97daa" --plan
    ```
 
 3. Follow the [APMX runbook](docs/apmx-factory.md) to run with an agent or configure GitHub Actions for independent replay and attestation. Review the exact patch and the evidence before accepting the change.
 
 ## Explore the examples
+
+The [checkout reference](docs/reference-checkout.md) uses OpenSpec 2.0,
+CALM/LikeC4 and independent acceptance across monorepo, multi-repo and
+hybrid layouts.
 
 | Example | What to exercise |
 | --- | --- |

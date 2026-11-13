@@ -1,0 +1,15 @@
+specification {
+  element service
+}
+model {
+  checkout_contract = service 'Checkout contract'
+  checkout_api = service 'Checkout API'
+  checkout_web = service 'Checkout web'
+  checkout_api -> checkout_contract 'Consumes checkout response'
+  checkout_web -> checkout_api 'Consumes checkout response'
+}
+views {
+  view checkout {
+    include *
+  }
+}

@@ -1,0 +1,34 @@
+name: ForgeKit reference checkout
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: richgo/forge-kit-skills
+          ref: 89eed7bdb145e8ec64ba08091968558cfee97daa
+          path: catalog
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.22.2'
+      - run: npm --prefix toolchain/openspec ci --ignore-scripts --engine-strict
+      - name: Exercise contract, specification and topology gates
+        env:
+          FORGE_OPENSPEC_TOOL: ${{ github.workspace }}/toolchain/openspec/node_modules/@fission-ai/openspec/bin/openspec.js
+          FORGE_ARCHITECTURE_PACKAGE: ${{ github.workspace }}/catalog/packages/architecture
+        run: |
+          node --test test/openspec.test.mjs test/blueprint-init.test.mjs test/product-change.test.mjs
+          node examples/openspec-checkout/qualify.mjs

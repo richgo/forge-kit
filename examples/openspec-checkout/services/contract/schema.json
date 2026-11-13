@@ -1,0 +1,4 @@
+{
+  "required": ["total", "currency"],
+  "currency": "GBP"
+}
