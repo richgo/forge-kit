@@ -1,0 +1,13 @@
+{
+  "factory": {
+    "package": "richgo/forge-kit-skills/packages/software-factory",
+    "ref": "89eed7bdb145e8ec64ba08091968558cfee97daa",
+    "sha256": "80813e385a0bef3d657a73ca9955435ac23f748f92ef91e632b0df6dc0281c03",
+    "mandatory": true,
+    "stacks": [
+      "json",
+      "python",
+      "node"
+    ]
+  }
+}

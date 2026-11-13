@@ -1,0 +1,137 @@
+{
+  "schema": 1,
+  "change": "CHECKOUT-HOSTED-1",
+  "specification": {
+    "store": "richgo/forge-kit",
+    "change": "update-checkout",
+    "revision": "e2d3679a598f94516d7306343b46761cf257e24b",
+    "sha256": "e0cd155980ebcb8c116600341e207e1ffcd4594f16b022cf443774451d2cc29c"
+  },
+  "models": {
+    "calm": "1fba17f40dc05f162a7e1ebdcb073e7a59497c85ccf86b80083577551fe81983",
+    "likec4": "ff686a97c07ee180a5281e9f12794e29f7d6d4655606d6127841edbde52ece2c"
+  },
+  "required": [
+    "architecture-conformance",
+    "contract-compatibility",
+    "system-acceptance"
+  ],
+  "units": {
+    "api": {
+      "id": "api",
+      "component": "checkout_api",
+      "stories": [
+        "STORY-001"
+      ],
+      "change": "checkout-api",
+      "source": {
+        "repository": "richgo/forgekit-reference-checkout-api",
+        "path": ".",
+        "revision": "614868766c1249719f0da194fdac9525287210d6"
+      },
+      "deploy": {
+        "unit": "api"
+      },
+      "owner": "richgo/checkout",
+      "build": {
+        "stack": "python",
+        "target": "api"
+      },
+      "requires": [
+        "contract"
+      ],
+      "capabilities": [
+        {
+          "id": "factory",
+          "package": "richgo/forge-kit-skills/packages/software-factory",
+          "ref": "89eed7bdb145e8ec64ba08091968558cfee97daa",
+          "sha256": "80813e385a0bef3d657a73ca9955435ac23f748f92ef91e632b0df6dc0281c03"
+        }
+      ],
+      "contract": {
+        "schema": 1,
+        "action": "forgekit.openspec.apply"
+      }
+    },
+    "contract": {
+      "id": "contract",
+      "component": "checkout_contract",
+      "stories": [
+        "STORY-001"
+      ],
+      "change": "checkout-contract",
+      "source": {
+        "repository": "richgo/forgekit-reference-checkout-contract",
+        "path": ".",
+        "revision": "63bb56a8df49986d3807c4b6e05d3d5e258b335c"
+      },
+      "deploy": null,
+      "owner": "richgo/checkout",
+      "build": {
+        "stack": "json",
+        "target": "contract"
+      },
+      "requires": [],
+      "capabilities": [
+        {
+          "id": "factory",
+          "package": "richgo/forge-kit-skills/packages/software-factory",
+          "ref": "89eed7bdb145e8ec64ba08091968558cfee97daa",
+          "sha256": "80813e385a0bef3d657a73ca9955435ac23f748f92ef91e632b0df6dc0281c03"
+        }
+      ],
+      "contract": {
+        "schema": 1,
+        "action": "forgekit.openspec.apply"
+      }
+    },
+    "web": {
+      "id": "web",
+      "component": "checkout_web",
+      "stories": [
+        "STORY-001"
+      ],
+      "change": "checkout-web",
+      "source": {
+        "repository": "richgo/forgekit-reference-checkout-web",
+        "path": ".",
+        "revision": "8c37a8f8baf8fd0bbd0759626313e80a5506d312"
+      },
+      "deploy": {
+        "unit": "web"
+      },
+      "owner": "richgo/checkout",
+      "build": {
+        "stack": "node",
+        "target": "web"
+      },
+      "requires": [
+        "api"
+      ],
+      "capabilities": [
+        {
+          "id": "factory",
+          "package": "richgo/forge-kit-skills/packages/software-factory",
+          "ref": "89eed7bdb145e8ec64ba08091968558cfee97daa",
+          "sha256": "80813e385a0bef3d657a73ca9955435ac23f748f92ef91e632b0df6dc0281c03"
+        }
+      ],
+      "contract": {
+        "schema": 1,
+        "action": "forgekit.openspec.apply"
+      }
+    }
+  },
+  "waves": [
+    [
+      "contract"
+    ],
+    [
+      "api"
+    ],
+    [
+      "web"
+    ]
+  ],
+  "sha256": "5f59cac6ccaf52e2d52497b1fb959323c75435eb16cd9ea76ecabde54c10e49e"
+}
