@@ -17,6 +17,14 @@ on:
         description: Project directory containing the reviewed request.md, specs/product-requirements.md and .forge/verify-change
         default: "."
         type: string
+      model:
+        description: Optional Copilot model override for the reviewed run
+        type: string
+        default: ""
+      qualification-tag:
+        description: Exact reviewed forgekit-brownfield-proof-* tag, for tag-push qualification
+        type: string
+        default: ""
     secrets:
       COPILOT_GITHUB_TOKEN:
         required: true
@@ -26,7 +34,10 @@ permissions: {}
 jobs:
   openspec:
     name: Validate the reviewed OpenSpec change
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    if: >-
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) ||
+      (github.event_name == 'push' && startsWith(inputs.qualification-tag, 'forgekit-brownfield-proof-') &&
+       github.ref == format('refs/tags/{0}', inputs.qualification-tag))
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -62,7 +73,6 @@ jobs:
   run:
     name: Produce, independently check and sign the change
     needs: openspec
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     uses: danielmeppiel/apmx/.github/workflows/run.yml@fae2067a0dc6ff07beda714015ff9e648f41ce63 # v0.8.0
     permissions:
       contents: read
@@ -71,6 +81,7 @@ jobs:
     with:
       factory: richgo/forge-kit-skills/packages/software-factory#89eed7bdb145e8ec64ba08091968558cfee97daa
       workspace: ${{ inputs.workspace }}
+      model: ${{ inputs.model }}
       apmx-version: "0.8.0"
       apmx-ref: fae2067a0dc6ff07beda714015ff9e648f41ce63
       attest: true

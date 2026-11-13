@@ -1,4 +1,11 @@
-# Run ForgeKit with SageKit
+# SageKit decisions in ForgeKit
+
+SageKit is ForgeKit’s decision layer for contextual evidence and typed
+recommendations at requirements and release checkpoints. Its router can use
+Venn when measured precedent exists and TypeSafe System One (Jev) for model
+advice. The independent APMX verifier governs acceptance and signs its own
+receipt. The separate ForgeKit repair and runtime workflows use the direct
+Jev adapter documented in [Decision providers](decision-providers.md).
 
 The **APMX software factory with SageKit** workflow runs ForgeKit's native
 APMX factory and independent replay with two optional SageKit gates.
@@ -33,7 +40,9 @@ the change passes independently.
 used. Use `inputs` for additional approved paths, such as a CALM architecture
 file. A gate can use SageKit's `exact_ids` and typed `decision` fields.
 Set the repository variable `SAGEKIT_REMOTE_URL` to the HTTPS service origin
-and the secret `SAGEKIT_READ_TOKEN` to a read-only token. Give the token the
+and the secret `SAGEKIT_READ_TOKEN` to a read-only SageKit service token. The direct TypeSafe key
+(`FORGE_JEV_TOKEN` in ForgeKit’s direct adapter) is a distinct credential. Give
+the SageKit token the
 `decide` scope only if a gate asks for a typed decision. Scope credentials to
 evidence suitable for the repository's Actions artifacts.
 
@@ -73,3 +82,13 @@ The [ForgeKit integration CI](../.github/workflows/sagekit-ci.yml) runs
 without production credentials. It exercises actual SageKit persistence and
 promotion after the ForgeKit verifier succeeds, and checks that a changed
 input or receipt blocks promotion.
+
+## Qualify a consumer on a reviewed tag
+
+A consumer can run the native factory from a reviewed tag starting with
+`forgekit-brownfield-proof-`. Trigger its workflow on a tag push and pass the
+exact tag name as `qualification-tag` to the pinned reusable APMX workflow.
+Use separate SageKit jobs to prepare the approved evidence and complete the
+release gate against the independently produced receipt digest. The bridge
+can use a disposable corpus seeded from reviewed inputs for a qualification.
+A hosted SageKit service or promotion uses the credentials and controls above.
