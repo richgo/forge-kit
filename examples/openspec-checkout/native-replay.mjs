@@ -153,7 +153,8 @@ export function nativeReplay({ apmx, root, source, readFixture, files, artifacts
         predicate.configuration?.some(item => item.annotations?.stage === 'plan' &&
           item.annotations?.check === 'baseline-acceptance')), 'Expected independent baseline proof');
       const contentSha256 = sha256(read(output));
-      const delivered = { [unit.source.path + '/' + files[unit.id]]: contentSha256 };
+      const deliveryPath = unit.source.path === '.' ? files[unit.id] : unit.source.path + '/' + files[unit.id];
+      const delivered = { [deliveryPath]: contentSha256 };
       // This local verifier owns the receipt bytes it just generated. The hosted
       // entry point supplies the equivalent statements only after signature verification.
       const verified = bindApmxEvidence(plan, unit.id, raw, { lines: statements }, delivered, factory);
