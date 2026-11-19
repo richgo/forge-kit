@@ -19,28 +19,29 @@ function fixture() {
   return { chain, approvedBase: digest('approved-base'), releaseDigest: input,
     authenticated: () => true };
 }
+const verify = ({ chain, ...options }) => verifyStageChain(chain, options);
 test('accepts a complete independently authenticated and verified stage chain', () => {
-  assert.equal(verifyStageChain(fixture()).stages, 6);
+  assert.equal(verify(fixture()).stages, 6);
 });
 test('rejects omitted and reordered stages', () => {
   const x = fixture(); x.chain.splice(2, 1);
-  assert.throws(() => verifyStageChain(x), /Complete stage chain/);
+  assert.throws(() => verify(x), /Complete stage chain/);
   const y = fixture(); [y.chain[1], y.chain[2]] = [y.chain[2], y.chain[1]];
-  assert.throws(() => verifyStageChain(y), /stage/i);
+  assert.throws(() => verify(y), /stage/i);
 });
 test('rejects forged authentication and self-verification', () => {
   const x = fixture(); x.authenticated = () => false;
-  assert.throws(() => verifyStageChain(x), /authenticated/);
+  assert.throws(() => verify(x), /authenticated/);
   const y = fixture(); y.chain[2].verification.independent = false;
-  assert.throws(() => verifyStageChain(y), /self-approve/);
+  assert.throws(() => verify(y), /self-approve/);
 });
 test('rejects altered evidence, broken links, denied policy and mismatched release', () => {
   const x = fixture(); x.chain[3].evidenceDigest = digest('swapped');
-  assert.throws(() => verifyStageChain(x), /modified/);
+  assert.throws(() => verify(x), /modified/);
   const y = fixture(); y.chain[4].predecessor = digest('wrong');
-  assert.throws(() => verifyStageChain(y), /predecessor/);
+  assert.throws(() => verify(y), /predecessor/);
   const z = fixture(); z.chain[1].policy.allowed = false;
-  assert.throws(() => verifyStageChain(z), /policy/);
+  assert.throws(() => verify(z), /policy/);
   const w = fixture(); w.releaseDigest = digest('other');
-  assert.throws(() => verifyStageChain(w), /Release digest/);
+  assert.throws(() => verify(w), /Release digest/);
 });

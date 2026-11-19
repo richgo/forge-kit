@@ -1,0 +1,29 @@
+name: Stage provenance security checks
+on:
+  pull_request:
+    paths:
+      - 'factory/stage-chain.mjs'
+      - 'factory/authenticate-stage-chain.mjs'
+      - 'test/*stage-chain.test.mjs'
+      - '.github/workflows/stage-chain-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'factory/stage-chain.mjs'
+      - 'factory/authenticate-stage-chain.mjs'
+      - 'test/*stage-chain.test.mjs'
+      - '.github/workflows/stage-chain-tests.yml'
+permissions:
+  contents: read
+jobs:
+  security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.22.2'
+      - run: node --test test/stage-chain.test.mjs test/authenticate-stage-chain.test.mjs
